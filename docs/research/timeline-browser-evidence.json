@@ -1,0 +1,12 @@
+{
+  "checks": 6,
+  "errors": [],
+  "verified": [
+    "year/month/activity hierarchy and annual group",
+    "hover focal and neighboring magnification",
+    "old label shrinks while new label grows",
+    "pointer leave resets and click selects correct activity",
+    "reduced motion disables scaling",
+    "mobile hierarchy remains one viewport"
+  ]
+}

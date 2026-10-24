@@ -770,3 +770,31 @@
 .fullscreen-button svg {
   flex-shrink: 0;
 }
+
+/* Three-level timeline. Labels scale inside stable hit areas, avoiding hover jitter. */
+.dock-timeline {width:245px;padding:0 12px 24px 16px;scrollbar-width:none;}
+.dock-timeline::-webkit-scrollbar {display:none;}
+.dock-timeline .timeline-year {font-size:22px;font-weight:400;margin:22px 0 10px;line-height:34px;}
+.dock-timeline .timeline-year-group:first-child .timeline-year {margin-top:0;}
+.timeline-month-group {margin:0 0 9px 12px;}
+.timeline-month {font-size:14px;font-weight:400;line-height:28px;margin:0;color:#b88b4a;}
+.timeline-month-group ul {list-style:none;padding:0 0 0 12px;margin:0;}
+.dock-timeline li {position:relative;}
+.dock-timeline button {padding:7px 0;line-height:20px;font-size:11px;}
+.dock-timeline .dock-label {display:block;transform-origin:left center;transform:translateX(calc(var(--dock,0) * 3px)) scale(calc(1 + var(--dock,0) * .32));transition:transform 220ms cubic-bezier(.2,.8,.2,1),color 220ms;max-width:74%;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
+.dock-timeline button:hover,.dock-timeline button:focus-visible {color:#efcca0;}
+.dock-timeline li:has(button:focus-visible) {--dock:1 !important;}
+.dock-timeline .timeline-dot {width:4px;height:4px;margin-right:7px;vertical-align:2px;}
+@media (max-width:700px) {
+  .dock-timeline {width:auto;height:112px;display:flex;align-items:flex-start;padding:4px 0;gap:24px;overflow-y:hidden;}
+  .dock-timeline .timeline-year-group {display:flex;gap:12px;flex:0 0 auto;}
+  .dock-timeline .timeline-year {display:block;font-size:16px;line-height:24px;margin:0;}
+  .dock-timeline .timeline-month-group {margin:0;min-width:140px;max-height:104px;overflow-y:auto;}
+  .dock-timeline .timeline-month {font-size:12px;line-height:22px;}
+  .dock-timeline .timeline-month-group ul {padding-left:8px;}
+  .dock-timeline button {padding:2px 0;min-width:140px;width:140px;}
+  .dock-timeline .dock-label {max-width:100%;transform:none;}
+}
+@media (prefers-reduced-motion:reduce) {
+  .dock-timeline .dock-label {transition:none;transform:none;}
+}

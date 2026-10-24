@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
 import "./gallery.css";
+import { ActivityTimeline } from "./timeline";
 
 export function Gallery({ api, onAdmin }) {
   const [loaded, setLoaded] = useState(false),
@@ -112,35 +113,7 @@ export function Gallery({ api, onAdmin }) {
             />
           )}
           {view === "tunnel" && (
-            <aside className="activity-timeline" aria-label="活动时间线">
-              {activities.map((a, i) => (
-                <React.Fragment key={a.id}>
-                  {(i === 0 ||
-                    a.event.year !== activities[i - 1].event.year) && (
-                    <div
-                      className={
-                        "timeline-year " +
-                        (current.event.year === a.event.year ? "selected" : "")
-                      }
-                    >
-                      {a.event.year || "未知年份"}
-                    </div>
-                  )}
-                  <button
-                    aria-current={i === index ? "true" : undefined}
-                    className={i === index ? "selected" : ""}
-                    title={a.event.theme}
-                    onClick={() => goTo(i)}
-                  >
-                    <span className="timeline-dot" />
-                    {a.event.month
-                      ? String(a.event.month).padStart(2, "0")
-                      : "年度"}
-                    -{a.event.theme}
-                  </button>
-                </React.Fragment>
-              ))}
-            </aside>
+            <ActivityTimeline activities={activities} index={index} onSelect={goTo} />
           )}
           <div className="gallery-caption">
             <div>

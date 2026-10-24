@@ -4,11 +4,30 @@ import os
 import hashlib
 import json
 import time
+from datetime import datetime
 from pathlib import PurePosixPath
 from fastapi import Depends, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from .cache import Cache
+
+def activity_time(event, rows):
+    """Latest observed capture within the declared period; never invent a day."""
+    dates = []
+    for row in rows:
+        value = json.loads(row['data_json']).get('captured_at')
+        if not isinstance(value, str):
+            continue
+        try:
+            date = datetime.strptime(value[:19].replace('T', ' ').replace('-', ':'), '%Y:%m:%d %H:%M:%S')
+        except ValueError:
+            continue
+        if event.get('year') and date.year != event['year']:
+            continue
+        if event.get('month') and date.month != event['month']:
+            continue
+        dates.append(date.isoformat())
+    return max(dates, default='')
 
 def diverse_score(row,selected):
     penalty=0
@@ -192,9 +211,9 @@ def register(app,database,owner):
                 chunk=rest[i*len(rest)//slots:(i+1)*len(rest)//slots]
                 if chunk:
                     selected.append(max(chunk,key=lambda r:diverse_score(r,selected)))
-            g.update(count=len(candidates),selected=[pack(r) for r in selected])
+            g.update(latest_capture=activity_time(g['event'],candidates),count=len(candidates),selected=[pack(r) for r in selected])
             result.append(g)
-        result.sort(key=lambda g:(g['event'].get('year') or 0,g['event'].get('month') or 0,g['id']),reverse=True)
+        result.sort(key=lambda g:(g['event'].get('year') or 0,g['event'].get('month') or 0,g['latest_capture'],g['event'].get('theme') or '',g['id']),reverse=True)
         return {'activities':result}
 
     @app.get('/api/gallery/{gid}',dependencies=[Depends(owner)])
