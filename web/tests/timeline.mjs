@@ -5,7 +5,7 @@ const browser=await chromium.launch({executablePath:'/Applications/Google Chrome
 const page=await browser.newPage({viewport:{width:1440,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
 const scale=el=>{const t=getComputedStyle(el).transform;return t==='none'?1:Number(t.match(/matrix\(([^,]+)/)[1]);};
 try {
- await page.goto('http://127.0.0.1:8793');await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'进入馆务室'}).click();
+ await page.goto('http://127.0.0.1:8793');await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'解锁'}).click();
  const group=page.locator('.timeline-year-group').first();await group.waitFor();
  assert.equal(await group.locator('h2').innerText(),'2024');
  assert.deepEqual(await group.locator('h3').allTextContents(),['10','年度']);

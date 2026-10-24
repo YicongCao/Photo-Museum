@@ -6,7 +6,7 @@ const browser=await chromium.launch({executablePath:'/Applications/Google Chrome
 const context=await browser.newContext({viewport:{width:1586,height:992},hasTouch:true});const page=await context.newPage();const checks=[],errors=[];page.on('pageerror',e=>errors.push(e.message));
 const position=()=>page.locator('.tunnel-stage').getAttribute('data-position').then(Number);
 try {
- await page.goto(base);await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'进入馆务室'}).click();await page.locator('.depth-0 > .photo-mosaic img').first().waitFor();
+ await page.goto(base);await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'解锁'}).click();await page.locator('.depth-0 > .photo-mosaic img').first().waitFor();
  assert.deepEqual(await page.locator('.gallery-nav button').allTextContents(),['Gallery','Dashboard','']);
  assert.equal(await page.locator('.gallery-caption p').count(),0);assert.ok(await page.locator('.depth-0 .panel-reflection').isVisible());
  checks.push('Only Gallery / Dashboard / fullscreen navigation; no selection count; actual image reflections');

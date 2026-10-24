@@ -65,16 +65,16 @@ try {
   assert.equal((await state()).status, 401);
   check("Unauthenticated catalog denied");
   await page.getByLabel("馆主密码", { exact: true }).fill("incorrect");
-  await page.getByRole("button", { name: "进入馆务室" }).click();
+  await page.getByRole("button", { name: "解锁" }).click();
   await page.getByRole("alert").waitFor();
   assert.match(await page.getByRole("alert").innerText(), /密码不正确/);
   check("Wrong password remains locked");
   await page
     .getByLabel("馆主密码", { exact: true })
     .fill("synthetic-owner-password");
-  await page.getByRole("button", { name: "进入馆务室" }).click();
+  await page.getByRole("button", { name: "解锁" }).click();
   await page.getByRole("heading", { name: "解析数据", exact: true }).waitFor();
-  await page.getByRole("button",{name:"照片源",exact:true}).click();
+  await page.getByRole("button",{name:"Settings",exact:true}).click();
   const cookies = await context.cookies();
   const session = cookies.find((c) => c.name === "museum_session");
   assert.ok(session.httpOnly && session.sameSite === "Strict");
@@ -155,7 +155,7 @@ try {
     ),
   );
   check("390px mobile management has no horizontal overflow");
-  await page.getByRole("button", { name: "锁馆", exact: true }).click();
+  await page.getByRole("button", { name: "锁定", exact: true }).click();
   await page.getByLabel("馆主密码", { exact: true }).waitFor();
   assert.equal((await state()).status, 401);
   await screenshot("05-login-mobile");

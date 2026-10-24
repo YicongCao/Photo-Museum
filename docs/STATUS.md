@@ -30,3 +30,5 @@ P0/P0.5/P1历史验收保留在 [路线图](ROADMAP.md)、[P0.5报告](research/
 连续隧道（键盘/横向滚轮/拖动）、底部倒影、活动整板入口、原比例4K横向照片墙、左图右信息暗房、按需NAS兼容原图及全屏已落地。见 [交互验证](research/gallery-interaction-validation.md)。最新验收入口为 <http://127.0.0.1:8790/#gallery>。
 
 Gallery时间线已改为年/月/主题三级及Dock邻近放大；同月按拍摄时间倒排。见 [时间线验证](research/timeline-validation.md)。
+
+Dashboard导航及进度加载语义已简化；异常分类与缓存建议见 [待处理统计](research/dashboard-backlog-review.md)，统计为2026-10-25的时间点快照，正常队列持续变化。

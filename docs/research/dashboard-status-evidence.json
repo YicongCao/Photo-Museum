@@ -1,0 +1,14 @@
+{
+  "unitStates": 8,
+  "browserChecks": 7,
+  "errors": [],
+  "checks": [
+    "four header controls",
+    "explicit first loading",
+    "refresh failure preserves last counters",
+    "initial failure never means complete",
+    "retry recovers and clears error",
+    "source configuration inside Settings",
+    "exceptions distinct from done; mobile one viewport"
+  ]
+}

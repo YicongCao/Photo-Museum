@@ -6,7 +6,7 @@ const browser=await chromium.launch({executablePath:'/Applications/Google Chrome
 const context=await browser.newContext({viewport:{width:1586,height:992}});const page=await context.newPage();
 const errors=[],checks=[];page.on('pageerror',e=>errors.push(e.message));const check=name=>checks.push(name);
 try{
- await page.goto('http://127.0.0.1:8793/');await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'进入馆务室'}).click();
+ await page.goto('http://127.0.0.1:8793/');await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'解锁'}).click();
  await page.locator('.depth-0 > .photo-mosaic img').first().waitFor();await page.waitForFunction(()=>[...document.querySelectorAll('.depth-0 > .photo-mosaic img')].every(i=>i.complete&&i.naturalWidth));
  assert.equal(await page.locator('.depth-0 > .photo-mosaic img').count(),10);check('Gallery default tunnel with ten real decoded fixtures');assert.equal(await page.getByText('PHOTO MUSEUM',{exact:true}).count(),0);check('No branding or slogan in exhibition');
  assert.equal(await page.locator('.timeline-month-group[aria-label="10月"] button').count(),3);check('Same-month independent activity rows');

@@ -4,6 +4,7 @@ import { FileProcessing, RecentStrip } from "./processing";
 import { CurrentInspection } from "./inspection";
 import { Intelligence } from "./intelligence";
 import "./manager.css";
+import { taskStatus } from "./task-status.mjs";
 const labels = {
   queued: "等待开始",
   running: "进行中",
@@ -26,6 +27,7 @@ const stageNames = {
 const errorNames = {
   media_DecompressionBombError: "图像尺寸超过安全上限",
   pq_or_hlg_transfer: "HDR 传递函数待适配",
+  gainmap_requires_sdr_base_validation: "增益图 SDR 基底待复验",
   unknown_color_profile: "缺少色域标记",
   unknown_video_color: "视频色域待适配",
   hdr_metadata_requires_sdr_base_or_tonemap_validation: "HDR 编码待适配",
@@ -40,6 +42,10 @@ export function Manager({ api, state, refresh, onLogout }) {
     [tab, setTab] = useState("directories"),
     [filter, setFilter] = useState("all"),
     [error, setError] = useState(""),
+    [pollError, setPollError] = useState(""),
+    [updatedAt, setUpdatedAt] = useState(null),
+    [directoryError, setDirectoryError] = useState(""),
+    [directoryLoaded, setDirectoryLoaded] = useState(false),
     [settings, setSettings] = useState(false),
     [browse, setBrowse] = useState({}),
     [assets, setAssets] = useState([]),
@@ -58,30 +64,37 @@ export function Manager({ api, state, refresh, onLogout }) {
     return () => q.removeEventListener("change", change);
   }, []);
   const cursor = useRef(null),
-    polling = useRef(false);
+    polling = useRef(false),
+    request = useRef(null),
+    mounted = useRef(true);
   const [directories, setDirectories] = useState([]),
     [currentDirectory, setCurrentDirectory] = useState(null),
     [recent, setRecent] = useState(null);
   const poll = async () => {
     if (polling.current) return;
     polling.current = true;
+    const controller = new AbortController();
+    request.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const message = (e) => controller.signal.aborted ? "请求超时" : e.message;
     try {
-      const [m, d] = await Promise.all([
-        api(
-          "/media/state" +
-            (cursor.current === null ? "" : "?after=" + cursor.current),
-        ),
-        api("/media/directories"),
+      await Promise.allSettled([
+        api("/media/state" + (cursor.current === null ? "" : "?after=" + cursor.current), "GET", undefined, { signal: controller.signal })
+          .then((m) => {
+            if (!mounted.current) return;
+            cursor.current = m.completion_cursor;
+            setMedia(m); setPollError(""); setUpdatedAt(new Date());
+            setRecent((r) => r === null ? m.recent : r);
+          }).catch((e) => { if (mounted.current) setPollError(message(e)); }),
+        api("/media/directories", "GET", undefined, { signal: controller.signal })
+          .then((d) => {
+            if (!mounted.current) return;
+            setDirectories(d.items); setCurrentDirectory(d.current);
+            setDirectoryLoaded(true); setDirectoryError("");
+          }).catch((e) => { if (mounted.current) setDirectoryError(message(e)); }),
       ]);
-      cursor.current = m.completion_cursor;
-      setMedia(m);
-      setDirectories(d.items);
-      setCurrentDirectory(d.current);
-      setRecent((r) => (r === null ? m.recent : r));
-    } catch (e) {
-      setError(e.message);
     } finally {
-      polling.current = false;
+      clearTimeout(timeout); polling.current = false;
     }
   };
   const completed = (item) =>
@@ -90,9 +103,10 @@ export function Manager({ api, state, refresh, onLogout }) {
       [...(rows || []).filter((a) => a.id !== item.id), item].slice(-20),
     );
   useEffect(() => {
+    mounted.current = true;
     poll();
     const timer = setInterval(poll, 2500);
-    return () => clearInterval(timer);
+    return () => { mounted.current = false; clearInterval(timer); request.current?.abort(); };
   }, []);
   useEffect(() => {
     if (tab === "assets")
@@ -128,27 +142,16 @@ export function Manager({ api, state, refresh, onLogout }) {
         : j.status === filter),
   );
   const loading = media === null;
-  const running = Boolean(
-    media?.active?.length ||
-      state.jobs.some((j) => ["running", "queued"].includes(j.status)),
-  );
+  const status = taskStatus(media, state.jobs, pollError);
   return (
     <div className="keeper-shell">
       <header className="keeper-header">
         <a href="#gallery">PHOTO MUSEUM</a>
         <nav>
-          <button onClick={() => setSettings(true)}>照片源</button>
-          <button
-            className="mobile-source"
-            onClick={() => setInspectOpen(true)}
-          >
-            当前照片
-          </button>
-          <span>
-            <Icon name="server" /> 馆务室
-          </span>
-          <a href="#gallery">返回 Gallery ↗</a>
-          <button onClick={onLogout} aria-label="锁馆">
+          <button onClick={() => setSettings(true)}>Settings</button>
+          <a href="#manage" aria-current="page">Dashboard</a>
+          <a href="#gallery">Gallery</a>
+          <button onClick={onLogout} aria-label="锁定">
             <Icon name="lock" />
           </button>
         </nav>
@@ -182,26 +185,18 @@ export function Manager({ api, state, refresh, onLogout }) {
               </span>
             </div>
             <div>
-              <Icon
-                name={media?.paused ? "pause" : running ? "clock" : "check"}
-              />
+              <Icon name={status.icon} />
               <span>
                 <small>任务状态</small>
-                <strong className="keeper-state">
-                  {loading
-                    ? "读取中"
-                    : media?.paused
-                      ? "媒体已暂停"
-                      : running
-                        ? "任务进行中"
-                        : mediaTotal >
-                            (media?.fully_done || 0) + (media?.error_count || 0)
-                          ? "等待处理"
-                          : "空闲"}
-                </strong>
+                <strong className="keeper-state" role="status">{status.text}</strong>
               </span>
             </div>
           </div>
+          {(pollError || directoryError) && <div role="alert" className="keeper-alert">
+            {pollError ? `进度：${pollError}` : `目录：${directoryError}`}
+            {pollError && updatedAt && <span> · 上次更新 {updatedAt.toLocaleTimeString()}</span>}
+            <button onClick={poll}>重新加载</button>
+          </div>}
           {error && (
             <div role="alert" className="keeper-alert">
               {error}
@@ -218,7 +213,7 @@ export function Manager({ api, state, refresh, onLogout }) {
               <svg
                 viewBox="0 0 120 120"
                 role="img"
-                aria-label={`已完成处理目录 ${done} / ${total}`}
+                aria-label={directoryLoaded ? `已完成处理目录 ${done} / ${total}` : "正在加载目录进度"}
               >
                 <circle cx="60" cy="60" r="52" className="ring-track" />
                 <circle
@@ -233,7 +228,7 @@ export function Manager({ api, state, refresh, onLogout }) {
               </svg>
               <div>
                 <strong>
-                  {done} <i>/ {total}</i>
+                  {directoryLoaded ? done : "—"} <i>/ {directoryLoaded ? total : "—"}</i>
                 </strong>
                 <small>已完成 / 已发现目录</small>
               </div>
@@ -288,6 +283,7 @@ export function Manager({ api, state, refresh, onLogout }) {
                 </button>
               </nav>
               <div className="keeper-queue-actions">
+                <button className="mobile-source" onClick={() => setInspectOpen(true)}>当前照片</button>
                 <button
                   onClick={() => control(media?.paused ? "resume" : "pause")}
                 >
@@ -653,14 +649,14 @@ export function Manager({ api, state, refresh, onLogout }) {
           className="keeper-modal"
           role="dialog"
           aria-modal="true"
-          aria-label="照片源设置"
+          aria-label="Settings"
           onKeyDown={(e) => {
             if (e.key === "Escape") setSettings(false);
           }}
         >
           <div className="settings-card">
             <div className="side-title">
-              <h2>照片源设置</h2>
+              <h2>Settings</h2>
               <button
                 autoFocus
                 onClick={() => setSettings(false)}
@@ -670,6 +666,7 @@ export function Manager({ api, state, refresh, onLogout }) {
               </button>
             </div>
             <div className="settings-scroll">
+              <h3>照片源</h3>
               {error && <p role="alert">{error}</p>}
               {state.sources.map((s) => (
                 <section className="source-setting" key={s.id}>

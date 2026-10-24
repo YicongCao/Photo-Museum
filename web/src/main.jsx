@@ -11,9 +11,10 @@ const errors = {
   tls_verification_failed: "HTTPS 证书未通过验证，请提供受信 CA。",
   partial_listing: "目录返回不完整，本次未提交，也未标记缺失。",
 };
-async function api(path, method = "GET", data) {
+async function api(path, method = "GET", data, options = {}) {
   const r = await fetch("/api" + path, {
     method,
+    signal: options.signal,
     headers: data !== undefined ? { "Content-Type": "application/json" } : {},
     body: data !== undefined ? JSON.stringify(data) : undefined,
   });
@@ -115,7 +116,7 @@ function App() {
             />
           </label>
           <button disabled={busy || initialized === null}>
-            {initialized === false ? "创建并进入" : "进入馆务室"}{" "}
+            {initialized === false ? "创建并进入" : "解锁"}{" "}
             <span>↗</span>
           </button>
         </form>

@@ -1831,3 +1831,12 @@
     grid-template-columns: 80px minmax(0, 1fr);
   }
 }
+
+.keeper-header nav > a[aria-current="page"] {color:#d8ae72;}
+.keeper-state {font-size:clamp(16px,2vw,30px);}
+@media(max-width:500px){
+  .keeper-header{gap:6px;}
+  .keeper-header nav{gap:8px;}
+  .keeper-header nav button{padding:4px 0;}
+  .keeper-header > a{font-size:9px;letter-spacing:1px;}
+}
