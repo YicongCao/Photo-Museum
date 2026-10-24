@@ -2,16 +2,18 @@
 
 一部可以不断重看的“人生照片集”。以活动主题作为展览，将照片、Live Photo 和视频组织成个人博物馆。服务目标是自托管于 Mac、内网 Linux 或 Docker，从 NAS WebDAV 只读取得成片。
 
-**当前阶段：P0 调研、全库文件名盘点、媒体实验和交互概念已完成；正式 Webserver 尚未实现。** 当前静态概念不读取真实照片，也不是无密码的照片服务。进度与验收结果见 [STATUS](docs/STATUS.md)。
+**当前阶段：P0实测完成；计划已升级为全屏WebGL观展；P0.5风险原型与正式Webserver尚未实现。** 旧HTML仅作色彩参考。进度与验收结果见 [STATUS](docs/STATUS.md)。
 
 ## 先看这里
 
 - [库规模与缓存预算](docs/research/library-census.md)：227活动、19,536图片候选；图片双缓存约8.52GB样本外推／35.16GB保守规划场景。
-- [离线交互概念](docs/design/concepts.html)：暖白Swiss主方案、暗色灯箱、隧道与照片墙演示。
-- [产品约定](docs/PRODUCT.md) · [推进路线](docs/ROADMAP.md) · [已确认决策](docs/decisions/0001-foundations.md)。
+- [最新架构决策](docs/decisions/0002-immersive-viewer-and-inference.md)：单canvas六模式、4K→原图冲印、同目录近邻补全。
+- [观展运行时](docs/architecture/viewer-runtime.md) · [元数据推断](docs/architecture/metadata-inference.md)。
+- [历史色彩概念](docs/design/concepts.html)：保留暖白Swiss气质；网页骨架与CSS演示不再作为正式交互蓝本。
+- [产品约定](docs/PRODUCT.md) · [推进路线](docs/ROADMAP.md) · [基础决策](docs/decisions/0001-foundations.md)。
 - [索引、WebDAV与provider研究](docs/research/architecture-providers.md) · [格式、色彩与媒体实验](docs/research/media-pipeline.md)。
 
-技术方向已确认：Python API＋独立worker＋React；SQLite放本地盘，暂不拆年表；识别在本地运行；先SDR后原生HDR；首版单馆主密码。
+技术方向已确认：Python API＋独立worker，React用于登录/管理，Three.js/WebGL单canvas负责观展；SQLite放本地盘，暂不拆年表；识别在本地运行；先SDR后原生HDR；首版单馆主密码。
 
 ## 本轮可运行工具
 

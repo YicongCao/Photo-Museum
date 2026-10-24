@@ -2,6 +2,8 @@
 
 核验日期：2026-10-24（Asia/Shanghai）。状态：设计提案 + 本机小样本验证，尚不是生产媒体服务。所有原文件只读；未向外部服务发送照片。
 
+后续设计已由[ADR 0002](../decisions/0002-immersive-viewer-and-inference.md)修订：观展采用单WebGL canvas，4K→NAS原始成片以冲印动画过渡；先做P0.5验证纹理/瓦片与颜色。本文历史编码实测仍有效，不能将原生img/video支持直接当成canvas HDR能力。原图及瓦片需额外预算。
+
 ## 一分钟读懂
 
 - 成片判断应以目录规则和人工覆盖为主，格式只提供线索。HEIC 不等于原片，JPEG 也不保证是成片；顶层 ARW/DNG/HIF 混放必须进入明确规则或复核。
@@ -54,15 +56,15 @@ Mac 可实现 ImageIO/Core Image provider，利用 Apple 的 gain-map、headroom
 
 Safari 17 官方加入 HEIC 支持；Safari 26 在相应系统版本上加入 HDR 图片支持。两条能力不同，不能把“能解码 HEIC”当成“以 HDR 显示”。[Safari 17](https://webkit.org/blog/14445/webkit-features-in-safari-17-0/) · [Safari 26 HDR images](https://webkit.org/blog/17333/webkit-features-in-safari-26-0/)
 
-拟采用三层选择：常规主题列表统一 SDR WebP；大图先即时显示 4K WebP，再按能力与用户偏好请求原生成片；原生失败立即回退 WebP。用真实解码小样本探测 HEIC，结合 `dynamic-range`、`color-gamut`、视频 `MediaCapabilities`。CSS media query 只能说明显示能力的一部分，并不能证明当前文件的 codec/profile 可播放。用户可明确切换“兼容显示 / 原生画质”，让错误或耗时回退可理解。[Media Capabilities](https://developer.mozilla.org/en-US/docs/Web/API/Media_Capabilities_API) · [dynamic-range](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/dynamic-range)
+拟采用三层选择：常规画布场景统一SDR WebP；细看先即时显示4K，再后台请求该成片原文件。解码、纹理/瓦片准备好且版本匹配后才显影；原生失败保留4K，并可按需生成标注清楚的兼容高分辨率图。用真实小样探测HEIC与WebGL纹理通路，结合`dynamic-range`、`color-gamut`、视频`MediaCapabilities`。这些能力信号不能证明当前文件在canvas里能正确显示HDR。[Media Capabilities](https://developer.mozilla.org/en-US/docs/Web/API/Media_Capabilities_API) · [dynamic-range](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/dynamic-range)
 
-标准浏览与照片墙保持 SDR，避免 HDR 照片在混排中刺眼；沉浸大图可启用原生 HDR，并尊重系统减少动态效果、屏幕亮度和省电状态。对原生 HEIC/HDR 的支持最终需要在用户实际 Mac Safari、Chrome 与移动设备上验收；本次没有进行这些浏览器色彩验收。
+标准浏览与照片墙保持SDR，避免HDR照片在混排中刺眼；沉浸大图只有通过P3单canvas显示链验收后才启用原生HDR，并尊重系统减少动态效果、屏幕亮度和省电状态。对原生HEIC/HDR的支持最终需要在用户实际Mac Safari、Chrome与移动设备上验收；本次没有进行这些浏览器色彩验收。
 
 ### Live Photo 与视频
 
 优先将静态图和 MOV 内的 Content Identifier 关联；同目录同 stem 是用户整理约定下的强线索，但若 metadata 冲突、多个同名派生或长度异常则留待复核。保留 `pair_method`、`confidence`、人工覆盖，重刮削不能覆盖人工确认。ExifTool 支持 Apple `ContentIdentifier`、`LivePhotoVideoIndex`，后者与对应 timescale 一起解释，不能直接当秒。[ExifTool Apple tag implementation](https://github.com/exiftool/exiftool/blob/master/lib/Image/ExifTool/Apple.pm) · [Apple pairedVideo](https://developer.apple.com/documentation/photos/phassetresourcetype/pairedvideo)
 
-Web 上用静态图 + `<video playsinline>` 实现短暂播放，点击/按住播放并提供键盘按钮；自动预览默认静音，音轨由用户开启。优先直送浏览器支持的 MOV/MP4 资源；不支持时按需转 H.264/AAC MP4 SDR。不要把全部 Live Photo 视频预转码进主缓存。
+Web上由静态纹理与视频纹理切换完成短暂播放；`video playsinline`可作为解码来源，画面仍由同一WebGL canvas呈现。点击/按住播放并提供键盘入口，默认静音、音轨由用户开启。浏览器支持的MOV/MP4可直送解码，不支持时按需转H.264/AAC MP4 SDR；纹理颜色需单独验证。不要全量预转码所有Live Photo视频。
 
 独立视频需索引时长、编码、分辨率、旋转、帧率、音轨、色彩及 HDR 字段，默认抽取 `duration / 2` 的一帧；黑场可选检测后向附近寻找帧，并记录实际时间。转码与抽帧使用有限临时文件；避免通过 WebDAV 反复随机 seek 导致整段远程文件重复读取。播放端实现 Range/206、Content-Range、ETag/If-Range、416，以及取消请求后的上游中止；仅加 `Accept-Ranges` 响应头不算实现。[HTTP Range requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests)
 

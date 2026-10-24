@@ -4,6 +4,8 @@
 
 用户随后已确认：Python API＋独立worker＋React，本地SQLite且暂不拆年表；先准确SDR后原生HDR；首版一个馆主密码。文中细节接口仍是实施提案。
 
+最新修订：[ADR 0002](../decisions/0002-immersive-viewer-and-inference.md)要求A–F观展全部在一个Three.js/WebGL画布内；React负责登录/管理与语义辅助。原图加载采用4K→NAS原始成片的受控升级；元数据首次schema即加入[原始/推断/人工/effective四层](../architecture/metadata-inference.md)。以下早期“列表/灯箱”措辞不指定DOM相册架构。
+
 ## 一分钟读懂
 
 - **建议使用本地 SQLite，先不按年份拆表。** 对个人照片库，更早遇到的瓶颈通常是 NAS 往返、解码、缩略图生成和模型推理。数据库选择应由本项目实测规模和查询延迟验证；SQLite 的理论容量不是性能承诺。
@@ -14,9 +16,9 @@
 
 ## 1. 系统边界与技术栈建议
 
-建议初始结构：浏览器 → Python API → 本地 SQLite／本地派生图缓存；独立 worker 从持久队列读取任务，再访问只读 WebDAV 与本地分析 provider。前端可用 React + TypeScript 实现虚拟列表、时间线、灯箱和后续展厅。API 与 worker 是独立进程，数据库和缓存必须位于同一台服务宿主机的本地磁盘；在 Docker 中使用本地持久卷。
+建议初始结构：浏览器 → Python API → 本地 SQLite／本地派生图缓存；独立worker访问只读WebDAV与本地provider。前端采用React＋TypeScript管理界面和Three.js/WebGL单画布观展运行时，场景共享媒体调度、纹理预算与输入。API与worker是独立进程，数据库和缓存位于同一服务宿主机本地磁盘；Docker使用本地持久卷。
 
-选择 Python 的理由是 EXIF、图像处理、ONNX／PyTorch 等能力容易连接；React 的价值是复杂浏览交互。代价是 Python 与 Node 两套开发依赖。部署时前端编译为静态资源，由 API 或反向代理提供，运行环境不必常驻 Node。版本应在正式基础设施提交时统一锁定，不能因本机已有新版本就直接认定所有解码器和模型兼容。
+选择Python的理由是EXIF、图像处理、ONNX／PyTorch等能力容易连接；React负责管理交互与展厅宿主生命周期，Three.js负责观展渲染。代价是Python与Node两套开发依赖。部署时前端编译为静态资源，由API或反向代理提供，运行环境不必常驻Node。版本应在正式基础设施提交时统一锁定，不能因本机已有新版本就直接认定所有解码器和模型兼容。
 
 替代路线：全 TypeScript 服务减少语言数量，但媒体／ML 仍可能需要 Python sidecar；Go 服务便于分发，模型集成成本更高；现成 Immich 适合照片管理参照，其外部库会扫描外部文件，但当前文档提示路径移动可能丢失库内追加元数据。Photo Museum 对“原片排除、活动十图、叙事展览、可恢复 WebDAV”的组合要求更适合自建薄核心。该判断是产品取舍，非对现有产品整体能力的评价。[Immich 外部库](https://docs.immich.app/features/libraries/)
 

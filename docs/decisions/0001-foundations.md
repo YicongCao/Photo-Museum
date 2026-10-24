@@ -2,6 +2,8 @@
 
 日期：2026-10-24。状态：产品方向与技术路线已确认；接口细节为设计提案，尚未成为生产实现。
 
+后续修订：[ADR 0002](0002-immersive-viewer-and-inference.md)将观展改为单canvas Three.js/WebGL，并加入渐进原图与近邻元数据补全。下面的React选择保留，但不再表示使用DOM相册作为观展实现。
+
 ## 已确认
 
 用户决定：自托管 Mac/Linux/Docker；源 NAS 通过 WebDAV；识别必须本地；可下载模型；GPS 确需联网时可外部服务；OpenAI 只用于确需 agent 的功能。第一版先完成刮削、缓存和主题浏览。暖白 Swiss 主界面、暗色灯箱。浏览器密码登录，无用户名。

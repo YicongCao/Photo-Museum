@@ -5,9 +5,9 @@ description: 验证 photo-museum 的独立 HTML 概念与展览交互，记录�
 
 # 展览概念验收
 
-已确认暖白纸感＋Swiss主界面、暗色灯箱。先读`docs/design/experience.md`和当前ADR，避免再次询问已经决定的方向。
+已确认暖白纸感＋Swiss场景排版、暗色单幅细看。先读`docs/design/experience.md`、ADR 0002和`docs/STATUS.md`。A–F正式观展全部采用一个Three.js/WebGL canvas，禁止将旧DOM/CSS研究当作已确认交互架构。
 
-独立入口`docs/design/concepts.html`，使用虚构主题与内嵌SVG，无外部依赖。可直接文件打开；需要浏览器测试时仅从`docs/`启动绑定loopback的静态服务，不从仓库根目录暴露私密`data/`。
+历史入口`docs/design/concepts.html`使用虚构主题与内嵌SVG，无外部依赖，仅保留色彩/气质参考。以下流程是旧HTML已验证的复审步骤；新WebGL/冲印动画尚未验证，不能照抄为新系统验收记录。需要浏览器复审时仅从`docs/`启动loopback静态服务，不暴露私密`data/`。
 
 ```bash
 python3 -m http.server 8765 --bind 127.0.0.1 --directory docs
@@ -17,4 +17,4 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory docs
 
 截图保存`docs/design/previews/`，只放不含真实照片的概念截图；在阶段日志列实际验证行为。控制台错误和正常加载不等于布局验收，SVG效果不代表HEIC/HDR已通过。日历、地图和器材仅有概念入口时明确标为未实现。
 
-结束时停止自己启动的临时服务；交付离线HTML绝对链接，必要时用当前文件预览工具打开。不要引入canvas私有运行时，也不要把这个静态预览变成产品的无密码照片服务。
+结束时停止自己启动的临时服务；交付离线HTML绝对链接。新版风险原型通过实际验证后，再补独立技能步骤；本技能不宣称WebGL颜色、显存、4K→原图或推断已跑通。应用使用标准浏览器canvas，不依赖编辑器私有canvas运行时。
