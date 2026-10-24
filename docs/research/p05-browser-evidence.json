@@ -1,0 +1,1665 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-10-24T11:35:54.951Z",
+  "baseURL": "http://127.0.0.1:8787",
+  "scope": "Loopback P0.5 fixture; browser behavior and resource accounting, not NAS or physical-display acceptance.",
+  "limitations": [
+    "Mobile results use Chromium viewport/touch emulation on this Mac, not an actual phone.",
+    "Texture byte counters are application estimates, not measured GPU memory.",
+    "No colorimeter, HDR output acceptance, Safari verification or full-library WebDAV scan.",
+    "Failure scenarios are deliberately injected local fixture responses."
+  ],
+  "browser": {
+    "version": "155.0.8059.85",
+    "executable": "Google Chrome",
+    "bundleFile": "/assets/index-CB4hiMoN.js"
+  },
+  "checks": [
+    {
+      "name": "desktop-single-canvas",
+      "status": "passed",
+      "durationMs": 531,
+      "result": {
+        "surface": {
+          "count": 1,
+          "same": true,
+          "width": 1440,
+          "height": 1000,
+          "left": 0,
+          "top": 0,
+          "viewportWidth": 1440,
+          "viewportHeight": 1000,
+          "overflowX": false,
+          "overflowY": false,
+          "visibleImages": 0,
+          "gl": true
+        },
+        "capabilities": {
+          "maxTextureSize": 16384,
+          "dpr": 1,
+          "webgl2": true,
+          "wideGamut": false,
+          "hdrDisplay": false,
+          "hdrPipeline": false
+        }
+      }
+    },
+    {
+      "name": "keyboard-accessibility",
+      "status": "passed",
+      "durationMs": 130,
+      "result": {
+        "tabAction": "演示藏品",
+        "enterOpensDetail": true,
+        "escapeClosesDetail": true,
+        "entryFocusRestored": true
+      }
+    },
+    {
+      "name": "slow-detail-keeps-4k-before-developing",
+      "status": "passed",
+      "durationMs": 2699,
+      "result": {
+        "previewMs": 102,
+        "visibleMs": 2525,
+        "preview": {
+          "mode": "theme",
+          "phase": "source_loading",
+          "quality": "preview",
+          "zoom": 1,
+          "generation": 2,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 39321600,
+            "peakBytes": 39321600,
+            "activeBytes": 39321600,
+            "textures": 1,
+            "activeTextures": 1,
+            "loading": 1,
+            "created": 1,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 0,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 2,
+            "geometries": 1,
+            "calls": 3
+          },
+          "frameStats": {
+            "renderP95": 11.199999988079071,
+            "intervalP95": 0,
+            "samples": 3,
+            "renderedFrames": 3
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        },
+        "final": {
+          "mode": "theme",
+          "phase": "detail_visible",
+          "quality": "original",
+          "zoom": 1,
+          "generation": 2,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 84066304,
+            "peakBytes": 84066304,
+            "activeBytes": 84066304,
+            "textures": 2,
+            "activeTextures": 2,
+            "loading": 0,
+            "created": 2,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 0,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 3,
+            "geometries": 1,
+            "calls": 4
+          },
+          "frameStats": {
+            "renderP95": 7.800000011920929,
+            "intervalP95": 16.700000000000273,
+            "samples": 40,
+            "renderedFrames": 40
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        },
+        "originalRequests": 1
+      }
+    },
+    {
+      "name": "detail-offline-retains-preview-and-recovers",
+      "status": "passed",
+      "durationMs": 408,
+      "result": {
+        "failure": {
+          "mode": "theme",
+          "phase": "detail_unavailable",
+          "quality": "preview",
+          "zoom": 1,
+          "generation": 2,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 40414720,
+            "peakBytes": 40414720,
+            "activeBytes": 39321600,
+            "textures": 2,
+            "activeTextures": 1,
+            "loading": 0,
+            "created": 2,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 0,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 3,
+            "geometries": 1,
+            "calls": 3
+          },
+          "frameStats": {
+            "renderP95": 10,
+            "intervalP95": 0,
+            "samples": 6,
+            "renderedFrames": 6
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": true
+        },
+        "recovery": {
+          "mode": "theme",
+          "phase": "developing",
+          "quality": "original",
+          "zoom": 1,
+          "generation": 3,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 85159424,
+            "peakBytes": 85159424,
+            "activeBytes": 84066304,
+            "textures": 3,
+            "activeTextures": 2,
+            "loading": 0,
+            "created": 3,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 1,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 4,
+            "geometries": 1,
+            "calls": 4
+          },
+          "frameStats": {
+            "renderP95": 10,
+            "intervalP95": 0,
+            "samples": 8,
+            "renderedFrames": 8
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        }
+      }
+    },
+    {
+      "name": "detail-decode-retains-preview-and-recovers",
+      "status": "passed",
+      "durationMs": 379,
+      "result": {
+        "failure": {
+          "mode": "theme",
+          "phase": "detail_unavailable",
+          "quality": "preview",
+          "zoom": 1,
+          "generation": 2,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 39321600,
+            "peakBytes": 39321600,
+            "activeBytes": 39321600,
+            "textures": 1,
+            "activeTextures": 1,
+            "loading": 0,
+            "created": 1,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 0,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 2,
+            "geometries": 1,
+            "calls": 3
+          },
+          "frameStats": {
+            "renderP95": 11,
+            "intervalP95": 0,
+            "samples": 6,
+            "renderedFrames": 6
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": true
+        },
+        "recovery": {
+          "mode": "theme",
+          "phase": "developing",
+          "quality": "original",
+          "zoom": 1,
+          "generation": 3,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 84066304,
+            "peakBytes": 84066304,
+            "activeBytes": 84066304,
+            "textures": 2,
+            "activeTextures": 2,
+            "loading": 0,
+            "created": 2,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 1,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 3,
+            "geometries": 1,
+            "calls": 4
+          },
+          "frameStats": {
+            "renderP95": 11,
+            "intervalP95": 0,
+            "samples": 8,
+            "renderedFrames": 8
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        }
+      }
+    },
+    {
+      "name": "detail-changed-retains-preview-and-recovers",
+      "status": "passed",
+      "durationMs": 398,
+      "result": {
+        "failure": {
+          "mode": "theme",
+          "phase": "source_changed",
+          "quality": "preview",
+          "zoom": 1,
+          "generation": 2,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 42600960,
+            "peakBytes": 42600960,
+            "activeBytes": 39321600,
+            "textures": 4,
+            "activeTextures": 1,
+            "loading": 0,
+            "created": 4,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 0,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 5,
+            "geometries": 1,
+            "calls": 3
+          },
+          "frameStats": {
+            "renderP95": 11.900000005960464,
+            "intervalP95": 0,
+            "samples": 7,
+            "renderedFrames": 7
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": true
+        },
+        "recovery": {
+          "mode": "theme",
+          "phase": "developing",
+          "quality": "original",
+          "zoom": 1,
+          "generation": 3,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 87345664,
+            "peakBytes": 87345664,
+            "activeBytes": 84066304,
+            "textures": 5,
+            "activeTextures": 2,
+            "loading": 0,
+            "created": 5,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 1,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 6,
+            "geometries": 1,
+            "calls": 4
+          },
+          "frameStats": {
+            "renderP95": 11.900000005960464,
+            "intervalP95": 0,
+            "samples": 9,
+            "renderedFrames": 9
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        }
+      }
+    },
+    {
+      "name": "detail-expired-retains-preview-and-recovers",
+      "status": "passed",
+      "durationMs": 419,
+      "result": {
+        "failure": {
+          "mode": "theme",
+          "phase": "detail_unavailable",
+          "quality": "preview",
+          "zoom": 1,
+          "generation": 2,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 42600960,
+            "peakBytes": 42600960,
+            "activeBytes": 39321600,
+            "textures": 4,
+            "activeTextures": 1,
+            "loading": 0,
+            "created": 4,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 0,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 5,
+            "geometries": 1,
+            "calls": 3
+          },
+          "frameStats": {
+            "renderP95": 12.400000005960464,
+            "intervalP95": 0,
+            "samples": 7,
+            "renderedFrames": 7
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": true
+        },
+        "recovery": {
+          "mode": "theme",
+          "phase": "developing",
+          "quality": "original",
+          "zoom": 1,
+          "generation": 3,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 87345664,
+            "peakBytes": 87345664,
+            "activeBytes": 84066304,
+            "textures": 5,
+            "activeTextures": 2,
+            "loading": 0,
+            "created": 5,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 1,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 6,
+            "geometries": 1,
+            "calls": 4
+          },
+          "frameStats": {
+            "renderP95": 12.400000005960464,
+            "intervalP95": 0,
+            "samples": 9,
+            "renderedFrames": 9
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        }
+      }
+    },
+    {
+      "name": "A-B-A-generation-fence",
+      "status": "passed",
+      "durationMs": 3180,
+      "result": {
+        "firstGeneration": 2,
+        "currentGeneration": 4,
+        "final": {
+          "mode": "theme",
+          "phase": "detail_visible",
+          "quality": "original",
+          "zoom": 1,
+          "generation": 4,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 126667264,
+            "peakBytes": 126667264,
+            "activeBytes": 84066304,
+            "textures": 6,
+            "activeTextures": 2,
+            "loading": 0,
+            "created": 6,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 2,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 7,
+            "geometries": 1,
+            "calls": 4
+          },
+          "frameStats": {
+            "renderP95": 2.0999999940395355,
+            "intervalP95": 16.700000000000045,
+            "samples": 46,
+            "renderedFrames": 46
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        }
+      }
+    },
+    {
+      "name": "close-cancels-pending-detail",
+      "status": "passed",
+      "durationMs": 1418,
+      "result": {
+        "closed": {
+          "mode": "theme",
+          "phase": "idle",
+          "zoom": 1,
+          "generation": 7,
+          "previewReady": false,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 126667264,
+            "peakBytes": 126667264,
+            "activeBytes": 0,
+            "textures": 6,
+            "activeTextures": 0,
+            "loading": 0,
+            "created": 6,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 7,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 7,
+            "geometries": 1,
+            "calls": 3
+          },
+          "frameStats": {
+            "renderP95": 2.0999999940395355,
+            "intervalP95": 16.700000000000045,
+            "samples": 48,
+            "renderedFrames": 48
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        },
+        "afterLateResponse": {
+          "mode": "theme",
+          "phase": "idle",
+          "zoom": 1,
+          "generation": 7,
+          "previewReady": false,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 126667264,
+            "peakBytes": 126667264,
+            "activeBytes": 42600960,
+            "textures": 6,
+            "activeTextures": 4,
+            "loading": 0,
+            "created": 6,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 11,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 7,
+            "geometries": 1,
+            "calls": 6
+          },
+          "frameStats": {
+            "renderP95": 2.0999999940395355,
+            "intervalP95": 16.700000000000045,
+            "samples": 50,
+            "renderedFrames": 50
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        }
+      }
+    },
+    {
+      "name": "native-61MP-tiles-and-zoom",
+      "status": "passed",
+      "durationMs": 892,
+      "result": {
+        "sourceWidth": 9504,
+        "sourceHeight": 6336,
+        "colorCheck": {
+          "expected": [
+            [
+              239,
+              68,
+              68
+            ],
+            [
+              34,
+              197,
+              94
+            ],
+            [
+              59,
+              130,
+              246
+            ],
+            [
+              234,
+              179,
+              8
+            ],
+            [
+              168,
+              85,
+              247
+            ],
+            [
+              6,
+              182,
+              212
+            ]
+          ],
+          "actual": [
+            [
+              239,
+              68,
+              68,
+              255
+            ],
+            [
+              34,
+              197,
+              94,
+              255
+            ],
+            [
+              59,
+              130,
+              246,
+              255
+            ],
+            [
+              234,
+              179,
+              8,
+              255
+            ],
+            [
+              168,
+              85,
+              247,
+              255
+            ],
+            [
+              6,
+              182,
+              212,
+              255
+            ]
+          ],
+          "maxChannelError": 0,
+          "tolerance": 4
+        },
+        "fit": {
+          "mode": "theme",
+          "phase": "detail_visible",
+          "quality": "tiled",
+          "zoom": 1,
+          "generation": 8,
+          "previewReady": true,
+          "tileCount": 12,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 122337280,
+            "peakBytes": 130725888,
+            "activeBytes": 78643200,
+            "textures": 18,
+            "activeTextures": 13,
+            "loading": 0,
+            "created": 20,
+            "disposed": 2,
+            "staleDrops": 0,
+            "cacheHits": 11,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 19,
+            "geometries": 1,
+            "calls": 15
+          },
+          "frameStats": {
+            "renderP95": 1.7000000178813934,
+            "intervalP95": 16.700000000000728,
+            "samples": 90,
+            "renderedFrames": 90
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        },
+        "zoomed": {
+          "mode": "theme",
+          "phase": "detail_visible",
+          "quality": "tiled",
+          "zoom": 4,
+          "generation": 8,
+          "previewReady": true,
+          "tileCount": 12,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 133347328,
+            "peakBytes": 133347328,
+            "activeBytes": 89653248,
+            "textures": 29,
+            "activeTextures": 13,
+            "loading": 0,
+            "created": 32,
+            "disposed": 3,
+            "staleDrops": 0,
+            "cacheHits": 11,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 30,
+            "geometries": 1,
+            "calls": 15
+          },
+          "frameStats": {
+            "renderP95": 1.7000000178813934,
+            "intervalP95": 16.700000000000728,
+            "samples": 94,
+            "renderedFrames": 94
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        }
+      }
+    },
+    {
+      "name": "constrained-texture-edge-uses-tiles",
+      "status": "passed",
+      "durationMs": 1015,
+      "result": {
+        "simulatedMaxTextureSize": 4096,
+        "sourceWidth": 9504,
+        "resource": {
+          "mode": "theme",
+          "phase": "detail_visible",
+          "quality": "tiled",
+          "zoom": 1,
+          "generation": 2,
+          "previewReady": true,
+          "tileCount": 12,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 83015680,
+            "peakBytes": 83015680,
+            "activeBytes": 78643200,
+            "textures": 17,
+            "activeTextures": 13,
+            "loading": 0,
+            "created": 17,
+            "disposed": 0,
+            "staleDrops": 1,
+            "cacheHits": 0,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 18,
+            "geometries": 1,
+            "calls": 15
+          },
+          "frameStats": {
+            "renderP95": 4.699999988079071,
+            "intervalP95": 16.700000000000045,
+            "samples": 41,
+            "renderedFrames": 41
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        },
+        "requestedTiles": 12,
+        "scope": "Capability fixture constrains the reported texture edge; this is not a claim about native device limit."
+      }
+    },
+    {
+      "name": "wall-and-theme-share-context",
+      "status": "passed",
+      "durationMs": 469,
+      "result": {
+        "canvasPreserved": true,
+        "final": {
+          "mode": "theme",
+          "phase": "idle",
+          "zoom": 1,
+          "generation": 2,
+          "previewReady": false,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 14210560,
+            "peakBytes": 14210560,
+            "activeBytes": 3279360,
+            "textures": 13,
+            "activeTextures": 3,
+            "loading": 1,
+            "created": 13,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 0,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 14,
+            "geometries": 1,
+            "calls": 6
+          },
+          "frameStats": {
+            "renderP95": 12.300000011920929,
+            "intervalP95": 0,
+            "samples": 4,
+            "renderedFrames": 4
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        }
+      }
+    },
+    {
+      "name": "20000-metadata-virtualization",
+      "status": "passed",
+      "durationMs": 112,
+      "result": {
+        "metadataRecords": 20000,
+        "selectedEvent": 1999,
+        "jumpReadyMs": 110,
+        "resource": {
+          "mode": "theme",
+          "phase": "idle",
+          "zoom": 1,
+          "generation": 3,
+          "previewReady": false,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 60090880,
+            "peakBytes": 60090880,
+            "activeBytes": 45880320,
+            "textures": 20,
+            "activeTextures": 7,
+            "loading": 0,
+            "created": 20,
+            "disposed": 0,
+            "staleDrops": 1,
+            "cacheHits": 0,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 21,
+            "geometries": 1,
+            "calls": 9
+          },
+          "frameStats": {
+            "renderP95": 12.300000011920929,
+            "intervalP95": 0,
+            "samples": 7,
+            "renderedFrames": 7
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        },
+        "scope": "20k metadata rows reference repeated synthetic fixture files; not 20k independent image downloads."
+      }
+    },
+    {
+      "name": "100-photo-visits-bounded-residency",
+      "status": "passed",
+      "durationMs": 18104,
+      "result": {
+        "visits": 100,
+        "samples": [
+          {
+            "visits": 10,
+            "mode": "theme",
+            "phase": "detail_visible",
+            "quality": "original",
+            "zoom": 1,
+            "generation": 14,
+            "previewReady": true,
+            "tileCount": 0,
+            "contextLost": false,
+            "photoTextures": {
+              "bytes": 129904128,
+              "peakBytes": 130997248,
+              "activeBytes": 84066304,
+              "textures": 4,
+              "activeTextures": 2,
+              "loading": 0,
+              "created": 49,
+              "disposed": 45,
+              "staleDrops": 1,
+              "cacheHits": 0,
+              "budgetBytes": 134217728
+            },
+            "renderer": {
+              "textures": 5,
+              "geometries": 1,
+              "calls": 4
+            },
+            "frameStats": {
+              "renderP95": 6.299999982118607,
+              "intervalP95": 0,
+              "samples": 56,
+              "renderedFrames": 56
+            },
+            "canvasCount": 1,
+            "reducedMotion": true,
+            "errorPresent": false
+          },
+          {
+            "visits": 20,
+            "mode": "theme",
+            "phase": "detail_visible",
+            "quality": "original",
+            "zoom": 1,
+            "generation": 24,
+            "previewReady": true,
+            "tileCount": 0,
+            "contextLost": false,
+            "photoTextures": {
+              "bytes": 129904128,
+              "peakBytes": 130997248,
+              "activeBytes": 84066304,
+              "textures": 4,
+              "activeTextures": 2,
+              "loading": 0,
+              "created": 79,
+              "disposed": 75,
+              "staleDrops": 1,
+              "cacheHits": 0,
+              "budgetBytes": 134217728
+            },
+            "renderer": {
+              "textures": 5,
+              "geometries": 1,
+              "calls": 4
+            },
+            "frameStats": {
+              "renderP95": 2,
+              "intervalP95": 0,
+              "samples": 104,
+              "renderedFrames": 104
+            },
+            "canvasCount": 1,
+            "reducedMotion": true,
+            "errorPresent": false
+          },
+          {
+            "visits": 30,
+            "mode": "theme",
+            "phase": "detail_visible",
+            "quality": "original",
+            "zoom": 1,
+            "generation": 34,
+            "previewReady": true,
+            "tileCount": 0,
+            "contextLost": false,
+            "photoTextures": {
+              "bytes": 129904128,
+              "peakBytes": 130997248,
+              "activeBytes": 84066304,
+              "textures": 4,
+              "activeTextures": 2,
+              "loading": 0,
+              "created": 109,
+              "disposed": 105,
+              "staleDrops": 1,
+              "cacheHits": 0,
+              "budgetBytes": 134217728
+            },
+            "renderer": {
+              "textures": 5,
+              "geometries": 1,
+              "calls": 4
+            },
+            "frameStats": {
+              "renderP95": 0.9000000059604645,
+              "intervalP95": 0,
+              "samples": 151,
+              "renderedFrames": 151
+            },
+            "canvasCount": 1,
+            "reducedMotion": true,
+            "errorPresent": false
+          },
+          {
+            "visits": 40,
+            "mode": "theme",
+            "phase": "detail_visible",
+            "quality": "original",
+            "zoom": 1,
+            "generation": 44,
+            "previewReady": true,
+            "tileCount": 0,
+            "contextLost": false,
+            "photoTextures": {
+              "bytes": 129904128,
+              "peakBytes": 130997248,
+              "activeBytes": 84066304,
+              "textures": 4,
+              "activeTextures": 2,
+              "loading": 0,
+              "created": 139,
+              "disposed": 135,
+              "staleDrops": 1,
+              "cacheHits": 0,
+              "budgetBytes": 134217728
+            },
+            "renderer": {
+              "textures": 5,
+              "geometries": 1,
+              "calls": 4
+            },
+            "frameStats": {
+              "renderP95": 0.800000011920929,
+              "intervalP95": 0,
+              "samples": 198,
+              "renderedFrames": 198
+            },
+            "canvasCount": 1,
+            "reducedMotion": true,
+            "errorPresent": false
+          },
+          {
+            "visits": 50,
+            "mode": "theme",
+            "phase": "detail_visible",
+            "quality": "original",
+            "zoom": 1,
+            "generation": 54,
+            "previewReady": true,
+            "tileCount": 0,
+            "contextLost": false,
+            "photoTextures": {
+              "bytes": 129904128,
+              "peakBytes": 130997248,
+              "activeBytes": 84066304,
+              "textures": 4,
+              "activeTextures": 2,
+              "loading": 0,
+              "created": 169,
+              "disposed": 165,
+              "staleDrops": 1,
+              "cacheHits": 0,
+              "budgetBytes": 134217728
+            },
+            "renderer": {
+              "textures": 5,
+              "geometries": 1,
+              "calls": 4
+            },
+            "frameStats": {
+              "renderP95": 0.800000011920929,
+              "intervalP95": 0,
+              "samples": 245,
+              "renderedFrames": 245
+            },
+            "canvasCount": 1,
+            "reducedMotion": true,
+            "errorPresent": false
+          },
+          {
+            "visits": 60,
+            "mode": "theme",
+            "phase": "detail_visible",
+            "quality": "original",
+            "zoom": 1,
+            "generation": 64,
+            "previewReady": true,
+            "tileCount": 0,
+            "contextLost": false,
+            "photoTextures": {
+              "bytes": 129904128,
+              "peakBytes": 130997248,
+              "activeBytes": 84066304,
+              "textures": 4,
+              "activeTextures": 2,
+              "loading": 0,
+              "created": 199,
+              "disposed": 195,
+              "staleDrops": 1,
+              "cacheHits": 0,
+              "budgetBytes": 134217728
+            },
+            "renderer": {
+              "textures": 5,
+              "geometries": 1,
+              "calls": 4
+            },
+            "frameStats": {
+              "renderP95": 0.7999999821186066,
+              "intervalP95": 0,
+              "samples": 293,
+              "renderedFrames": 293
+            },
+            "canvasCount": 1,
+            "reducedMotion": true,
+            "errorPresent": false
+          },
+          {
+            "visits": 70,
+            "mode": "theme",
+            "phase": "detail_visible",
+            "quality": "original",
+            "zoom": 1,
+            "generation": 74,
+            "previewReady": true,
+            "tileCount": 0,
+            "contextLost": false,
+            "photoTextures": {
+              "bytes": 129904128,
+              "peakBytes": 130997248,
+              "activeBytes": 84066304,
+              "textures": 4,
+              "activeTextures": 2,
+              "loading": 0,
+              "created": 229,
+              "disposed": 225,
+              "staleDrops": 1,
+              "cacheHits": 0,
+              "budgetBytes": 134217728
+            },
+            "renderer": {
+              "textures": 5,
+              "geometries": 1,
+              "calls": 4
+            },
+            "frameStats": {
+              "renderP95": 0.7999999821186066,
+              "intervalP95": 0,
+              "samples": 342,
+              "renderedFrames": 342
+            },
+            "canvasCount": 1,
+            "reducedMotion": true,
+            "errorPresent": false
+          },
+          {
+            "visits": 80,
+            "mode": "theme",
+            "phase": "detail_visible",
+            "quality": "original",
+            "zoom": 1,
+            "generation": 84,
+            "previewReady": true,
+            "tileCount": 0,
+            "contextLost": false,
+            "photoTextures": {
+              "bytes": 129904128,
+              "peakBytes": 130997248,
+              "activeBytes": 84066304,
+              "textures": 4,
+              "activeTextures": 2,
+              "loading": 0,
+              "created": 259,
+              "disposed": 255,
+              "staleDrops": 1,
+              "cacheHits": 0,
+              "budgetBytes": 134217728
+            },
+            "renderer": {
+              "textures": 5,
+              "geometries": 1,
+              "calls": 4
+            },
+            "frameStats": {
+              "renderP95": 0.7000000178813934,
+              "intervalP95": 0,
+              "samples": 388,
+              "renderedFrames": 388
+            },
+            "canvasCount": 1,
+            "reducedMotion": true,
+            "errorPresent": false
+          },
+          {
+            "visits": 90,
+            "mode": "theme",
+            "phase": "detail_visible",
+            "quality": "original",
+            "zoom": 1,
+            "generation": 94,
+            "previewReady": true,
+            "tileCount": 0,
+            "contextLost": false,
+            "photoTextures": {
+              "bytes": 129904128,
+              "peakBytes": 130997248,
+              "activeBytes": 84066304,
+              "textures": 4,
+              "activeTextures": 2,
+              "loading": 0,
+              "created": 289,
+              "disposed": 285,
+              "staleDrops": 1,
+              "cacheHits": 0,
+              "budgetBytes": 134217728
+            },
+            "renderer": {
+              "textures": 5,
+              "geometries": 1,
+              "calls": 4
+            },
+            "frameStats": {
+              "renderP95": 0.7000000178813934,
+              "intervalP95": 0,
+              "samples": 438,
+              "renderedFrames": 438
+            },
+            "canvasCount": 1,
+            "reducedMotion": true,
+            "errorPresent": false
+          },
+          {
+            "visits": 100,
+            "mode": "theme",
+            "phase": "detail_visible",
+            "quality": "original",
+            "zoom": 1,
+            "generation": 104,
+            "previewReady": true,
+            "tileCount": 0,
+            "contextLost": false,
+            "photoTextures": {
+              "bytes": 129904128,
+              "peakBytes": 130997248,
+              "activeBytes": 84066304,
+              "textures": 4,
+              "activeTextures": 2,
+              "loading": 0,
+              "created": 319,
+              "disposed": 315,
+              "staleDrops": 1,
+              "cacheHits": 0,
+              "budgetBytes": 134217728
+            },
+            "renderer": {
+              "textures": 5,
+              "geometries": 1,
+              "calls": 4
+            },
+            "frameStats": {
+              "renderP95": 0.699999988079071,
+              "intervalP95": 0,
+              "samples": 485,
+              "renderedFrames": 485
+            },
+            "canvasCount": 1,
+            "reducedMotion": true,
+            "errorPresent": false
+          }
+        ],
+        "warmPeak": 129904128,
+        "laterPeak": 129904128,
+        "closed": {
+          "mode": "theme",
+          "phase": "idle",
+          "zoom": 1,
+          "generation": 105,
+          "previewReady": false,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 132090368,
+            "peakBytes": 132090368,
+            "activeBytes": 42600960,
+            "textures": 6,
+            "activeTextures": 4,
+            "loading": 0,
+            "created": 321,
+            "disposed": 315,
+            "staleDrops": 1,
+            "cacheHits": 2,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 7,
+            "geometries": 1,
+            "calls": 6
+          },
+          "frameStats": {
+            "renderP95": 0.7000000178813934,
+            "intervalP95": 0,
+            "samples": 487,
+            "renderedFrames": 487
+          },
+          "canvasCount": 1,
+          "reducedMotion": true,
+          "errorPresent": false
+        },
+        "scope": "100 sequential visits over the bounded demo catalog, not 100 distinct source files."
+      }
+    },
+    {
+      "name": "reduced-motion-skips-developing",
+      "status": "passed",
+      "durationMs": 331,
+      "result": {
+        "final": {
+          "mode": "theme",
+          "phase": "detail_visible",
+          "quality": "original",
+          "zoom": 1,
+          "generation": 2,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 84066304,
+            "peakBytes": 84066304,
+            "activeBytes": 84066304,
+            "textures": 2,
+            "activeTextures": 2,
+            "loading": 0,
+            "created": 2,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 0,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 3,
+            "geometries": 1,
+            "calls": 4
+          },
+          "frameStats": {
+            "renderP95": 10.699999988079071,
+            "intervalP95": 0,
+            "samples": 6,
+            "renderedFrames": 6
+          },
+          "canvasCount": 1,
+          "reducedMotion": true,
+          "errorPresent": false
+        },
+        "sampledVisualPhases": [
+          "preview_loading",
+          "source_loading",
+          "detail_visible"
+        ],
+        "loaderPhases": [
+          "preview_loading",
+          "preview_ready",
+          "source_loading",
+          "source_received",
+          "detail_preparing",
+          "detail_ready"
+        ]
+      }
+    },
+    {
+      "name": "webgl-context-restoration",
+      "status": "passed",
+      "durationMs": 202,
+      "result": {
+        "selectedAndLoadedMatch": true,
+        "state": {
+          "mode": "theme",
+          "phase": "detail_visible",
+          "quality": "original",
+          "zoom": 1,
+          "generation": 4,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 85159424,
+            "peakBytes": 85159424,
+            "activeBytes": 84066304,
+            "textures": 3,
+            "activeTextures": 2,
+            "loading": 0,
+            "created": 5,
+            "disposed": 2,
+            "staleDrops": 0,
+            "cacheHits": 0,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 4,
+            "geometries": 1,
+            "calls": 4
+          },
+          "frameStats": {
+            "renderP95": 10.699999988079071,
+            "intervalP95": 0,
+            "samples": 11,
+            "renderedFrames": 11
+          },
+          "canvasCount": 1,
+          "reducedMotion": true,
+          "errorPresent": false
+        }
+      }
+    },
+    {
+      "name": "fullscreen-gesture-and-exit",
+      "status": "passed",
+      "durationMs": 292,
+      "result": {
+        "entered": true,
+        "fallbackRemainsViewportCanvas": true,
+        "capability": "headless Chromium accepted user-gesture fullscreen"
+      }
+    },
+    {
+      "name": "fullscreen-rejection-retains-exhibit",
+      "status": "passed",
+      "durationMs": 131,
+      "result": {
+        "explicitRejectionInjected": true,
+        "exhibitRetained": true
+      }
+    },
+    {
+      "name": "webgl-unavailable-has-explicit-fallback",
+      "status": "passed",
+      "durationMs": 138,
+      "result": {
+        "unavailableContextInjected": true,
+        "explanatoryFallbackVisible": true,
+        "startupErrors": [
+          "WebGL2 unavailable"
+        ]
+      }
+    },
+    {
+      "name": "mobile-390-DPR2-touch-and-rotation",
+      "status": "passed",
+      "durationMs": 2468,
+      "result": {
+        "emulated": true,
+        "hiddenHudSingleTapRestores": true,
+        "before": {
+          "mode": "theme",
+          "phase": "detail_visible",
+          "quality": "original",
+          "zoom": 1,
+          "generation": 2,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 87345664,
+            "peakBytes": 87345664,
+            "activeBytes": 84066304,
+            "textures": 5,
+            "activeTextures": 2,
+            "loading": 0,
+            "created": 5,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 1,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 6,
+            "geometries": 1,
+            "calls": 4
+          },
+          "frameStats": {
+            "renderP95": 5.5999999940395355,
+            "intervalP95": 16.700000000000045,
+            "samples": 42,
+            "renderedFrames": 42
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        },
+        "pinched": {
+          "mode": "theme",
+          "phase": "detail_visible",
+          "quality": "original",
+          "zoom": 2.111111111111111,
+          "generation": 2,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 87345664,
+            "peakBytes": 87345664,
+            "activeBytes": 84066304,
+            "textures": 5,
+            "activeTextures": 2,
+            "loading": 0,
+            "created": 5,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 1,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 6,
+            "geometries": 1,
+            "calls": 4
+          },
+          "frameStats": {
+            "renderP95": 5.5999999940395355,
+            "intervalP95": 16.700000000000045,
+            "samples": 45,
+            "renderedFrames": 45
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        },
+        "rotated": {
+          "mode": "theme",
+          "phase": "detail_visible",
+          "quality": "original",
+          "zoom": 2.111111111111111,
+          "generation": 2,
+          "previewReady": true,
+          "tileCount": 0,
+          "contextLost": false,
+          "photoTextures": {
+            "bytes": 87345664,
+            "peakBytes": 87345664,
+            "activeBytes": 84066304,
+            "textures": 5,
+            "activeTextures": 2,
+            "loading": 0,
+            "created": 5,
+            "disposed": 0,
+            "staleDrops": 0,
+            "cacheHits": 1,
+            "budgetBytes": 134217728
+          },
+          "renderer": {
+            "textures": 6,
+            "geometries": 1,
+            "calls": 4
+          },
+          "frameStats": {
+            "renderP95": 5.5999999940395355,
+            "intervalP95": 16.700000000000045,
+            "samples": 46,
+            "renderedFrames": 46
+          },
+          "canvasCount": 1,
+          "reducedMotion": false,
+          "errorPresent": false
+        },
+        "deviceScaleFactor": 2
+      }
+    },
+    {
+      "name": "private-SDR-small-sample-smoke",
+      "status": "passed",
+      "durationMs": 20369,
+      "result": {
+        "available": true,
+        "samples": [
+          {
+            "sample": 1,
+            "width": 5122,
+            "height": 7683,
+            "detailKind": "tiles",
+            "phase": "detail_visible",
+            "errorPresent": false
+          },
+          {
+            "sample": 2,
+            "width": 5184,
+            "height": 3456,
+            "detailKind": "tiles",
+            "phase": "detail_visible",
+            "errorPresent": false
+          },
+          {
+            "sample": 3,
+            "width": 3276,
+            "height": 4553,
+            "detailKind": "tiles",
+            "phase": "detail_visible",
+            "errorPresent": false
+          },
+          {
+            "sample": 4,
+            "width": 5152,
+            "height": 7728,
+            "detailKind": "tiles",
+            "phase": "detail_visible",
+            "errorPresent": false
+          },
+          {
+            "sample": 5,
+            "width": 2448,
+            "height": 3264,
+            "detailKind": "image",
+            "phase": "detail_visible",
+            "errorPresent": false
+          },
+          {
+            "sample": 6,
+            "width": 7521,
+            "height": 5151,
+            "detailKind": "tiles",
+            "phase": "detail_visible",
+            "errorPresent": false
+          }
+        ],
+        "scope": "Known local SDR copies and compatible derivatives only; visual/capture review remains separate."
+      }
+    },
+    {
+      "name": "no-unexpected-browser-errors",
+      "status": "passed",
+      "durationMs": 0,
+      "result": {
+        "unexpectedConsoleErrors": 0,
+        "uncaughtErrors": 0,
+        "expectedFixtureErrors": 2
+      }
+    }
+  ],
+  "screenshots": [
+    "docs/design/previews/p05/desktop-theme.png",
+    "docs/design/previews/p05/desktop-4k-waiting.png",
+    "docs/design/previews/p05/desktop-detail.png",
+    "docs/design/previews/p05/desktop-61mp-detail.png",
+    "docs/design/previews/p05/desktop-wall.png",
+    "docs/design/previews/p05/mobile-theme.png",
+    "docs/design/previews/p05/mobile-detail.png",
+    "docs/design/previews/p05/mobile-wall.png"
+  ],
+  "consoleErrors": [
+    {
+      "case": "detail-offline-retains-preview-and-recovers",
+      "expected": true,
+      "message": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "case": "detail-expired-retains-preview-and-recovers",
+      "expected": true,
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    }
+  ],
+  "uncaughtErrors": [],
+  "status": "passed",
+  "finishedAt": "2026-10-24T11:36:49.531Z"
+}

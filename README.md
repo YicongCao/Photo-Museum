@@ -2,7 +2,13 @@
 
 一部可以不断重看的“人生照片集”。以活动主题作为展览，将照片、Live Photo 和视频组织成个人博物馆。服务目标是自托管于 Mac、内网 Linux 或 Docker，从 NAS WebDAV 只读取得成片。
 
-**当前阶段：P0实测完成；计划已升级为全屏WebGL观展；P0.5风险原型与正式Webserver尚未实现。** 旧HTML仅作色彩参考。进度与验收结果见 [STATUS](docs/STATUS.md)。
+**当前阶段：P0完成；P0.5全屏WebGL核心原型已实现，准备验收。** 生产Webserver尚待P1/P2；旧HTML仅作色彩参考。进度与验收结果见 [STATUS](docs/STATUS.md)。
+
+## 先体验原型
+
+运行说明见[prototype/README.md](prototype/README.md)，当前本机入口为<http://127.0.0.1:8787>。B主题展览、简化F照片墙和暗房细看共用一个WebGL画布；可切换演示素材与已有真实小样。该服务仅供本机P0.5验收，不是生产登录或NAS直连服务。
+
+[验收结果与限制](docs/research/p05-validation.md) · [浏览器验证证据](docs/research/p05-browser-evidence.json) · [可复用验证skill](.agents/skills/photo-museum-webgl-validation/SKILL.md)
 
 ## 先看这里
 
