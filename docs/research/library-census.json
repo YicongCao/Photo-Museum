@@ -1,0 +1,10 @@
+{
+  "candidate_images": 19536,
+  "sample_successful_sdr_images": 17,
+  "mean_combined_bytes": 436237.8823529412,
+  "sample_extrapolation_bytes": 8522343269.647059,
+  "sample_plus_20_percent_bytes": 10226811923.576471,
+  "conservative_assumption_bytes_per_image": 1500000,
+  "conservative_plus_20_percent_bytes": 35164800000.0,
+  "units": "GB uses 1e9 bytes; assumptions, not a full-library encoding measurement"
+}
