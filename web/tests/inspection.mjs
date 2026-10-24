@@ -12,12 +12,12 @@ await page.addInitScript(()=>{
   URL.revokeObjectURL=u=>{window.blobAudit.live.delete(u);window.blobAudit.revoked++;revoke(u)};
 });
 try {
- await page.goto(base);await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'进入馆务室'}).click();await page.locator('.depth-0 img').first().waitFor();
+ await page.goto(base);await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'进入馆务室'}).click();await page.locator('.depth-0 > .photo-mosaic img').first().waitFor();
  const initial=await (await context.request.get(base+'/api/media/state')).json();
  let mock={...initial,active:[],completion_events:[]};
  await page.route('**/api/media/state*',route=>route.fulfill({json:mock}));
  let nasOriginals=0;page.on('request',r=>{if(r.url().includes('/original?'))nasOriginals++});
- await page.getByRole('button',{name:'馆务',exact:true}).click();
+ await page.getByRole('button',{name:'Dashboard',exact:true}).click();
  await page.getByRole('img',{name:'已完成处理目录 7 / 7',exact:true}).waitFor();
  assert.equal(await page.getByText('已索引成片与视频',{exact:true}).count(),0);
  assert.equal(await page.getByText('已连接来源',{exact:true}).count(),0);
@@ -55,7 +55,7 @@ try {
  mock={...mock,completion_events:[{...slow,asset_id:slow.id,path:'/fixture/'+slow.name,completed:true,completion_id:104,steps:Object.fromEntries(['download','exif','display','thumb','publish','address','subject','faces','score'].map(s=>[s,'done']))}],completion_cursor:104};
  await pending;
  const aborted=page.waitForEvent('requestfailed',{predicate:r=>r.url().includes(`/assets/${slow.id}/inspection-image`)});
- await page.getByRole('link',{name:'返回 Gallery ↗',exact:true}).click();await page.locator('.depth-0 img').first().waitFor();
+ await page.getByRole('link',{name:'返回 Gallery ↗',exact:true}).click();await page.locator('.depth-0 > .photo-mosaic img').first().waitFor();
  await aborted;
  await page.waitForFunction(()=>blobAudit.live.size===0);checks.push('Leaving management aborts an in-flight image request, revokes final URL and removes image element');
  assert.deepEqual(errors,[]);

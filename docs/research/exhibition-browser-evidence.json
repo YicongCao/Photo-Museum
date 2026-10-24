@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-24T16:14:12.407Z",
+  "checks": [
+    "Only Gallery / Dashboard / fullscreen navigation; no selection count; actual image reflections",
+    "Arrow navigation traverses fractional positions; departing panel stays mounted for reverse entry",
+    "Horizontal trackpad wheel, mouse drag and real touch input move continuously without accidental activity opening",
+    "Whole collage opens activity wall, 4K sources preserve portrait/landscape/panorama ratios, no original requests",
+    "More than 200 activity photos load through pagination; offscreen 4K elements are unmounted",
+    "Wall photo opens left image/right metadata; 4K remains until NAS original decode and darkroom transition",
+    "Photo fullscreen isolates image; exit restores metadata and close restores wall focus",
+    "Mobile tunnel and horizontal wall remain one viewport"
+  ],
+  "errors": [],
+  "fixtures": "Synthetic geometric charts and 241-item pagination fixture"
+}

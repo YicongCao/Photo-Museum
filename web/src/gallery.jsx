@@ -1,20 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
+import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
 import "./gallery.css";
 
-export function Gallery({ api, onAdmin, onLogout }) {
-  const [loaded, setLoaded] = useState(false);
-  const [activities, setActivities] = useState([]),
+export function Gallery({ api, onAdmin }) {
+  const [loaded, setLoaded] = useState(false),
+    [activities, setActivities] = useState([]),
     [index, setIndex] = useState(0),
     [view, setView] = useState("tunnel"),
-    [wall, setWall] = useState([]),
     [photo, setPhoto] = useState(null),
     [error, setError] = useState("");
-  const lastFocus = useRef(null),
-    wheelTime = useRef(0),
+  const tunnel = useRef(null),
+    lastFocus = useRef(null),
     selectedId = useRef(null);
-  selectedId.current = activities[index]?.id || null;
   const current = activities[index];
+  selectedId.current = current?.id;
   const reload = () =>
     api("/gallery")
       .then((d) => {
@@ -31,52 +31,44 @@ export function Gallery({ api, onAdmin, onLogout }) {
     const timer = setInterval(reload, 15000);
     return () => clearInterval(timer);
   }, []);
-  useEffect(() => {
-    if (index >= activities.length)
-      setIndex(Math.max(0, activities.length - 1));
-  }, [activities, index]);
-  useEffect(() => {
-    let cancelled = false;
-    setWall([]);
-    if (view === "wall" && current)
-      api("/gallery/" + current.id + "?limit=200")
-        .then((d) => {
-          if (!cancelled) setWall(d.items);
-        })
-        .catch((e) => {
-          if (!cancelled) setError(e.message);
-        });
-    return () => {
-      cancelled = true;
-    };
-  }, [view, current?.id]);
-  const move = (n) =>
-    setIndex((i) => Math.max(0, Math.min(activities.length - 1, i + n)));
+  const goTo = (i) => {
+    if (view === "tunnel") tunnel.current?.goTo(i);
+    else setIndex(i);
+  };
+  const move = (n) => tunnel.current?.move(n);
+  const openActivity = (id) => {
+    const i = activities.findIndex((a) => a.id === id);
+    if (i >= 0) {
+      setIndex(i);
+      setView("wall");
+    }
+  };
   useEffect(() => {
     const f = (e) => {
       if (photo || ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-        e.preventDefault();
-        move(1);
+      if (e.key === "Escape" && view === "wall") {
+        setView("tunnel");
+        return;
       }
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      if (view !== "tunnel") return;
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
         e.preventDefault();
-        move(-1);
+        move(e.key === "ArrowRight" ? 1 : -1);
       }
     };
     window.addEventListener("keydown", f);
     return () => window.removeEventListener("keydown", f);
-  }, [photo, activities.length]);
-  const open = (a) => {
+  }, [photo, view]);
+  const open = (p) => {
     lastFocus.current = document.activeElement;
-    setPhoto(a);
+    setPhoto(p);
   };
   const close = () => {
     setPhoto(null);
     requestAnimationFrame(() => lastFocus.current?.focus());
   };
   return (
-    <div className="gallery-shell">
+    <div className={"gallery-shell gallery-view-" + view}>
       <nav className="gallery-nav">
         <div>
           <button
@@ -85,24 +77,8 @@ export function Gallery({ api, onAdmin, onLogout }) {
           >
             Gallery
           </button>
-          <button
-            className={view === "wall" ? "active" : ""}
-            onClick={() => setView("wall")}
-          >
-            照片墙
-          </button>
-          <button
-            onClick={() =>
-              document.documentElement.requestFullscreen?.().catch(() => {})
-            }
-            aria-label="全屏"
-          >
-            ⛶
-          </button>
-          <button onClick={onAdmin}>馆务</button>
-          <button aria-label="锁馆" onClick={onLogout}>
-            <Icon name="lock" />
-          </button>
+          <button onClick={onAdmin}>Dashboard</button>
+          <FullscreenButton />
         </div>
       </nav>
       {error && (
@@ -119,101 +95,53 @@ export function Gallery({ api, onAdmin, onLogout }) {
       ) : (
         <>
           {view === "tunnel" ? (
-            <section
-              aria-label="时光隧道"
-              className="tunnel-stage"
-              onWheel={(e) => {
-                if (
-                  Math.abs(e.deltaY) > 20 &&
-                  Date.now() - wheelTime.current > 650
-                ) {
-                  wheelTime.current = Date.now();
-                  move(e.deltaY > 0 ? 1 : -1);
-                }
-              }}
-            >
-              {activities.slice(index, index + 5).map((a, depth) => (
-                <div
-                  key={a.id}
-                  className={"activity-panel depth-" + depth}
-                  aria-hidden={depth > 0}
-                >
-                  <div className={"photo-mosaic count-" + a.selected.length}>
-                    {a.selected.map((p, i) => (
-                      <button
-                        key={p.id}
-                        tabIndex={depth ? -1 : 0}
-                        className={"mosaic-cell cell-" + i}
-                        onClick={() =>
-                          depth ? setIndex(index + depth) : open(p)
-                        }
-                        aria-label={"查看 " + p.name}
-                      >
-                        <img
-                          src={p.thumbnail}
-                          alt={depth ? "" : p.name}
-                          decoding="async"
-                        />
-                        <span>{p.kind === "video_candidate" ? "▶" : ""}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </section>
+            <Tunnel
+              ref={tunnel}
+              activities={activities}
+              index={index}
+              onIndex={setIndex}
+              onOpen={openActivity}
+            />
           ) : (
-            <section className="photo-wall" aria-label="活动照片墙">
-              {wall.map((p) => (
-                <button key={p.id} onClick={() => open(p)}>
-                  <img src={p.thumbnail} alt={p.name} loading="lazy" />
-                  <span>{p.kind === "video_candidate" ? "▶" : ""}</span>
-                </button>
-              ))}
-              {wall.length >= 200 && (
-                <button
-                  onClick={() =>
-                    api(
-                      "/gallery/" +
-                        current.id +
-                        "?offset=" +
-                        wall.length +
-                        "&limit=200",
-                    ).then((d) => setWall((w) => [...w, ...d.items]))
-                  }
-                >
-                  继续展开
-                </button>
-              )}
-            </section>
+            <PhotoWall
+              key={current.id}
+              activity={current}
+              api={api}
+              onOpen={open}
+              onError={setError}
+            />
           )}
-          <aside className="activity-timeline" aria-label="活动时间线">
-            {activities.map((a, i) => (
-              <React.Fragment key={a.id}>
-                {(i === 0 || a.event.year !== activities[i - 1].event.year) && (
-                  <div
-                    className={
-                      "timeline-year " +
-                      (current.event.year === a.event.year ? "selected" : "")
-                    }
+          {view === "tunnel" && (
+            <aside className="activity-timeline" aria-label="活动时间线">
+              {activities.map((a, i) => (
+                <React.Fragment key={a.id}>
+                  {(i === 0 ||
+                    a.event.year !== activities[i - 1].event.year) && (
+                    <div
+                      className={
+                        "timeline-year " +
+                        (current.event.year === a.event.year ? "selected" : "")
+                      }
+                    >
+                      {a.event.year || "未知年份"}
+                    </div>
+                  )}
+                  <button
+                    aria-current={i === index ? "true" : undefined}
+                    className={i === index ? "selected" : ""}
+                    title={a.event.theme}
+                    onClick={() => goTo(i)}
                   >
-                    {a.event.year || "未知年份"}
-                  </div>
-                )}
-                <button
-                  aria-current={i === index ? "true" : undefined}
-                  className={i === index ? "selected" : ""}
-                  title={a.event.theme}
-                  onClick={() => setIndex(i)}
-                >
-                  <span className="timeline-dot" />
-                  {a.event.month
-                    ? String(a.event.month).padStart(2, "0")
-                    : "年度"}
-                  -{a.event.theme}
-                </button>
-              </React.Fragment>
-            ))}
-          </aside>
+                    <span className="timeline-dot" />
+                    {a.event.month
+                      ? String(a.event.month).padStart(2, "0")
+                      : "年度"}
+                    -{a.event.theme}
+                  </button>
+                </React.Fragment>
+              ))}
+            </aside>
+          )}
           <div className="gallery-caption">
             <div>
               {current.event.year}
@@ -222,27 +150,25 @@ export function Gallery({ api, onAdmin, onLogout }) {
                 : ""}
             </div>
             <h1>{current.event.theme}</h1>
-            <p>
-              <Icon name="photo" /> {current.selected.length} 张精选{" "}
-              <span>／ {current.count} 件藏品</span>
-            </p>
           </div>
-          <div className="tunnel-controls">
-            <button
-              onClick={() => move(-1)}
-              disabled={!index}
-              aria-label="上一场活动"
-            >
-              〈
-            </button>
-            <button
-              onClick={() => move(1)}
-              disabled={index === activities.length - 1}
-              aria-label="下一场活动"
-            >
-              〉
-            </button>
-          </div>
+          {view === "tunnel" && (
+            <div className="tunnel-controls">
+              <button
+                onClick={() => move(-1)}
+                disabled={!index}
+                aria-label="上一场活动"
+              >
+                〈
+              </button>
+              <button
+                onClick={() => move(1)}
+                disabled={index === activities.length - 1}
+                aria-label="下一场活动"
+              >
+                〉
+              </button>
+            </div>
+          )}
         </>
       )}
       {photo && (
@@ -258,6 +184,21 @@ export function Gallery({ api, onAdmin, onLogout }) {
   );
 }
 
+function metadataText(field, value) {
+  if (value == null) return "未知";
+  if (field === "gps" && typeof value === "object")
+    return `${Number(value.latitude).toFixed(5)}, ${Number(value.longitude).toFixed(5)}`;
+  if (field === "exposure" && Number(value) > 0)
+    return Number(value) < 1
+      ? `1/${Math.round(1 / Number(value))} s`
+      : `${value} s`;
+  if (field === "aperture") return `ƒ/${value}`;
+  if (field === "focal_length") return `${value} mm`;
+  if (field === "captured_at")
+    return String(value).replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+  return String(value);
+}
+
 function Viewer({ photo, api, onClose, onChanged }) {
   const [suggestions, setSuggestions] = useState([]),
     [mutationError, setMutationError] = useState("");
@@ -266,11 +207,12 @@ function Viewer({ photo, api, onClose, onChanged }) {
     [original, setOriginal] = useState(null),
     [phase, setPhase] = useState("4K 读取中"),
     [zoom, setZoom] = useState(false),
-    [info, setInfo] = useState(false),
+    [info, setInfo] = useState(true),
     [pinned, setPinned] = useState(photo.pinned),
     [play, setPlay] = useState(false),
     [analysis, setAnalysis] = useState(null),
     [native, setNative] = useState(false);
+  const viewerRef = useRef(null);
   const closeRef = useRef(null),
     previewRef = useRef(null);
   useEffect(() => {
@@ -278,7 +220,10 @@ function Viewer({ photo, api, onClose, onChanged }) {
     const f = (e) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        e.stopPropagation();
+        if (document.fullscreenElement === viewerRef.current)
+          document.exitFullscreen();
+        else onClose();
       }
       if (e.key === "Tab") {
         const buttons = [
@@ -301,7 +246,7 @@ function Viewer({ photo, api, onClose, onChanged }) {
   }, []);
   useEffect(() => {
     const controller = new AbortController();
-    let url;
+    let url, decoded;
     setOriginal(null);
     setPhase("4K · 原图读取中");
     (async () => {
@@ -325,31 +270,37 @@ function Viewer({ photo, api, onClose, onChanged }) {
         }
         // Load preview immediately, original independently; original only replaces after decode.
         const response = await fetch(
-          native ? m.original : m.compatible || m.original,
-          { signal: controller.signal },
+          native ? m.original : m.original_compatible || m.original,
+          { signal: controller.signal, cache: "no-store" },
         );
         if (!response.ok) throw Error("原图暂不可用");
         const blob = await response.blob();
         if (controller.signal.aborted) return;
         url = URL.createObjectURL(blob);
-        const decoded = new Image();
+        decoded = new Image();
         decoded.src = url;
         await decoded.decode();
         if (controller.signal.aborted) return;
         setOriginal(url);
-        setPhase(m.compatible && !native ? "全分辨率 SDR" : "原图");
+        setPhase(
+          m.original_compatible && !native ? "原图 · SDR 兼容显示" : "原图",
+        );
+        decoded.removeAttribute("src");
+        decoded = null;
       } catch (e) {
         if (!controller.signal.aborted) setPhase("保留 4K · 原图暂不可用");
       }
     })();
     return () => {
       controller.abort();
+      decoded?.removeAttribute("src");
       if (url) URL.revokeObjectURL(url);
     };
   }, [photo.id, native]);
   return (
     <div
-      className="photo-viewer"
+      ref={viewerRef}
+      className={"photo-viewer " + (info ? "with-metadata" : "image-only")}
       role="dialog"
       aria-modal="true"
       aria-label="照片细看"
@@ -378,6 +329,7 @@ function Viewer({ photo, api, onClose, onChanged }) {
           <button onClick={() => setInfo(!info)} aria-expanded={info}>
             照片档案
           </button>
+          <FullscreenButton target={viewerRef} />
           <button ref={closeRef} onClick={onClose} aria-label="关闭照片">
             ✕
           </button>
@@ -522,25 +474,48 @@ function Viewer({ photo, api, onClose, onChanged }) {
                 </button>
               </div>
             ))}
-          {Object.entries(manifest?.effective_metadata || {}).map(
-            ([field, f]) => (
+          {Object.entries(manifest?.effective_metadata || {})
+            .filter(([field]) =>
+              [
+                "camera",
+                "lens",
+                "captured_at",
+                "width",
+                "height",
+                "aperture",
+                "exposure",
+                "iso",
+                "focal_length",
+                "gps",
+              ].includes(field),
+            )
+            .map(([field, f]) => (
               <div key={field}>
                 <small>
-                  {field} ·{" "}
+                  {
+                    {
+                      camera: "相机",
+                      lens: "镜头",
+                      captured_at: "拍摄时间",
+                      width: "宽度",
+                      height: "高度",
+                      aperture: "光圈",
+                      exposure: "曝光时间",
+                      iso: "ISO",
+                      focal_length: "焦距",
+                      gps: "GPS",
+                    }[field]
+                  }{" "}
+                  ·{" "}
                   {f.layer === "observed"
                     ? "相机记录"
                     : f.layer === "manual"
                       ? "你已修订"
                       : "近邻推断"}
                 </small>
-                <p>
-                  {typeof f.value === "object"
-                    ? JSON.stringify(f.value)
-                    : String(f.value ?? "未知")}
-                </p>
+                <p>{metadataText(field, f.value)}</p>
               </div>
-            ),
-          )}
+            ))}
         </aside>
       )}
     </div>

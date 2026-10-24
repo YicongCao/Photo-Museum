@@ -228,8 +228,12 @@ def create_app(directory=None, dav_factory=WebDAV):
     @app.get('/api/assets/{aid}/manifest', dependencies=[Depends(owner)])
     def manifest(aid: str):
         row = asset(aid)
+        with db.connect() as c:
+            media = c.execute('SELECT data_json FROM media_info WHERE asset_id=? AND revision=?',(aid,row['revision'])).fetchone()
+        media_info = json.loads(media[0]) if media else {}
         return {'id': aid, 'revision': row['revision'], 'version_quality': row['version_quality'],
                 'original': f"/api/assets/{aid}/original?revision={row['revision']}",
+                'original_compatible': f"/api/assets/{aid}/original-compatible?revision={row['revision']}" if media_info.get('hdr_source') or Cache(db).lookup(aid,row['revision'],'compatible') or Path(row['path']).suffix.lower() in ('.heic','.heif','.hif') else None,
                 'live': live_pair(db,row),
                 'preview': f"/api/assets/{aid}/media/display?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'display') else None,
                 'thumbnail': f"/api/assets/{aid}/media/thumb?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'thumb') else None,
@@ -254,6 +258,14 @@ def create_app(directory=None, dav_factory=WebDAV):
             info=json.loads(r['info_json']);info.update(accepted=action=='accept',reviewed=action)
             c.execute("UPDATE metadata SET info_json=? WHERE asset_id=? AND record_id=?",(json.dumps(info),aid,record_id))
         return {'ok':True}
+
+    @app.get('/api/assets/{aid}/original-compatible', dependencies=[Depends(owner)])
+    def original_compatible(aid: str, revision: str):
+        from .view_original import converted_original
+        row = asset(aid)
+        if row['revision'] != revision:
+            raise HTTPException(409, '源版本已变更')
+        return converted_original(db, row, dav_for(row['source_id']))
 
     @app.get('/api/assets/{aid}/original', dependencies=[Depends(owner)])
     def original(aid: str, revision: str, request: Request):

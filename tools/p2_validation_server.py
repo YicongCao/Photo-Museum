@@ -24,6 +24,8 @@ with tempfile.TemporaryDirectory(prefix='museum-gallery-fixture-') as directory,
   for n in range(10):
    image=Image.new('RGB',(1200,800),['#496575','#a67e55','#536b62','#877463','#476b7d'][n%5]);draw=ImageDraw.Draw(image)
    draw.polygon([(0,600),(300+n*20,150),(650,620),(900,260),(1200,650),(1200,800),(0,800)],fill='#253b3c');draw.ellipse((850,80,980,210),fill='#d8ae72')
+   if n%3==1:image=image.rotate(90,expand=True)
+   if n%3==2:image=image.resize((1800,600))
    out=io.BytesIO();image.save(out,'JPEG',icc_profile=ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes())
    remote.entries[folder+f'/IMG_{n:04}.jpg']=out.getvalue()
  with db.connect() as c:c.execute('INSERT INTO sources VALUES(?,?,?,?,?,?,?,?,?)',('fixture','合成照片源',url,fixture.ROOT,'pulsar',sec.encrypt('fixture-only'),None,1,time.time()))
