@@ -1,0 +1,13 @@
+services:
+  museum:
+    build: .
+    ports:
+      - "127.0.0.1:8792:8792"
+    volumes:
+      - museum-data:/data
+      - ./data/models:/models:ro
+    environment:
+      MUSEUM_HOSTS: 127.0.0.1:8792,localhost:8792
+    restart: unless-stopped
+volumes:
+  museum-data:

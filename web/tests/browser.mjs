@@ -46,8 +46,8 @@ async function waitFor(predicate) {
   throw Error("State timeout");
 }
 try {
-  await page.goto(base);
-  await page.getByRole("heading", { name: "欢迎回来。" }).waitFor();
+  await page.goto(base+"/#manage");
+  await page.getByLabel("馆主密码", { exact: true }).waitFor();
   assert.equal(
     await page.evaluate(() => getComputedStyle(document.body).backgroundColor),
     "rgb(0, 0, 0)",
@@ -73,7 +73,8 @@ try {
     .getByLabel("馆主密码", { exact: true })
     .fill("synthetic-owner-password");
   await page.getByRole("button", { name: "进入馆务室" }).click();
-  await page.getByRole("heading", { name: "01 照片源", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "连接的照片源", exact: true }).waitFor();
+  await page.getByRole("button",{name:"＋ 管理来源",exact:true}).click();
   const cookies = await context.cookies();
   const session = cookies.find((c) => c.name === "museum_session");
   assert.ok(session.httpOnly && session.sameSite === "Strict");
@@ -86,6 +87,7 @@ try {
   await page.getByLabel("扫描范围").waitFor();
   check("WebDAV connection and Chinese activity selection");
   await page.getByRole("button", { name: "开始刮削" }).click();
+  await page.getByRole("button",{name:"扫描批次",exact:true}).click();
   await page.getByRole("button", { name: "暂停", exact: true }).waitFor();
   await page.getByRole("button", { name: "暂停", exact: true }).click();
   await waitFor((s) => s.data.jobs[0]?.status === "paused");
@@ -93,34 +95,35 @@ try {
   let paused = await state();
   const done = paused.data.jobs[0].done_dirs;
   await page.reload();
+  await page.getByRole("button",{name:"扫描批次",exact:true}).click();
   await page.getByRole("button", { name: "恢复", exact: true }).waitFor();
   assert.equal((await state()).data.jobs[0].done_dirs, done);
   check("Pause persists across browser reload without progress loss");
   await screenshot("02-paused-desktop");
   await page.getByRole("button", { name: "恢复", exact: true }).click();
   await waitFor((s) => s.data.jobs[0]?.status === "completed");
-  await page.getByText("已完成", { exact: true }).waitFor();
+  await page.getByText("目录已完成", { exact: true }).waitFor();
   check("Resume finishes complete directory queue");
-  assert.equal((await state()).data.asset_count, 7);
-  check("RAW directory and RAW files excluded");
+  assert.equal((await state()).data.asset_count, 3);
+  check("RAW and all secondary directories excluded; only direct topic files indexed");
   const summary = await state();
   const displayed = summary.data.jobs[0];
   await page
     .getByRole("img", {
-      name: `当前展示任务已完成 ${displayed.done_dirs} 个目录，共发现 ${displayed.total_dirs} 个目录`,
+      name: `目录 ${displayed.done_dirs} / ${displayed.total_dirs}`,
     })
     .waitFor();
   assert.equal(
-    await page.locator(".directory-ring strong").innerText(),
-    String(displayed.done_dirs),
+    (await page.locator(".keeper-ring strong").innerText()).replace(/\s+/g," "),
+    `${displayed.done_dirs} / ${displayed.total_dirs}`,
   );
   assert.equal(
-    await page.locator(".directory-ring span").innerText(),
+    await page.locator(".keeper-ring i").innerText(),
     `/ ${displayed.total_dirs}`,
   );
   check("Directory visualization agrees with actual task data");
   assert.ok(
-    !(await page.locator(".collection-overview").innerText()).includes("%"),
+    !(await page.locator(".keeper-ring").innerText()).includes("%"),
   );
   check(
     "Charts do not present discovered-directory ratio as whole-library percentage",
@@ -153,7 +156,7 @@ try {
   );
   check("390px mobile management has no horizontal overflow");
   await page.getByRole("button", { name: "锁馆", exact: true }).click();
-  await page.getByRole("heading", { name: "欢迎回来。" }).waitFor();
+  await page.getByLabel("馆主密码", { exact: true }).waitFor();
   assert.equal((await state()).status, 401);
   await screenshot("05-login-mobile");
   check("Logout revokes session and returns to login");

@@ -87,6 +87,11 @@ class Worker:
                 is_event = task['path'] == root and parse_event(name)['precision'] != 'unknown'
                 if entry.is_dir and excluded_directory(name) and not is_event:
                     continue
+                if entry.is_dir and '/' in entry.path[len(root.rstrip('/')):].strip('/'):
+                    # An excluded subtree still exists on the NAS; exclusion is not deletion.
+                    included.add(entry.path)
+                    db.execute('UPDATE entries SET scope_excluded=1 WHERE source_id=? AND (path=? OR substr(path,1,?)=?)',(task['source_id'],entry.path,len(entry.path)+1,entry.path+'/'))
+                    continue
                 kind = 'directory' if entry.is_dir else classify(name)
                 if kind not in ('directory', 'image_candidate', 'video_candidate'):
                     continue
@@ -95,10 +100,10 @@ class Worker:
                 aid = old['id'] if old else uuid.uuid4().hex
                 if old and (old['revision'] != entry.revision or old['missing']):
                     invalidate(db, aid)
-                db.execute('''INSERT INTO entries VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(source_id,path) DO UPDATE SET
+                db.execute('''INSERT INTO entries(id,source_id,path,parent,is_dir,kind,size,modified,etag,revision,version_quality,event_json,missing,seen_job,updated) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(source_id,path) DO UPDATE SET
                     parent=excluded.parent,is_dir=excluded.is_dir,kind=excluded.kind,size=excluded.size,modified=excluded.modified,
                     etag=excluded.etag,revision=excluded.revision,version_quality=excluded.version_quality,event_json=excluded.event_json,
-                    missing=0,seen_job=excluded.seen_job,updated=excluded.updated''',
+                    missing=0,scope_excluded=0,seen_job=excluded.seen_job,updated=excluded.updated''',
                     (aid, task['source_id'], entry.path, task['path'], int(entry.is_dir), kind, entry.size, entry.modified,
                      entry.etag, entry.revision, entry.quality, json.dumps(parse_event(event_name), ensure_ascii=False), 0, task['job_id'], now))
                 if entry.is_dir:
@@ -115,7 +120,7 @@ class Worker:
                         invalidate(db, item['id'])
                         db.execute('UPDATE entries SET missing=1,updated=? WHERE id=?', (now, item['id']))
             db.execute("UPDATE scan_dirs SET state='done',token=NULL,lease_until=NULL,error=NULL WHERE id=?", (task['id'],))
-            pending = db.execute("SELECT 1 FROM scan_dirs WHERE job_id=? AND state!='done'", (task['job_id'],)).fetchone()
+            pending = db.execute("SELECT 1 FROM scan_dirs WHERE job_id=? AND state NOT IN ('done','excluded')", (task['job_id'],)).fetchone()
             db.execute('UPDATE jobs SET status=?,files_seen=files_seen+?,updated=?,error=NULL WHERE id=?', ('running' if pending else 'completed', files, now, task['job_id']))
 
     def failure(self, task, code, retryable):

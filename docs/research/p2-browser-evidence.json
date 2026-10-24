@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-24T15:38:23.945Z",
+  "browser": "155.0.8059.85",
+  "checks": [
+    "Gallery default tunnel with ten real decoded fixtures",
+    "No branding or slogan in exhibition",
+    "Same-month independent activity rows",
+    "Annual activity does not invent month",
+    "Preview remains visible during original transfer",
+    "Full image decoded before reveal",
+    "Escape restores focus to photo",
+    "Activity photo wall",
+    "390px mobile no document overflow",
+    "390px one-page management no horizontal or vertical document overflow",
+    "Desktop one-page management",
+    "720px-height one-page management",
+    "Latest twenty fill fixed full-width bottom strip",
+    "Hover loads converted 4K preview",
+    "Click pins 4K preview",
+    "Preview never requests NAS original and Escape closes",
+    "Directory queue shows every discovered directory, separate from scan batches",
+    "Pushed completed item shifts strip left with nonlinear animation",
+    "Each completion lights all 100 bars one at a time without progress jumps",
+    "Download bytes contribute to one unified per-photo progress",
+    "Metadata substeps expose distinct SVG icons and truthful state",
+    "All nine subtasks light at full per-photo completion",
+    "Reduced-motion suppresses strip and progress animation",
+    "Media pause persists across reload",
+    "No uncaught browser errors"
+  ],
+  "errors": [],
+  "fixtures": "synthetic geometric charts; no private photographs"
+}

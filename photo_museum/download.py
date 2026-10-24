@@ -14,14 +14,14 @@ class TransferCancelled(Exception):
     pass
 
 
-def download(dav, entry, spool, cancelled=lambda: False, max_bytes=256*1024*1024, budget=512*1024*1024):
+def download(dav, entry, spool, cancelled=lambda: False, max_bytes=256*1024*1024, budget=512*1024*1024, progress=None):
     try:
-        return _download(dav, entry, spool, cancelled, max_bytes, budget)
+        return _download(dav, entry, spool, cancelled, max_bytes, budget, progress)
     except httpx.TransportError:
         raise DAVError('network_unavailable', True) from None
 
 
-def _download(dav, entry, spool, cancelled, max_bytes, budget):
+def _download(dav, entry, spool, cancelled, max_bytes, budget, progress):
     from pathlib import Path
     spool = Path(spool)
     spool.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -41,6 +41,7 @@ def _download(dav, entry, spool, cancelled, max_bytes, budget):
                     digest = hashlib.file_digest(cached, 'sha256').hexdigest()
                 info = json.loads(manifest.read_text())
                 if info['sha256'] == digest and target.stat().st_size == entry.size:
+                    if progress: progress(entry.size, entry.size)
                     return {'path': target, 'resumed_bytes': 0, 'cached': True, 'sha256': digest}
             except (OSError, ValueError, KeyError):
                 pass
@@ -86,6 +87,7 @@ def _download(dav, entry, spool, cancelled, max_bytes, budget):
                 else:
                     offset = 0  # Range ignored or If-Range no longer matches: never append 200.
                 count = offset
+                if progress: progress(count, entry.size)
                 try:
                     with open(part, 'ab' if offset else 'wb') as out:
                         os.chmod(part, 0o600)
@@ -98,6 +100,7 @@ def _download(dav, entry, spool, cancelled, max_bytes, budget):
                             if count > entry.size or count > max_bytes:
                                 raise DAVError('download_size_mismatch')
                             out.write(chunk)
+                            if progress: progress(count, entry.size)
                         out.flush()
                         os.fsync(out.fileno())
                 finally:

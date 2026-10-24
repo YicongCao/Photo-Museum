@@ -1,0 +1,28 @@
+[
+  {
+    "url": "http://127.0.0.1:8792",
+    "checks": [
+      "anonymous_denied",
+      "password_setup_login",
+      "state",
+      "media_state",
+      "gallery",
+      "static_UI",
+      "logout_revoked"
+    ],
+    "trusted_certificate": false
+  },
+  {
+    "url": "https://127.0.0.1:8794",
+    "checks": [
+      "anonymous_denied",
+      "password_setup_login",
+      "state",
+      "media_state",
+      "gallery",
+      "static_UI",
+      "logout_revoked"
+    ],
+    "trusted_certificate": true
+  }
+]

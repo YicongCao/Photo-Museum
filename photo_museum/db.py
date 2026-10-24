@@ -72,7 +72,15 @@ class Database:
                 extraction = db.execute("SELECT status FROM extractions WHERE asset_id=? AND source_revision=?", (asset_id, revision)).fetchone()
                 if not extraction or extraction['status'] != 'extracted':
                     raise ValueError('Observed facts require a successful extraction')
+            previous = db.execute('SELECT * FROM metadata WHERE asset_id=? AND field=? AND layer=?', (asset_id, field, layer)).fetchone()
+            if layer == 'observed' and previous and not previous['stale'] and previous['source_revision']==revision and previous['rule_version']==rule and json.loads(previous['value_json'])==value:
+                return
             if layer == 'inferred':
+                if previous and not previous['stale'] and previous['source_revision']==revision and previous['rule_version']==rule and json.loads(previous['value_json'])==value:
+                    old_info=json.loads(previous['info_json'])
+                    old_donors={tuple(r) for r in db.execute('SELECT donor_id,donor_revision,donor_record_id FROM dependencies WHERE asset_id=? AND field=?',(asset_id,field))}
+                    if old_info.get('reviewed') and old_donors==set(donors):
+                        info.update(accepted=old_info['accepted'],reviewed=True)
                 info.setdefault('accepted', False)
                 for donor_id, donor_revision, donor_record_id in donors:
                     donor = db.execute('SELECT * FROM entries WHERE id=?', (donor_id,)).fetchone()
@@ -103,6 +111,9 @@ class Database:
     def new_job(self, source_id, root):
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
+            source=db.execute('SELECT root FROM sources WHERE id=?',(source_id,)).fetchone()
+            if not source or '/' in root[len(source['root'].rstrip('/')):].strip('/'):
+                raise ValueError('只扫描一级主题目录，不进入二级目录')
             if db.execute("SELECT 1 FROM jobs WHERE source_id=? AND status IN ('queued','running','paused','blocked')", (source_id,)).fetchone():
                 raise ValueError('该照片源已有未完成任务，请先恢复或取消')
             jid = uuid.uuid4().hex

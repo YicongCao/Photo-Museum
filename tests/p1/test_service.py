@@ -302,7 +302,7 @@ def test_schema_migration_preserves_data_and_rejects_newer_database(tmp_path):
     c.execute('PRAGMA user_version=1');c.commit();c.close()
     db=Database(directory)
     with db.connect() as c:
-        assert c.execute('PRAGMA user_version').fetchone()[0]==2
+        assert c.execute('PRAGMA user_version').fetchone()[0]==len(__import__('photo_museum.db',fromlist=['MIGRATIONS']).MIGRATIONS)
         assert c.execute("SELECT value FROM settings WHERE key='sample'").fetchone()[0]=='preserved'
         c.execute('PRAGMA user_version=999')
     with pytest.raises(RuntimeError,match='newer'):Database(directory)

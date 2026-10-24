@@ -2,22 +2,22 @@
 
 一部可以不断重看的“人生照片集”。以活动主题作为展览，将照片、Live Photo 和视频组织成个人博物馆。服务目标是自托管于 Mac、内网 Linux 或 Docker，从 NAS WebDAV 只读取得成片。
 
-**当前阶段：P0.5方向已接受；P1 WebDAV直连、馆主登录、可暂停恢复任务已实现并验证，待验收。** 正式照片缓存与观展接入在P2。进度与验收结果见 [STATUS](docs/STATUS.md)。
+**当前阶段：P2–P4 本机软件链路已实现，真实队列持续运行，待用户验收。** Gallery、媒体缓存、本地策展和一屏馆务已接入；物理HDR/真实移动设备和全库处理进度见 [STATUS](docs/STATUS.md)。
 
 最新视觉与交付顺序：[ADR 0003](docs/decisions/0003-black-ochre-gallery-home.md) · [纯黑/黄褐设计语言](docs/design/visual-language.md)。取消整页canvas，时光隧道为P2首版Gallery首页，右侧timeline逐项列出月份－活动。
 
 ## 运行正式本机服务
 
 ```bash
-uv sync --locked
+uv sync --locked --all-extras
 npm ci --prefix web
 npm run build --prefix web
-uv run python -m photo_museum
+uv run --all-extras python -m photo_museum
 ```
 
-打开 <http://127.0.0.1:8790>，首次由馆主设置密码、配置NAS。API与独立worker一起启动，Ctrl-C停止；重启后任务接续。NAS始终只读，数据与加密凭据留在被忽略的`data/server/`。
+打开 <http://127.0.0.1:8790>，首次由馆主设置密码、配置NAS。首次使用本地智能模型，先运行 `tools/prepare_models.py` 和 `tools/prepare_geography.py`，详见运行文档。API与独立worker一起启动，Ctrl-C停止；重启后任务接续。NAS始终只读，数据与加密凭据留在被忽略的`data/server/`。
 
-[运行与验收步骤](docs/operations/p1-service.md) · [P1验证报告](docs/research/p1-validation.md) · [复验skill](.agents/skills/photo-museum-p1-validation/SKILL.md)
+[当前运行与部署](docs/operations/p2-p4-service.md) · [本轮验证](docs/research/p2-p4-validation.md) · [复验skill](.agents/skills/photo-museum-media-validation/SKILL.md)
 
 ## 先体验原型
 
@@ -38,7 +38,7 @@ uv run python -m photo_museum
 
 ## 本轮可运行工具
 
-需要Python3.11+与uv。只有媒体实验需要系统`exiftool`、`ffmpeg`、`ffprobe`；Python媒体依赖锁定于`uv.lock`。本机核验版本与覆盖范围见媒体报告。
+需要Python3.11+与uv。正式媒体处理需要系统`exiftool`、`ffmpeg`、`ffprobe`；Python媒体依赖锁定于`uv.lock`。本机核验版本与覆盖范围见媒体报告。
 
 ```bash
 uv sync --extra media
@@ -48,7 +48,7 @@ uv run python tools/inventory.py --root '/Volumes/Farmer.local/工程/拍照片'
 uv run python tools/report_inventory.py
 ```
 
-报告生成需要已完成的`data/research/inventory.json`与媒体实验`results.json`。媒体实验使用明确样本manifest，详见 [发现与容量验证skill](.agents/skills/photo-museum-discovery/SKILL.md)。P1现已实现WebDAV目录增量、Range续传组件和网站鉴权；正式缓存、视频播放与Docker仍待后续阶段。
+报告生成需要已完成的`data/research/inventory.json`与媒体实验`results.json`。媒体实验使用明确样本manifest，详见 [发现与容量验证skill](.agents/skills/photo-museum-discovery/SKILL.md)。P1现已实现WebDAV目录增量、Range续传组件和网站鉴权；正式缓存、同名Live候选视频处理与Docker现已接入。独立视频仅索引，不下载；二级目录不处理。
 
 概念可直接打开`docs/design/concepts.html`；若需本地预览：
 

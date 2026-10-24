@@ -14,6 +14,8 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 from .auth import Security
 from .db import Database
+from .cache import Cache
+from .gallery import register as register_gallery, live_pair
 from .webdav import WebDAV, DAVError, normalize, within, strong
 from tools.inventory import excluded_directory, parse_event
 
@@ -64,7 +66,7 @@ def create_app(directory=None, dav_factory=WebDAV):
         result.headers['Cache-Control'] = 'no-store'
         result.headers['X-Content-Type-Options'] = 'nosniff'
         result.headers['Referrer-Policy'] = 'no-referrer'
-        result.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+        result.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:; img-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
         return result
 
     @app.exception_handler(DAVError)
@@ -108,7 +110,7 @@ def create_app(directory=None, dav_factory=WebDAV):
 
     @app.post('/api/setup')
     def setup(body: Password, request: Request, response: Response):
-        if request.client.host not in ('127.0.0.1', '::1', 'testclient'):
+        if request.client.host not in ('127.0.0.1', '::1', 'testclient') and os.environ.get('MUSEUM_CONTAINER_SETUP') != '1':
             raise HTTPException(403, '首次设置只允许本机访问')
         security.setup(body.password)
         cookie(response, security.login(body.password, request.client.host), request)
@@ -134,10 +136,13 @@ def create_app(directory=None, dav_factory=WebDAV):
     def state():
         with db.connect() as conn:
             sources = [dict(r) for r in conn.execute('SELECT id,name,url,root,allow_http FROM sources ORDER BY created')]
-            jobs = [dict(r) for r in conn.execute('''SELECT j.*, (SELECT count(*) FROM scan_dirs WHERE job_id=j.id) AS total_dirs,
+            jobs = [dict(r) for r in conn.execute('''SELECT j.*, (SELECT count(*) FROM scan_dirs WHERE job_id=j.id AND state!='excluded') AS total_dirs,
                 (SELECT count(*) FROM scan_dirs WHERE job_id=j.id AND state='done') AS done_dirs,
                 (SELECT count(*) FROM scan_dirs WHERE job_id=j.id AND state='leased') AS active_dirs FROM jobs j ORDER BY created DESC LIMIT 30''')]
-            count = conn.execute('SELECT count(*) FROM entries WHERE is_dir=0 AND missing=0').fetchone()[0]
+            for job in jobs:
+                cover=conn.execute("SELECT e.id,e.revision FROM entries e JOIN derivatives d ON d.asset_id=e.id AND d.revision=e.revision AND d.profile='thumb' AND d.status='ready' WHERE e.source_id=? AND e.missing=0 AND e.scope_excluded=0 AND (e.parent=? OR substr(e.path,1,?)=?) ORDER BY e.path LIMIT 1",(job['source_id'],job['root'],len(job['root'])+1,job['root']+'/')).fetchone()
+                job['cover']=f"/api/assets/{cover['id']}/media/thumb?revision={cover['revision']}" if cover else None
+            count = conn.execute('SELECT count(*) FROM entries WHERE is_dir=0 AND missing=0 AND scope_excluded=0').fetchone()[0]
             heartbeat = conn.execute('SELECT max(heartbeat) FROM workers').fetchone()[0]
         return {'sources': sources, 'jobs': jobs, 'asset_count': count, 'worker_online': bool(heartbeat and heartbeat > time.time() - 15)}
 
@@ -181,6 +186,8 @@ def create_app(directory=None, dav_factory=WebDAV):
         root = normalize(body.root)
         if not within(root, s['root']):
             raise HTTPException(400, '扫描范围超出照片根目录')
+        if '/' in root[len(s['root'].rstrip('/')):].strip('/'):
+            raise HTTPException(400,'只扫描一级主题目录，不进入二级目录')
         for index, segment in enumerate(root[len(s['root']):].strip('/').split('/')):
             if excluded_directory(segment) and not (index == 0 and parse_event(segment)['precision'] != 'unknown'):
                 raise HTTPException(400, '原片或系统目录不纳入照片库')
@@ -208,14 +215,14 @@ def create_app(directory=None, dav_factory=WebDAV):
         if offset < 0 or not 1 <= limit <= 100:
             raise HTTPException(400)
         with db.connect() as conn:
-            rows = conn.execute('SELECT id,path,kind,size,revision,version_quality,event_json FROM entries WHERE is_dir=0 AND missing=0 ORDER BY path LIMIT ? OFFSET ?', (limit, offset)).fetchall()
+            rows = conn.execute('SELECT id,path,kind,size,revision,version_quality,event_json FROM entries WHERE is_dir=0 AND missing=0 AND scope_excluded=0 ORDER BY path LIMIT ? OFFSET ?', (limit, offset)).fetchall()
         return {'items': [dict(r) | {'event': json.loads(r['event_json'])} for r in rows]}
 
     def asset(aid):
         with db.connect() as conn:
-            row = conn.execute('SELECT * FROM entries WHERE id=? AND is_dir=0 AND missing=0', (aid,)).fetchone()
+            row = conn.execute('SELECT * FROM entries WHERE id=? AND is_dir=0 AND missing=0 AND scope_excluded=0', (aid,)).fetchone()
         if not row:
-            raise HTTPException(404, '成片不存在或已标记缺失')
+            raise HTTPException(404, '照片不存在或不在当前刮削范围')
         return dict(row)
 
     @app.get('/api/assets/{aid}/manifest', dependencies=[Depends(owner)])
@@ -223,8 +230,30 @@ def create_app(directory=None, dav_factory=WebDAV):
         row = asset(aid)
         return {'id': aid, 'revision': row['revision'], 'version_quality': row['version_quality'],
                 'original': f"/api/assets/{aid}/original?revision={row['revision']}",
-                'preview': None, 'thumbnail': None, 'derivatives_status': 'awaiting_p2',
+                'live': live_pair(db,row),
+                'preview': f"/api/assets/{aid}/media/display?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'display') else None,
+                'thumbnail': f"/api/assets/{aid}/media/thumb?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'thumb') else None,
+                'compatible': f"/api/assets/{aid}/media/compatible?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'compatible') else None,
+                'playback': f"/api/assets/{aid}/media/playback?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'playback') else None,
+                'derivatives_status': 'ready' if Cache(db).lookup(aid,row['revision'],'display') else 'pending',
                 'effective_metadata': db.effective(aid)}
+
+    @app.get('/api/assets/{aid}/suggestions', dependencies=[Depends(owner)])
+    def suggestions(aid: str):
+        asset(aid)
+        with db.connect() as c:
+            rows=c.execute("SELECT field,value_json,info_json,record_id FROM metadata WHERE asset_id=? AND layer='inferred' AND stale=0",(aid,)).fetchall()
+        return {'items':[{'field':r['field'],'value':json.loads(r['value_json']),'info':json.loads(r['info_json']),'record_id':r['record_id']} for r in rows]}
+
+    @app.post('/api/assets/{aid}/suggestions/{record_id}/{action}', dependencies=[Depends(owner)])
+    def review_suggestion(aid:str,record_id:str,action:str):
+        if action not in ('accept','reject'):raise HTTPException(400)
+        with db.connect() as c:
+            r=c.execute("SELECT * FROM metadata WHERE asset_id=? AND record_id=? AND layer='inferred' AND stale=0",(aid,record_id)).fetchone()
+            if not r:raise HTTPException(409,'推断已经更新')
+            info=json.loads(r['info_json']);info.update(accepted=action=='accept',reviewed=action)
+            c.execute("UPDATE metadata SET info_json=? WHERE asset_id=? AND record_id=?",(json.dumps(info),aid,record_id))
+        return {'ok':True}
 
     @app.get('/api/assets/{aid}/original', dependencies=[Depends(owner)])
     def original(aid: str, revision: str, request: Request):
@@ -291,6 +320,10 @@ def create_app(directory=None, dav_factory=WebDAV):
                 upstream.close()
             client.close()
             raise
+
+    register_gallery(app, db, owner)
+    from .intelligence_api import register as register_intelligence
+    register_intelligence(app, db, owner)
 
     build = ROOT / 'web/dist'
     if (build / 'assets').exists():

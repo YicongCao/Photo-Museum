@@ -1,50 +1,24 @@
 # 当前进度
 
-更新：2026-10-24（Asia/Shanghai）。阶段：**P0完成；P0.5按用户接受的方向继续；P1请求功能已实现、验证完成，待用户验收**。正式本机服务 <http://127.0.0.1:8790> 已接 NAS WebDAV、馆主密码与持久刮削队列；原型 8787 保留。EXIF/近邻推断执行、4K缓存与正式观展接入留在P2。
+更新：2026-10-24。**P2–P4 的本机软件链路已实现，持续真实刮削；当前交付等待用户检查。** P3物理HDR/真实移动设备验收与P4主观选片质量不能由自动测试代替，仍保留明确边界。入口：<http://127.0.0.1:8790/#manage>。
 
-## P1最新交付
+## 当前可验收
 
-- Python API＋独立worker＋React馆务室；本地SQLite迁移、租约、退避、暂停/恢复/取消、只读WebDAV、鉴权manifest/原文件Range。
-- 原始/推断/人工/effective、供体版本与原始记录ID、历史及提取状态已有底座；真实EXIF和推断算法尚未运行。
-- Python 39项（含P1新增21项）、P0.5 TypeScript 13项、P1浏览器12组通过；真实NAS两活动54个候选已索引，小活动10项重复扫描稳定。
-- 实际文件在128KiB处取消后通过强ETag续传；与独立完整GET的SHA-256相同。真实浏览器原图显示与匿名401通过。
-- 本次HTTP5005经用户授权；HTTPS证书仍未修复。P1不是HDR/全库媒体缓存/Linux-Docker验收。
+- P1：只读WebDAV、馆主密码、持久扫描队列、暂停/恢复、增量发现与强ETag字节续传继续可用。
+- P2：EXIF/ICC sRGB、4K＋640px WebP、HEIF/HDR SDR主图兼容全图、已验证HLG/P3视频路径、活动Gallery时光隧道、逐月逐主题时间线、照片墙、4K→原图暗房、保守近邻推断与采纳/忽略。
+- 馆务：一屏固定布局、纯黑黄褐、品牌只留管理页、无slogan。单图所有子任务统一进度，逐根0→100；固定20项照片条、缓动左移、hover/点按本地4K。真实全目录列表与扫描批次分开。
+- 范围/顺序：按目录名倒序逐个处理，只处理一级主题直属文件。独立视频不下载整段，只记录文件元数据；同名照片的视频才进入Live候选。当前227个一级主题＋根目录、20,137候选，11个二级目录/1,462文件已退出范围且未被标记为NAS删除。
+- P3：Mac运行、Debian容器构建/启动、受信测试证书TLS、在线备份和新目录恢复已实跑；基础Docker镜像含媒体，不含PyTorch智能依赖。
+- P4：本地YuNet/SFace人物聚类与人工改组、MobileNetV3主体标签、技术/构图评分、近重复与多样性十图、固定精选、GeoNames离线近似城市。模型和人工数据分层、版本化。
 
-[验收报告](research/p1-validation.md) · [运行和用户验收](operations/p1-service.md) · [P1日志](logs/2026-10-24-p1-service.md) · [P1验证skill](../.agents/skills/photo-museum-p1-validation/SKILL.md)
+## 证据入口
 
-## 最新计划修订
+[本轮验收报告](research/p2-p4-validation.md) · [运行、限制与部署](operations/p2-p4-service.md) · [实施日志](logs/2026-10-24-p2-p4-engineering.md) · [复验skill](../.agents/skills/photo-museum-media-validation/SKILL.md)。公开截图只包含合成图；真实照片、GPS、人脸与真实界面截图只保存在忽略的data目录。
 
-[ADR 0003](decisions/0003-black-ochre-gallery-home.md)确认：取消整页canvas；所有页面纯黑底与黄褐主题，增加有意义的图标/图表。A时光隧道提升为P2首个可浏览版本的Gallery首页，右侧按年份分组，逐项显示`MM-活动主题`；无月活动显示`年度-主题`。
+## 不混称为已完成的事项
 
-[统一设计语言](design/visual-language.md)与[体验规范](design/experience.md)覆盖登录、Gallery、馆务、墙和后续展厅。[运行时](architecture/viewer-runtime.md)改为React/DOM、CSS透视、原生媒体及局部渲染。P0.5继续保留为历史原型，复用加载/取消/资源经验，不把单canvas作为新功能验收条件。
+全库候选的目录枚举已完成，但全库媒体缓存/分析仍在后台继续；新策略不处理独立视频原文件和所有二级目录。缺色域的HEIC、超出解码尺寸上限、尚未验证的编码会保留“需处理”，不伪造转换成功。真实NAS仍使用本次授权的HTTP5005，5006证书未修复。
 
-本轮已同步P1登录与馆务的黑底黄褐主题、图标及真实目录图表，16组浏览器检查通过；Gallery隧道仍是P2首版交付要求，概念图不表示已实现。见[修订与验证日志](logs/2026-10-24-black-ochre-gallery.md)及[新版概念](design/imagegen-2026-10-24-v2/README.md)。
+原生HDR开关是受浏览器能力约束的路径，不代表Safari/Chromium、HDR物理屏幕与真实手机均已验证。缺省正式观展使用SDR；城市逆解析不制造街道/区域。技术分不是人类喜欢概率。P5的B/C/D/E及高级F展厅、P6可选agent尚未实现。
 
-## 已完成与证据
-
-- [产品范围](PRODUCT.md)、[路线图](ROADMAP.md)、[ADR](decisions/0001-foundations.md) 已记录两轮用户决定；后续无需重复询问已选技术栈、视觉、隐私、HDR顺序和单密码模式。
-- 只读盘点成功：227个活动，239个目录完成列举，12个原片目录及1个系统目录排除，无读取目录错误。19,536图片候选、2,063视频候选、1,173唯一同名MOV配对候选与5组歧义。完整证据在本地忽略的`data/research/inventory.json`；[公开汇总](research/library-census.md)。
-- 20照片＋2视频小样本：17SDR成功、3HDR照片延期、2HDR视频延期。Python媒体处理依赖已锁定；[实验与限制](research/media-pipeline.md)。
-- [历史概念页](design/concepts.html)使用虚构主题和SVG示意；此前1440×1000与390×844检查、灯箱/切换/随机排列验证只适用于旧DOM研究。它已标为色彩参考，不再作为新WebGL方案的验收证据。
-- P0阶段的8项Python行为测试通过；当时两项项目skills结构校验通过。独立审查发现并修复空活动漏计、活动名误排原片两项问题。
-
-## P0.5交付与验证
-
-- 13张合成演示素材、6张既有真实SDR小样；B/F/单图同canvas，4K优先、暗房显影、按需瓦片及128MiB纹理预算。
-- TypeScript 13项行为测试、Python合计18项测试通过；浏览器22组检查通过。含2万模拟元数据、100次浏览、60.2MP色条/瓦片、源故障、取消、全屏、焦点、触摸和context恢复。
-- 1440×1000桌面与390×844/DPR2模拟手机；8张公开截图。手机硬件、Safari、HDR、真实NAS和生产鉴权不在通过范围。
-- 可复验入口见[原型说明](../prototype/README.md)与[WebGL验证skill](../.agents/skills/photo-museum-webgl-validation/SKILL.md)，实测数字与证据见[验收报告](research/p05-validation.md)。
-
-## 本轮不宣称完成
-
-全库EXIF提取/去重/文件字节统计；HDR色调映射；真实Live Photo配对播放；视频中帧SDR输出；本地识别模型推理；原生HDR跨浏览器；Linux/Docker部署与性能验收。
-
-盘点的resume只接续既有队列；它不是生产增量任务系统。静态概念中的日历、足迹、器材是未来入口，SVG的LIVE标志不是实际播放能力。缓存预算是小样本外推加显式保守假设，不是全库编码实测。
-
-## 当前验收与下一阶段
-
-1. 在8790验收登录/锁馆、NAS连接、活动扫描、暂停后刷新与恢复、原文件读取。已保存的源配置和馆主密码继续使用。
-2. P2实施EXIF/准确SDR缓存，交付Gallery时光隧道首页及活动时间线，再完成近邻补全、Live Photo/视频与4K→原图暗房流程。
-3. P3继续可信TLS、HDR、跨浏览器/实机、Linux/Docker与备份恢复，当前不标为通过。
-
-P0日志：[发现与方案](logs/2026-10-24-discovery.md) · [全屏计划修订](logs/2026-10-24-viewer-plan-revision.md)。P0.5日志：[全画布原型](logs/2026-10-24-p05-prototype.md)。
+P0/P0.5/P1历史验收保留在 [路线图](ROADMAP.md)、[P0.5报告](research/p05-validation.md)、[P1报告](research/p1-validation.md)。历史单canvas和暖白概念不再是当前约束。

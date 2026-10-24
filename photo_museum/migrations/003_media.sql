@@ -1,0 +1,11 @@
+CREATE TABLE media_jobs(asset_id TEXT NOT NULL REFERENCES entries(id),revision TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', stage TEXT NOT NULL DEFAULT 'download', attempts INTEGER NOT NULL DEFAULT 0, available REAL NOT NULL DEFAULT 0, token TEXT, lease_until REAL, error TEXT, updated REAL NOT NULL DEFAULT 0, PRIMARY KEY(asset_id,revision));
+CREATE INDEX media_queue ON media_jobs(status,available,lease_until);
+CREATE TABLE media_info(asset_id TEXT PRIMARY KEY REFERENCES entries(id),revision TEXT NOT NULL, data_json TEXT NOT NULL, updated REAL NOT NULL);
+CREATE TABLE cache_files(key TEXT PRIMARY KEY,asset_id TEXT NOT NULL,revision TEXT NOT NULL,profile TEXT NOT NULL,path TEXT NOT NULL,size INTEGER NOT NULL,accessed REAL NOT NULL);
+CREATE INDEX cache_lru ON cache_files(accessed);
+CREATE TABLE curation(asset_id TEXT PRIMARY KEY REFERENCES entries(id),pinned INTEGER NOT NULL DEFAULT 0,excluded INTEGER NOT NULL DEFAULT 0,updated REAL NOT NULL);
+CREATE TABLE analysis(asset_id TEXT NOT NULL REFERENCES entries(id),revision TEXT NOT NULL,provider TEXT NOT NULL,version TEXT NOT NULL,data_json TEXT NOT NULL,updated REAL NOT NULL,PRIMARY KEY(asset_id,provider));
+CREATE TABLE people(id TEXT PRIMARY KEY,label TEXT NOT NULL DEFAULT '',updated REAL NOT NULL);
+CREATE TABLE faces(id TEXT PRIMARY KEY,asset_id TEXT NOT NULL REFERENCES entries(id),revision TEXT NOT NULL,person_id TEXT REFERENCES people(id),box_json TEXT NOT NULL,embedding BLOB NOT NULL,model TEXT NOT NULL,manual INTEGER NOT NULL DEFAULT 0);
+INSERT OR IGNORE INTO settings VALUES('media_paused','false');
+INSERT OR IGNORE INTO settings VALUES('cache_budget', '85899345920');
