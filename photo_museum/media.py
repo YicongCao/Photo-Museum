@@ -44,47 +44,70 @@ def facts(meta):
         result['gps'] = {'latitude':lat,'longitude':lon}
     return result
 
-def still(path, folder, meta, progress=lambda *args: None):
-    nclx, auxiliaries = {}, []
+def still(path, folder, meta, progress=lambda *args: None, *, compatible=False):
+    nclx, auxiliaries, h = {}, [], None
     if meta.get('FileType') in ('HEIC','HEIF','HIF'):
         h = pillow_heif.open_heif(path, convert_hdr_to_8bit=False)
         nclx = h.info.get('nclx_profile') or {}
         auxiliaries = list(h.info.get('aux',{}))
-        del h
+        if h.size[0] * h.size[1] > Image.MAX_IMAGE_PIXELS:
+            raise Image.DecompressionBombError("Image exceeds preview pixel budget")
     reason = hdr_reason(meta,nclx,auxiliaries)
     apple_sdr_base = (meta.get('FileType') in ('HEIC','HEIF','HIF') and meta.get('Make')=='Apple' and meta.get('ProfileDescription') in ('Display P3','sRGB IEC61966-2.1') and nclx.get('transfer_characteristics') not in (16,18))
     jpeg_sdr_base = meta.get('FileType')=='JPEG' and meta.get('ProfileDescription') in ('Display P3','sRGB IEC61966-2.1','sRGB') and meta.get('TransferCharacteristics') not in (16,18)
-    if reason and not (apple_sdr_base or jpeg_sdr_base):
+    primary_hdr = nclx.get('transfer_characteristics') in (16, 18)
+    # ExifTool may report an auxiliary item's PQ tag. Primary 8-bit ICC SDR is authoritative.
+    icc_sdr_base = bool(h and h.info.get('bit_depth') == 8 and h.info.get('icc_profile')
+                        and meta.get('ProfileDescription') in ('Display P3','sRGB IEC61966-2.1','sRGB') and not primary_hdr)
+    if reason and not (primary_hdr or apple_sdr_base or jpeg_sdr_base or icc_sdr_base):
         raise MediaUnsupported(reason)
     srgb = ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB'))
-    with Image.open(path) as src:
-        icc = src.info.get('icc_profile')
-        image = ImageOps.exif_transpose(src)
-        if icc:
-            image = ImageCms.profileToProfile(image, ImageCms.ImageCmsProfile(io.BytesIO(icc)),srgb,outputMode='RGB')
-            color = 'icc_to_srgb'
-        elif meta.get('ColorSpace') == 1 or (nclx.get('color_primaries')==1 and nclx.get('transfer_characteristics')==13):
-            image = image.convert('RGB')
-            color = 'declared_srgb'
-        elif meta.get('FileType') in ('JPEG','PNG') and not nclx:
-            # W3C untagged-image default. Explicit assumption, never described as measured ICC.
-            image = image.convert('RGB')
-            color = 'untagged_assumed_srgb'
-        else:
-            raise MediaUnsupported('unknown_color_profile')
-        result = {'width':image.width,'height':image.height,'color':color,'hdr':False,'hdr_source':bool(reason),'sdr_base':apple_sdr_base}
+    assumed = False
+    if primary_hdr:
+        from .hdr import tone_map
+        if nclx.get('color_primaries') not in (1,9,12):
+            raise MediaUnsupported('unsupported_hdr_primaries')
+        original_size = h.size
+        image = tone_map(h, folder, command, max_edge=None if compatible else 3840)
+        color = 'primary_nclx_mobius_srgb'
+        del h
+    else:
+        del h
+        with Image.open(path) as src:
+            if src.width*src.height>Image.MAX_IMAGE_PIXELS:raise Image.DecompressionBombError()
+            icc = src.info.get('icc_profile')
+            image = ImageOps.exif_transpose(src)
+            if icc:
+                image = ImageCms.profileToProfile(image, ImageCms.ImageCmsProfile(io.BytesIO(icc)),srgb,outputMode='RGB')
+                color = 'icc_to_srgb'
+            elif meta.get('ColorSpace') == 1 or (nclx.get('color_primaries')==1 and nclx.get('transfer_characteristics')==13):
+                image = image.convert('RGB')
+                color = 'declared_srgb'
+            else:
+                if nclx.get('color_primaries') not in (None,0,2):
+                    image.close()
+                    raise MediaUnsupported('unsupported_sdr_nclx')
+                image = image.convert('RGB')
+                color = 'untagged_assumed_srgb'
+                assumed = True
+        original_size = image.size
+    try:
+        result = {'width':original_size[0],'height':original_size[1],'color':color,'hdr':False,'hdr_source':bool(reason),'sdr_base':apple_sdr_base or jpeg_sdr_base or icc_sdr_base,'assumed_color':assumed,'score_penalty':15 if assumed else 0,'cache_policy':'preview-only-v1'}
         for profile,edge,quality in [('display',3840,80),('thumb',640,74)]:
             progress(profile, 'running')
             out = image.copy()
             out.thumbnail((edge,edge),Image.Resampling.LANCZOS)
             out.save(folder/(profile+'.webp'),'WEBP',quality=quality,method=4,icc_profile=srgb.tobytes())
+            out.close()
             progress(profile, 'done')
         # Native JPEG/PNG gets the source file. HEIF needs a full-resolution compatibility image.
-        if reason or meta.get('FileType') not in ('JPEG','PNG','WEBP'):
+        if compatible:
             progress('compatible', 'running')
             image.save(folder/'compatible.jpg','JPEG',quality=94,icc_profile=srgb.tobytes())
             progress('compatible', 'done')
         return result
+    finally:
+        image.close()
 
 def video(path,folder,meta,progress=lambda *args: None):
     probe=json.loads(command(['ffprobe','-v','error','-show_streams','-show_format','-of','json',str(path)]))
@@ -113,12 +136,4 @@ def video(path,folder,meta,progress=lambda *args: None):
     progress('frame', 'done')
     result=still(frame,folder,{'ColorSpace':1,'FileType':'PNG'},progress)
     frame.unlink()
-    # Browser-compatible SDR H.264, bounded execution; preserves audio where present.
-    playback_vf=('zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=mobius:desat=2,zscale=t=bt709:m=bt709:r=limited,' if hdr else ('colorspace=iall='+s['color_primaries']+':all=bt709,' if assumed else 'colorspace=all=bt709,'))+'scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,format=yuv420p'
-    progress('playback', 'running')
-    command(['ffmpeg','-v','error','-y','-i',str(path),'-map','0:v:0','-map','0:a:0?','-vf',playback_vf,'-c:v','libx264','-threads','2','-preset','fast','-crf','23','-c:a','aac','-b:a','128k','-fs','1073741824','-movflags','+faststart','-color_primaries','bt709','-color_trc','bt709','-colorspace','bt709',str(folder/'playback.mp4')],900)
-    output_duration=float(json.loads(command(['ffprobe','-v','error','-show_entries','format=duration','-of','json',str(folder/'playback.mp4')]))['format']['duration'])
-    if abs(output_duration-duration)>1:
-        raise MediaUnsupported('playback_exceeds_output_limit')
-    progress('playback', 'done')
     return result | {'assumed_color':assumed,'duration':duration,'hdr_source':hdr,'frame_time':duration/2,'codec':s.get('codec_name'),'color':'hlg_pq_mobius_sdr' if hdr else 'bt709_to_srgb'}

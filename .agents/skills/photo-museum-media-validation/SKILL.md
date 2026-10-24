@@ -20,3 +20,6 @@ description: 复验 photo-museum 正式媒体缓存、Gallery、单图进度与�
 最新范围：仅照片根目录与一级主题直属文件；二级目录不能PROPFIND/GET。独立视频无同名成片时只做索引、零GET，新增同名成片后才重新入候选队列。tests/p1/test_scope.py 覆盖旧数据迁移、范围404和这些零下载断言。逐目录倒序等待分析完成的测试在 test_processing.py。历史239目录不是当前范围，应读取当前状态（本次为227主题＋根目录）。
 
 容器内运行隔离pytest时需设置 `MUSEUM_HOSTS=testserver`，生产镜像默认只接受8792的loopback Host，不能把测试Host被拒绝误判成登录故障。测试依赖仅装入一次性容器，基础镜像不带pytest。等待fixture输出“ready”或HTTP可用后再开始浏览器脚本，避免把准备期间的连接拒绝当作页面失败。
+
+
+缓存迁移与 HDR HEIC 复验先读 `docs/research/preview-cache-hdr-policy.md`：停 supervisor 后等待租约过期，先 dry-run `tools/apply_preview_policy.py`，再以 `--apply --receipt data/...json` 执行用户已授权的缓存清理和定向重试，随后恢复 supervisor。收据只放忽略目录。验证缓存账本仅 thumb/display、兼容原图响应后临时目录为空、占位文件零 GET 且不参与分析/精选。用真实主图 NCLX 区分 PQ 与辅助图误标；合成 HLG 灰阶测试不能当真实 HLG HEIC 或 HDR 屏幕验收。入队数量不能当完成数量，交付前重新按收据统计状态。

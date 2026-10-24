@@ -81,7 +81,11 @@ class AnalysisWorker:
      c.execute('INSERT INTO faces VALUES(?,?,?,?,?,?,?,0)',(fid,r['id'],r['revision'],best,json.dumps(face['box']),vector.tobytes(),self.provider.version))
    else:result.pop('faces',None)
    media=c.execute('SELECT data_json FROM media_info WHERE asset_id=? AND revision=?',(r['id'],r['revision'])).fetchone()
-   result['input_media_version']=json.loads(media['data_json']).get('version') if media else None
+   info=json.loads(media['data_json']) if media else {}
+   result['input_media_version']=info.get('version')
+   if info.get('assumed_color') and info.get('score_penalty') and isinstance(result.get('score'),(int,float)):
+    result.update(raw_score=result['score'],score_penalty=info['score_penalty'],score_penalty_reason='assumed_srgb')
+    result['score']=max(0,result['raw_score']-result['score_penalty'])
    c.execute('INSERT OR REPLACE INTO analysis VALUES(?,?,?,?,?,?)',(r['id'],r['revision'],self.provider.id,self.provider.version,json.dumps(result),time.time()))
    if place:
     place.update(input_record=gps['record_id'],input_layer=gps['layer'],input_precision=gps['precision'])

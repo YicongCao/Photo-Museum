@@ -60,6 +60,7 @@ def test_existing_nested_catalog_is_excluded_without_marking_nas_missing(system)
         c.execute('INSERT INTO media_jobs(asset_id,revision) VALUES(?,?)',(row['id'],row['revision']))
         c.execute('INSERT INTO scan_dirs(job_id,path) VALUES(?,?)',(jid,row['parent']))
         c.execute('ALTER TABLE entries DROP COLUMN scope_excluded')
+        c.execute('DROP INDEX cache_asset_revision_profile')
         c.execute('PRAGMA user_version=5')
     Database(db.directory)
     with db.connect() as c:

@@ -202,7 +202,7 @@ def register(app,database,owner):
         result=[]
         for g in groups.values():
             # Pins first; stratified selection across sorted activity avoids one burst dominating.
-            candidates=[r for r in g.pop('rows') if not r['excluded']]
+            candidates=[r for r in g.pop('rows') if not r['excluded'] and not json.loads(r['data_json']).get('placeholder')]
             pins=[r for r in candidates if r['pinned']][:10]
             rest=[r for r in candidates if not r['pinned']]
             slots=min(10-len(pins),len(rest))
@@ -272,7 +272,7 @@ def live_pair(database,row):
     same=[r for r in siblings if r['kind']=='video_candidate' and PurePosixPath(r['path']).stem.casefold()==PurePosixPath(row['path']).stem.casefold()]
     if len(exact)==1:
         video=exact[0]
-        return {'id':video['id'],'match':'content_identifier','confirmed':True,'playback':media_url(video,'playback') if Cache(database).lookup(video['id'],video['revision'],'playback') else None}
+        return {'id':video['id'],'match':'content_identifier','confirmed':True,'playback':f"/api/assets/{video['id']}/original?revision={video['revision']}" if video['size'] is not None and video['size']<=256*1024**2 else None}
     if len(same)==1:
         return {'id':same[0]['id'],'match':'same_name_candidate','confirmed':False,'playback':None}
     return None

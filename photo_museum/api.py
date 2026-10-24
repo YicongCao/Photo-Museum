@@ -232,13 +232,14 @@ def create_app(directory=None, dav_factory=WebDAV):
             media = c.execute('SELECT data_json FROM media_info WHERE asset_id=? AND revision=?',(aid,row['revision'])).fetchone()
         media_info = json.loads(media[0]) if media else {}
         return {'id': aid, 'revision': row['revision'], 'version_quality': row['version_quality'],
-                'original': f"/api/assets/{aid}/original?revision={row['revision']}",
-                'original_compatible': f"/api/assets/{aid}/original-compatible?revision={row['revision']}" if media_info.get('hdr_source') or Cache(db).lookup(aid,row['revision'],'compatible') or Path(row['path']).suffix.lower() in ('.heic','.heif','.hif') else None,
+                'placeholder': media_info.get('placeholder'),
+                'original': None if media_info.get('placeholder') else f"/api/assets/{aid}/original?revision={row['revision']}",
+                'original_compatible': None if media_info.get('placeholder') else f"/api/assets/{aid}/original-compatible?revision={row['revision']}" if media_info.get('hdr_source') or Cache(db).lookup(aid,row['revision'],'compatible') or Path(row['path']).suffix.lower() in ('.heic','.heif','.hif','.avif') else None,
                 'live': live_pair(db,row),
                 'preview': f"/api/assets/{aid}/media/display?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'display') else None,
                 'thumbnail': f"/api/assets/{aid}/media/thumb?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'thumb') else None,
                 'compatible': f"/api/assets/{aid}/media/compatible?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'compatible') else None,
-                'playback': f"/api/assets/{aid}/media/playback?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'playback') else None,
+                'playback': f"/api/assets/{aid}/original?revision={row['revision']}" if row['kind']=='video_candidate' and not media_info.get('placeholder') else None,
                 'derivatives_status': 'ready' if Cache(db).lookup(aid,row['revision'],'display') else 'pending',
                 'effective_metadata': db.effective(aid)}
 
@@ -259,12 +260,19 @@ def create_app(directory=None, dav_factory=WebDAV):
             c.execute("UPDATE metadata SET info_json=? WHERE asset_id=? AND record_id=?",(json.dumps(info),aid,record_id))
         return {'ok':True}
 
+    def reject_placeholder(row):
+        with db.connect() as c:
+            info=c.execute('SELECT data_json FROM media_info WHERE asset_id=? AND revision=?',(row['id'],row['revision'])).fetchone()
+        if info and json.loads(info[0]).get('placeholder'):
+            raise HTTPException(413,'超大文件仅索引')
+
     @app.get('/api/assets/{aid}/original-compatible', dependencies=[Depends(owner)])
     def original_compatible(aid: str, revision: str):
         from .view_original import converted_original
         row = asset(aid)
         if row['revision'] != revision:
             raise HTTPException(409, '源版本已变更')
+        reject_placeholder(row)
         return converted_original(db, row, dav_for(row['source_id']))
 
     @app.get('/api/assets/{aid}/original', dependencies=[Depends(owner)])
@@ -274,6 +282,7 @@ def create_app(directory=None, dav_factory=WebDAV):
             raise HTTPException(409, '源版本已变更，请刷新索引')
         if row['size'] is None or row['size'] > 256 * 1024 * 1024:
             raise HTTPException(413, 'P1 单次原文件读取上限 256 MiB')
+        reject_placeholder(row)
         range_value = request.headers.get('range')
         if range_value and not re.fullmatch(r'bytes=(\d+-\d*|-\d+)', range_value):
             raise HTTPException(416, '仅支持一个字节范围')

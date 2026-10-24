@@ -31,7 +31,7 @@ def converted_original(db, row, client):
         local = download(client, current[0], folder/'spool', max_bytes=256*1024**2, budget=300*1024**2)['path']
         outputs = folder/'outputs'; outputs.mkdir()
         # Full-resolution SDR conversion; all outputs belong to this one transient request.
-        still(local, outputs, metadata(local))
+        still(local, outputs, metadata(local), compatible=True)
         result = outputs/'compatible.jpg'
         if not result.exists():
             raise HTTPException(415, '此文件无需兼容转换，请使用原图入口')

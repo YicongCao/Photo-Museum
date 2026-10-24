@@ -206,21 +206,21 @@ export function CurrentInspection({ file, media, onClose }) {
             "display",
             "4K 小图",
             "display",
-            derivative("display") &&
+            info.placeholder ? "静态占位 · SVG" : derivative("display") &&
               `${size(derivative("display").size)} · WebP · sRGB · SDR`,
           )}
           {row(
             "thumb",
             "缩略图",
             "thumbnail",
-            derivative("thumb") && `${size(derivative("thumb").size)} · WebP`,
+            info.placeholder ? "静态占位 · SVG" : derivative("thumb") && `${size(derivative("thumb").size)} · WebP`,
           )}
           {row(
             "publish",
             "索引",
             "server",
             steps.publish === "done" &&
-              (info.metadata_only ? "视频仅索引" : "已写入"),
+              (info.placeholder ? "超大文件仅索引" : info.metadata_only ? "视频仅索引" : "已写入"),
           )}
           {row(
             "address",
@@ -251,7 +251,7 @@ export function CurrentInspection({ file, media, onClose }) {
             "score",
             "技术 / 构图分",
             "score",
-            data?.score != null ? `${data.score} / 100` : null,
+            data?.score != null ? `${data.score} / 100${info.assumed_color && info.score_penalty ? " · 色域假定 −15" : ""}` : null,
           )}
           {steps.compatible &&
             row(

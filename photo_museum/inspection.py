@@ -62,7 +62,7 @@ def register(app, database, owner):
             pass  # Worker has advanced and removed its temporary spool.
         display = cache.lookup(aid, rev, 'display')
         if display:
-            return display, 'image/webp', '4K SDR 兼容预览', None, None
+            return display, 'image/svg+xml' if display.suffix=='.svg' else 'image/webp', '超大文件占位' if display.suffix=='.svg' else '4K SDR 兼容预览', None, None
         return None
 
     @app.get('/api/assets/{aid}/inspection', dependencies=[Depends(owner)])

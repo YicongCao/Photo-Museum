@@ -9,6 +9,7 @@ import threading
 import time
 import uuid
 from pathlib import Path, PurePosixPath
+from PIL import Image
 from .processing import Progress, complete_file
 from .work_queue import directory_focus
 from .auth import Security
@@ -38,7 +39,7 @@ class MediaWorker:
                 for video in videos:
                     paired=(video['source_id'],video['parent'],PurePosixPath(video['path']).stem.casefold()) in photos
                     if paired:
-                        c.execute("UPDATE media_jobs SET status='pending',available=0 WHERE asset_id=? AND status='indexed'",(video['id'],))
+                        c.execute("UPDATE media_jobs SET status='pending',available=0 WHERE asset_id=? AND status='indexed' AND NOT EXISTS(SELECT 1 FROM media_info m WHERE m.asset_id=media_jobs.asset_id AND m.revision=media_jobs.revision AND json_extract(m.data_json,'$.placeholder') IS NOT NULL)",(video['id'],))
                     else:
                         c.execute("UPDATE media_jobs SET status='pending',available=0,attempts=0,error=NULL WHERE asset_id=? AND status IN ('ready','failed','unsupported')",(video['id'],))
                 self.policy_stamp=stamp
@@ -86,7 +87,7 @@ class MediaWorker:
             photos=c.execute("SELECT path FROM entries WHERE source_id=? AND parent=? AND kind='image_candidate' AND missing=0 AND scope_excluded=0",(t['source_id'],t['parent'])).fetchall()
         return not any(PurePosixPath(r['path']).stem.casefold()==stem for r in photos)
 
-    def index_video(self,t,progress):
+    def index_video(self,t,progress,placeholder=None):
         # WebDAV already supplied name, size, mtime, revision and activity. No GET/codec/model.
         self.stage(t,'publish')
         for step in ('download','exif','frame','display','thumb','playback'):
@@ -99,7 +100,8 @@ class MediaWorker:
             previous=c.execute('SELECT data_json FROM media_info WHERE asset_id=? AND revision=?',(t['id'],t['revision'])).fetchone()
             info=json.loads(previous['data_json']) if previous else {}
             has_cache=bool(c.execute("SELECT 1 FROM cache_files WHERE asset_id=? AND revision=? AND profile='thumb'",(t['id'],t['revision'])).fetchone())
-            info.update(metadata_only=True,cached_preview=has_cache,version=VERSION,policy='standalone-video-index-only-v1')
+            info.update(metadata_only=True,cached_preview=has_cache,version=VERSION,policy='oversized-index-only-v1' if placeholder else 'standalone-video-index-only-v1')
+            if placeholder:info.update(placeholder=placeholder,score=None)
             c.execute('INSERT OR REPLACE INTO media_info VALUES(?,?,?,?)',(t['id'],t['revision'],json.dumps(info),time.time()))
         progress.report('publish','done')
         self.finish(t,'indexed')
@@ -108,6 +110,30 @@ class MediaWorker:
         for step in ('address','subject','faces','score'):analysis.report(step,'skipped')
         analysis.finish('ready')
         complete_file(self.db,t['id'],t['revision'])
+
+    def oversized(self,t):
+        kind='video' if t['kind']=='video_candidate' else 'image'
+        limit=2*1024**3 if kind=='video' else 256*1024**2
+        if t['size'] is not None and t['size']>limit:return kind
+        if kind=='image':
+            values=self.db.effective(t['id'])
+            w=values.get('width',{}).get('value',0);h=values.get('height',{}).get('value',0)
+            if isinstance(w,(int,float)) and isinstance(h,(int,float)) and w*h>Image.MAX_IMAGE_PIXELS:return kind
+        return None
+
+    def index_placeholder(self,t,progress,kind,locked=False):
+        def publish():
+            self.stage(t,'publish')
+            target=self.cache.root/(t['id']+'-'+t['revision']);target.mkdir(exist_ok=True)
+            source=Path(__file__).parent/'static'/('oversized-'+kind+'.svg')
+            with self.db.connect() as c:
+                for profile in ('thumb','display'):
+                    final=target/(profile+'.svg');shutil.copyfile(source,final)
+                    self.cache.register(c,t['id'],t['revision'],profile,final)
+            self.index_video(t,progress,placeholder=kind)
+        if locked:publish()
+        else:
+            with self.cache.writer(reserve=4096):publish()
 
     def tick(self):
         t=self.claim()
@@ -126,6 +152,9 @@ class MediaWorker:
         dav=None
         scratch=self.cache.root/'work'
         try:
+            if kind:=self.oversized(t):
+                self.index_placeholder(t,progress,kind)
+                return True
             if self.standalone_video(t):
                 self.index_video(t,progress)
                 return True
@@ -158,7 +187,13 @@ class MediaWorker:
                     self.db.set_metadata(t['id'],field,value,'observed',t['revision'],VERSION)
                 progress.report('exif','done')
                 self.stage(t,'cache')
-                result=(video if t['kind']=='video_candidate' else still)(local,outputs,meta,progress.report)
+                try:
+                    if kind:=self.oversized(t):raise Image.DecompressionBombError()
+                    result=(video if t['kind']=='video_candidate' else still)(local,outputs,meta,progress.report)
+                except Image.DecompressionBombError:
+                    self.index_placeholder(t,progress,'image',locked=True)
+                    shutil.rmtree(scratch,ignore_errors=True)
+                    return True
                 result.update(file_type=meta.get('FileType'),version=VERSION)
                 self.stage(t,'publish')
                 progress.report('publish')
@@ -171,6 +206,7 @@ class MediaWorker:
                     if not current or current['token']!=t['token'] or current['lease_until']<time.time() or entry['revision']!=t['revision'] or entry['missing'] or entry['scope_excluded']:
                         raise TransferCancelled()
                     for output in outputs.iterdir():
+                        if output.stem not in ('thumb','display'):continue
                         final=target/output.name
                         output.replace(final)
                         self.cache.register(c,t['id'],t['revision'],output.stem,final)

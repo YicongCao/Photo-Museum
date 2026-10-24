@@ -237,6 +237,10 @@ function Viewer({ photo, api, onClose, onChanged }) {
         const m = await api("/assets/" + photo.id + "/manifest");
         if (controller.signal.aborted) return;
         setManifest(m);
+        if (m.placeholder) {
+          setPhase(m.placeholder === "video" ? "此视频超大" : "此图片超大");
+          return;
+        }
         if (photo.kind === "video_candidate") {
           setPhase("视频封面");
           return;
@@ -370,7 +374,7 @@ function Viewer({ photo, api, onClose, onChanged }) {
           {analysis?.visual?.data?.score != null && (
             <div>
               <small>技术评分</small>
-              <p>{analysis.visual.data.score} / 100</p>
+              <p>{analysis.visual.data.score} / 100{analysis.visual.data.score_penalty_reason === "assumed_srgb" ? " · 色域假定 −15" : ""}</p>
             </div>
           )}
           {analysis?.visual?.data?.tags && (
@@ -415,6 +419,10 @@ function Viewer({ photo, api, onClose, onChanged }) {
                       .then(() => api("/assets/" + photo.id + "/manifest"))
                       .then((m) => {
                         setManifest(m);
+        if (m.placeholder) {
+          setPhase(m.placeholder === "video" ? "此视频超大" : "此图片超大");
+          return;
+        }
                         setSuggestions((xs) =>
                           xs.filter((x) => x.record_id !== s.record_id),
                         );
