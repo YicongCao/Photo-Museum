@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-24T15:35:30.737Z",
+  "date": "2026-10-24T15:58:30.013Z",
   "browser": "155.0.8059.85",
   "checks": [
     {
@@ -39,7 +39,7 @@
       "passed": true
     },
     {
-      "name": "Directory visualization agrees with actual task data",
+      "name": "Directory visualization counts fully processed directories, not scan completion",
       "passed": true
     },
     {

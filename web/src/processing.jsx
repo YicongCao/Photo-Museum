@@ -55,7 +55,12 @@ function targetPercent(file) {
     amount += Math.min(1, file.bytes_done / file.bytes_total);
   return Math.min(99, Math.floor((amount / items.length) * 100));
 }
-export function FileProcessing({ media, workerOnline, onCompleted }) {
+export function FileProcessing({
+  media,
+  workerOnline,
+  onCompleted,
+  onCurrent,
+}) {
   const machine = useRef({
       current: null,
       queue: [],
@@ -123,9 +128,11 @@ export function FileProcessing({ media, workerOnline, onCompleted }) {
       const cur = m.current;
       if (cur) {
         if (cur.value < cur.target) {
-          cur.value = (cur.metadata_only || matchMedia("(prefers-reduced-motion: reduce)").matches)
-            ? cur.target
-            : cur.value + 1;
+          cur.value =
+            cur.metadata_only ||
+            matchMedia("(prefers-reduced-motion: reduce)").matches
+              ? cur.target
+              : cur.value + 1;
           setFrame({ ...cur });
         }
         if ((cur.completed && cur.value === 100) || cur.failed) {
@@ -145,6 +152,9 @@ export function FileProcessing({ media, workerOnline, onCompleted }) {
       clearTimeout(timer);
     };
   }, []);
+  useEffect(() => {
+    onCurrent?.(frame);
+  }, [frame?.asset_id, frame?.revision, media]);
   const current = frame,
     items = itemSteps(current),
     steps = current?.steps || {};

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Icon, statusIcon } from "./icons";
 import { FileProcessing, RecentStrip } from "./processing";
+import { CurrentInspection } from "./inspection";
 import { Intelligence } from "./intelligence";
 import "./manager.css";
 const labels = {
@@ -8,7 +9,7 @@ const labels = {
   running: "进行中",
   paused: "已暂停",
   blocked: "需要处理",
-  completed: "目录已完成",
+  completed: "枚举完成",
   cancelled: "已取消",
   ready: "已就绪",
   pending: "等待处理",
@@ -20,6 +21,7 @@ const stageNames = {
   metadata: "读取 EXIF",
   cache: "生成预览",
   publish: "发布藏品",
+  analysis: "本地分析",
 };
 const errorNames = {
   media_DecompressionBombError: "图像尺寸超过安全上限",
@@ -44,6 +46,17 @@ export function Manager({ api, state, refresh, onLogout }) {
     [offset, setOffset] = useState(0),
     [busy, setBusy] = useState(false),
     [sourceForm, setSourceForm] = useState(false);
+  const [inspecting, setInspecting] = useState(null),
+    [inspectOpen, setInspectOpen] = useState(false);
+  const [wide, setWide] = useState(
+    () => matchMedia("(min-width: 901px)").matches,
+  );
+  useEffect(() => {
+    const q = matchMedia("(min-width: 901px)");
+    const change = () => setWide(q.matches);
+    q.addEventListener("change", change);
+    return () => q.removeEventListener("change", change);
+  }, []);
   const cursor = useRef(null),
     polling = useRef(false);
   const [directories, setDirectories] = useState([]),
@@ -101,14 +114,12 @@ export function Manager({ api, state, refresh, onLogout }) {
   };
   const control = (action) =>
     act(() => api("/media/control", "POST", { action }));
-  const job =
-    state.jobs.find((j) => !["completed", "cancelled"].includes(j.status)) ||
-    state.jobs[0];
-  const total = job?.total_dirs || 0,
-    done = job?.done_dirs || 0;
+  const total = directories.length,
+    done = directories.filter(
+      (d) => d.state === "done" && d.done === d.total && !d.errors && !d.error,
+    ).length;
   const counts = media?.counts || {},
-    mediaTotal = Object.values(counts).reduce((a, b) => a + b, 0),
-    ready = counts.ready || 0;
+    mediaTotal = Object.values(counts).reduce((a, b) => a + b, 0);
   const jobs = state.jobs.filter(
     (j) =>
       filter === "all" ||
@@ -119,18 +130,19 @@ export function Manager({ api, state, refresh, onLogout }) {
   const loading = media === null;
   const running = Boolean(
     media?.active?.length ||
-      counts.running ||
-      counts.pending ||
       state.jobs.some((j) => ["running", "queued"].includes(j.status)),
   );
-  const stage = media?.active[0]?.stage;
   return (
     <div className="keeper-shell">
       <header className="keeper-header">
         <a href="#gallery">PHOTO MUSEUM</a>
         <nav>
-          <button className="mobile-source" onClick={() => setSettings(true)}>
-            照片源
+          <button onClick={() => setSettings(true)}>照片源</button>
+          <button
+            className="mobile-source"
+            onClick={() => setInspectOpen(true)}
+          >
+            当前照片
           </button>
           <span>
             <Icon name="server" /> 馆务室
@@ -147,15 +159,26 @@ export function Manager({ api, state, refresh, onLogout }) {
             <div>
               <Icon name="photo" />
               <span>
-                <small>已索引成片与视频</small>
-                <strong>{fmt(state.asset_count)}</strong>
+                <small>完整处理文件</small>
+                <strong>{loading ? "—" : fmt(media.fully_done)}</strong>
               </span>
             </div>
             <div>
               <Icon name="server" />
               <span>
-                <small>已连接来源</small>
-                <strong>{state.sources.length}</strong>
+                <small>待处理文件</small>
+                <strong>
+                  {loading
+                    ? "—"
+                    : fmt(
+                        Math.max(
+                          0,
+                          mediaTotal -
+                            media.fully_done -
+                            (media.error_count || 0),
+                        ),
+                      )}
+                </strong>
               </span>
             </div>
             <div>
@@ -171,7 +194,10 @@ export function Manager({ api, state, refresh, onLogout }) {
                       ? "媒体已暂停"
                       : running
                         ? "任务进行中"
-                        : "空闲"}
+                        : mediaTotal >
+                            (media?.fully_done || 0) + (media?.error_count || 0)
+                          ? "等待处理"
+                          : "空闲"}
                 </strong>
               </span>
             </div>
@@ -185,11 +211,14 @@ export function Manager({ api, state, refresh, onLogout }) {
             </div>
           )}
           <section className="keeper-progress" aria-label="刮削进度">
-            <div className="keeper-ring">
+            <div
+              className="keeper-ring"
+              title="目录枚举完成，且直属文件全部完成处理、没有错误；无直属文件的目录也计入完成。"
+            >
               <svg
                 viewBox="0 0 120 120"
                 role="img"
-                aria-label={`目录 ${done} / ${total}`}
+                aria-label={`已完成处理目录 ${done} / ${total}`}
               >
                 <circle cx="60" cy="60" r="52" className="ring-track" />
                 <circle
@@ -206,7 +235,7 @@ export function Manager({ api, state, refresh, onLogout }) {
                 <strong>
                   {done} <i>/ {total}</i>
                 </strong>
-                <small>已发现目录</small>
+                <small>已完成 / 已发现目录</small>
               </div>
             </div>
             <div className="keeper-bars">
@@ -214,6 +243,7 @@ export function Manager({ api, state, refresh, onLogout }) {
                 media={media}
                 workerOnline={state.worker_online}
                 onCompleted={completed}
+                onCurrent={setInspecting}
               />
             </div>
           </section>
@@ -248,7 +278,7 @@ export function Manager({ api, state, refresh, onLogout }) {
                   className={tab === "errors" ? "selected" : ""}
                   onClick={() => setTab("errors")}
                 >
-                  需处理 ({(counts.failed || 0) + (counts.unsupported || 0)})
+                  需处理 ({media?.error_count || 0})
                 </button>
                 <button
                   className={tab === "people" ? "selected" : ""}
@@ -357,7 +387,7 @@ export function Manager({ api, state, refresh, onLogout }) {
                           {d.status === "completed"
                             ? d.total
                               ? "已完成"
-                              : "已发现"
+                              : "无直属文件"
                             : d.status === "pending"
                               ? "待刮削"
                               : labels[d.status]}
@@ -367,7 +397,16 @@ export function Manager({ api, state, refresh, onLogout }) {
                             {d.done} / {d.total}
                             {d.cached > d.done ? " · 缓存 " + d.cached : ""}
                           </small>
-                          <progress value={d.done} max={d.total || 1} />
+                          <progress
+                            value={
+                              d.total
+                                ? d.done
+                                : d.status === "completed"
+                                  ? 1
+                                  : 0
+                            }
+                            max={d.total || 1}
+                          />
                         </div>
                       </article>
                     ))}
@@ -406,7 +445,7 @@ export function Manager({ api, state, refresh, onLogout }) {
                 <div className="task-table-header">
                   <span>相册 / 目录</span>
                   <span>状态</span>
-                  <span>进度</span>
+                  <span>目录枚举</span>
                   <span>操作</span>
                 </div>
                 <div
@@ -552,7 +591,7 @@ export function Manager({ api, state, refresh, onLogout }) {
             {tab === "errors" && (
               <>
                 <div className="file-pagination">
-                  <span>显示最近最多 100 项</span>
+                  <span>最多显示 100 项</span>
                   <button onClick={() => control("retry")}>
                     重试未完成文件
                   </button>
@@ -592,125 +631,21 @@ export function Manager({ api, state, refresh, onLogout }) {
             )}
           </section>
         </div>
-        <aside className="keeper-sidebar">
-          <section className="keeper-source">
-            <div className="side-title">
-              <h2>连接的照片源</h2>
-              <button onClick={() => setSettings(true)}>＋ 管理来源</button>
-            </div>
-            <div className="source-diagram">
-              <div>
-                <Icon name="server" />
-                <strong>{state.sources[0]?.name || "等待连接"}</strong>
-                <small>NAS</small>
-              </div>
-              <span>┄┄┄→</span>
-              <div>
-                <Icon name="folder" />
-                <strong>本地索引</strong>
-              </div>
-            </div>
-            <p>
-              <Icon name="lock" /> 只读
-            </p>
-          </section>
-          <section className="keeper-stage">
-            <h2>当前任务阶段</h2>
-            <div className="side-stages">
-              {[
-                [
-                  "folder",
-                  "发现目录",
-                  Boolean(job && job.status !== "completed"),
-                ],
-                ["photo", "媒体处理", running && !media?.paused],
-                [
-                  "subject",
-                  "本地策展",
-                  Boolean(media?.active?.some((a) => a.lane === "analysis")),
-                ],
-              ].map(([icon, title, active]) => (
-                <div key={title} className={active ? "active" : ""}>
-                  <span>
-                    <Icon name={icon} />
-                  </span>
-                  <strong>{title}</strong>
-                </div>
-              ))}
-            </div>
-            <small>
-              {stageNames[stage] || "等待任务"} · EXIF / 4K / 缩略图
-            </small>
-          </section>
-          <section className="keeper-source-info">
-            <h2>来源信息</h2>
-            <dl>
-              <div>
-                <dt>
-                  <Icon name="server" />
-                  来源名称
-                </dt>
-                <dd>{state.sources[0]?.name || "—"}</dd>
-              </div>
-              <div>
-                <dt>
-                  <Icon name="folder" />
-                  设备类型
-                </dt>
-                <dd>NAS / WebDAV</dd>
-              </div>
-              <div>
-                <dt>
-                  <Icon name="photo" />
-                  支持格式
-                </dt>
-                <dd>JPEG / HEIF / 视频</dd>
-              </div>
-              <div>
-                <dt>
-                  <Icon name="pulse" />
-                  缓存占用
-                </dt>
-                <dd>
-                  {loading
-                    ? "—"
-                    : ((media.cache_bytes || 0) / 1024 ** 3).toFixed(2) +
-                      " / " +
-                      media.budget_bytes / 1024 ** 3 +
-                      " GiB"}
-                </dd>
-              </div>
-              <div>
-                <dt>
-                  <Icon name="check" />
-                  媒体就绪
-                </dt>
-                <dd>{fmt(ready)}</dd>
-              </div>
-              <div>
-                <dt>
-                  <Icon name="video" />
-                  视频仅索引
-                </dt>
-                <dd>{fmt(counts.indexed)}</dd>
-              </div>
-              <div>
-                <dt>
-                  <Icon name="clock" />
-                  等待处理
-                </dt>
-                <dd>{fmt(counts.pending)}</dd>
-              </div>
-              <div>
-                <dt>
-                  <Icon name="alert" />
-                  需处理
-                </dt>
-                <dd>{(counts.failed || 0) + (counts.unsupported || 0)}</dd>
-              </div>
-            </dl>
-          </section>
-        </aside>
+        {(wide || inspectOpen) && (
+          <aside
+            className={
+              "keeper-sidebar inspection-sidebar" +
+              (inspectOpen ? " inspection-open" : "")
+            }
+          >
+            <CurrentInspection
+              key={inspecting?.asset_id + ":" + inspecting?.revision}
+              file={inspecting}
+              media={media}
+              onClose={() => setInspectOpen(false)}
+            />
+          </aside>
+        )}
       </div>
       <RecentStrip items={recent || []} />
       {settings && (

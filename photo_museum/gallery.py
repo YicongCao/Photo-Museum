@@ -52,7 +52,9 @@ def register(app,database,owner):
             c.execute('BEGIN')
             current_pipeline=pipeline(c)
             counts={r['status']:r['n'] for r in c.execute("SELECT q.status,count(*) n FROM media_jobs q JOIN entries e ON e.id=q.asset_id AND e.revision=q.revision WHERE e.missing=0 AND e.scope_excluded=0 GROUP BY q.status")}
-            errors=[dict(r) for r in c.execute("SELECT q.asset_id,q.status,q.stage,q.error,e.path FROM media_jobs q JOIN entries e ON e.id=q.asset_id AND e.revision=q.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status IN ('failed','unsupported') LIMIT 100")]
+            errors=[dict(r) for r in c.execute("SELECT q.asset_id,q.status,q.stage,q.error,e.path FROM media_jobs q JOIN entries e ON e.id=q.asset_id AND e.revision=q.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status IN ('failed','unsupported')")]
+            if os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1':
+                errors.extend(dict(r) for r in c.execute("""SELECT e.id asset_id,'failed' status,'analysis' stage,json_extract(a.data_json,'$.error') error,e.path FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND a.provider='visual' AND a.version=(SELECT value FROM settings WHERE key='analysis_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL"""))
             active=[dict(r) for r in c.execute("""SELECT q.asset_id,q.stage,e.path,e.kind,e.revision,e.size,'media' lane FROM media_jobs q JOIN entries e ON e.id=q.asset_id AND e.revision=q.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='running' AND q.lease_until>? ORDER BY q.updated DESC LIMIT 4""",(time.time(),))]
             analyzing=[dict(r) for r in c.execute("""SELECT p.asset_id,p.stage,e.path,e.kind,e.revision,e.size,'analysis' lane FROM processing_progress p JOIN entries e ON e.id=p.asset_id AND e.revision=p.revision WHERE e.missing=0 AND e.scope_excluded=0 AND p.lane='analysis' AND p.status='running' AND p.updated>? ORDER BY p.updated DESC LIMIT 2""",(time.time()-60,))]
             active.extend(r for r in analyzing if not any(a['asset_id']==r['asset_id'] for a in active))
@@ -84,7 +86,7 @@ def register(app,database,owner):
                 if path.is_file():temporary_bytes+=path.stat().st_size
             except FileNotFoundError:
                 pass
-        return {'completion_cursor':cursor,'completion_events':events,'fully_done':fully_done,'counts':counts,'errors':errors,'active':active,'recent':recent,'paused':settings['media_paused']=='true','cache_bytes':bytes_used+temporary_bytes,'temporary_bytes':temporary_bytes,'budget_bytes':int(settings['cache_budget'])}
+        return {'completion_cursor':cursor,'completion_events':events,'fully_done':fully_done,'counts':counts,'error_count':len(errors),'errors':errors[:100],'active':active,'recent':recent,'paused':settings['media_paused']=='true','cache_bytes':bytes_used+temporary_bytes,'temporary_bytes':temporary_bytes,'budget_bytes':int(settings['cache_budget'])}
 
     @app.get('/api/media/directories',dependencies=[Depends(owner)])
     def directories():
@@ -96,7 +98,7 @@ def register(app,database,owner):
             ), totals AS (
               SELECT e.source_id,e.parent,count(*) total,
                 sum(q.status='ready') cached,
-                sum(q.status IN ('failed','unsupported')) errors,
+                sum(q.status IN ('failed','unsupported') OR (?=1 AND q.status='ready' AND EXISTS(SELECT 1 FROM analysis a JOIN media_info m ON m.asset_id=a.asset_id AND m.revision=a.revision WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual' AND a.version=(SELECT value FROM settings WHERE key='analysis_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL))) errors,
                 sum(q.status='running' AND q.lease_until>unixepoch('now')) active,
                 sum(EXISTS(SELECT 1 FROM file_completions f WHERE f.asset_id=e.id AND f.revision=e.revision AND f.pipeline IN (?,?))) done,
                 min(CASE WHEN q.status='running' AND q.lease_until>unixepoch('now') THEN e.path END) current_file
@@ -104,7 +106,7 @@ def register(app,database,owner):
               WHERE e.missing=0 AND e.scope_excluded=0 AND e.is_dir=0 GROUP BY e.source_id,e.parent
             ) SELECT l.source_id,l.path,l.source_root,l.state,l.lease_until,l.job_status,l.error,coalesce(t.total,0) total,
                 coalesce(t.cached,0) cached,coalesce(t.errors,0) errors,coalesce(t.active,0) active,coalesce(t.done,0) done,t.current_file
-              FROM latest l LEFT JOIN totals t ON t.source_id=l.source_id AND t.parent=l.path WHERE l.position=1 AND l.state!='excluded' AND NOT EXISTS(SELECT 1 FROM entries gone WHERE gone.source_id=l.source_id AND gone.path=l.path AND gone.missing=1) ORDER BY l.path DESC""",(pipeline(c),pipeline(c).split('|')[0]+'|metadata-only'))]
+              FROM latest l LEFT JOIN totals t ON t.source_id=l.source_id AND t.parent=l.path WHERE l.position=1 AND l.state!='excluded' AND NOT EXISTS(SELECT 1 FROM entries gone WHERE gone.source_id=l.source_id AND gone.path=l.path AND gone.missing=1) ORDER BY l.path DESC""",(int(os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1'),pipeline(c),pipeline(c).split('|')[0]+'|metadata-only'))]
             analysis_dirs={tuple(r) for r in c.execute("SELECT e.source_id,e.parent FROM processing_progress p JOIN entries e ON e.id=p.asset_id AND e.revision=p.revision WHERE p.status='running' AND p.lane='analysis' AND p.updated>? AND e.missing=0 AND e.scope_excluded=0",(time.time()-60,))}
             focus_row=c.execute("SELECT value FROM settings WHERE key='media_directory'").fetchone()
             focus=json.loads(focus_row['value']) if focus_row else None

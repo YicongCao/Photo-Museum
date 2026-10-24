@@ -11,6 +11,8 @@
 - P3：Mac运行、Debian容器构建/启动、受信测试证书TLS、在线备份和新目录恢复已实跑；基础Docker镜像含媒体，不含PyTorch智能依赖。
 - P4：本地YuNet/SFace人物聚类与人工改组、MobileNetV3主体标签、技术/构图评分、近重复与多样性十图、固定精选、GeoNames离线近似城市。模型和人工数据分层、版本化。
 
+馆务最新数据语义与当前照片检查器已更新，见 [数据复审](research/management-data-review.md)。
+
 ## 证据入口
 
 [本轮验收报告](research/p2-p4-validation.md) · [运行、限制与部署](operations/p2-p4-service.md) · [实施日志](logs/2026-10-24-p2-p4-engineering.md) · [复验skill](../.agents/skills/photo-museum-media-validation/SKILL.md)。公开截图只包含合成图；真实照片、GPS、人脸与真实界面截图只保存在忽略的data目录。

@@ -322,6 +322,8 @@ def create_app(directory=None, dav_factory=WebDAV):
             raise
 
     register_gallery(app, db, owner)
+    from .inspection import register as register_inspection
+    register_inspection(app, db, owner)
     from .intelligence_api import register as register_intelligence
     register_intelligence(app, db, owner)
 

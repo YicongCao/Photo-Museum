@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-24T15:57:07.767Z",
+  "checks": [
+    "Counters represent fully processed files/directories; static source and format panels removed",
+    "Three sequential decoded photos use local cache, zero NAS originals, at most one live Blob URL",
+    "Desktop, 720px and mobile stay one page; mobile inspector opens and releases image on close",
+    "Leaving management aborts an in-flight image request, revokes final URL and removes image element"
+  ],
+  "audit": {
+    "max": 1,
+    "live": 1,
+    "created": 3,
+    "revoked": 2
+  },
+  "errors": [],
+  "scope": "Synthetic fixture. Object URL lifecycle assertions, not a claim that browser GC immediately returns all resident memory."
+}

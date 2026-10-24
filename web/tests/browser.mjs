@@ -73,8 +73,8 @@ try {
     .getByLabel("馆主密码", { exact: true })
     .fill("synthetic-owner-password");
   await page.getByRole("button", { name: "进入馆务室" }).click();
-  await page.getByRole("heading", { name: "连接的照片源", exact: true }).waitFor();
-  await page.getByRole("button",{name:"＋ 管理来源",exact:true}).click();
+  await page.getByRole("heading", { name: "解析数据", exact: true }).waitFor();
+  await page.getByRole("button",{name:"照片源",exact:true}).click();
   const cookies = await context.cookies();
   const session = cookies.find((c) => c.name === "museum_session");
   assert.ok(session.httpOnly && session.sameSite === "Strict");
@@ -102,15 +102,15 @@ try {
   await screenshot("02-paused-desktop");
   await page.getByRole("button", { name: "恢复", exact: true }).click();
   await waitFor((s) => s.data.jobs[0]?.status === "completed");
-  await page.getByText("目录已完成", { exact: true }).waitFor();
+  await page.getByText("枚举完成", { exact: true }).waitFor();
   check("Resume finishes complete directory queue");
   assert.equal((await state()).data.asset_count, 3);
   check("RAW and all secondary directories excluded; only direct topic files indexed");
-  const summary = await state();
-  const displayed = summary.data.jobs[0];
+  const directoryState = await (await context.request.get(base+"/api/media/directories")).json();
+  const displayed = {total_dirs:directoryState.items.length,done_dirs:directoryState.items.filter(d=>d.state==="done"&&d.done===d.total&&!d.errors&&!d.error).length};
   await page
     .getByRole("img", {
-      name: `目录 ${displayed.done_dirs} / ${displayed.total_dirs}`,
+      name: /^已完成处理目录 /,
     })
     .waitFor();
   assert.equal(
@@ -121,7 +121,7 @@ try {
     await page.locator(".keeper-ring i").innerText(),
     `/ ${displayed.total_dirs}`,
   );
-  check("Directory visualization agrees with actual task data");
+  check("Directory visualization counts fully processed directories, not scan completion");
   assert.ok(
     !(await page.locator(".keeper-ring").innerText()).includes("%"),
   );
