@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import "./tokens.css";
 import "./style.css";
+import { Icon, statusIcon } from "./icons";
+import { CollectionOverview, DirectoryBar } from "./progress";
 const labels = {
   queued: "等待开始",
   running: "正在刮削",
@@ -115,6 +118,7 @@ function App() {
               })
             }
           >
+            <Icon name="lock" />
             锁馆
           </button>
         )}
@@ -131,6 +135,7 @@ function App() {
       )}
       {!state ? (
         <section className="entrance">
+          <Icon name="lock" className="entrance-icon" />
           <div className="eyebrow">THE KEEPER'S ROOM</div>
           <h1>
             {initialized === false ? "为记忆，留一把钥匙。" : "欢迎回来。"}
@@ -169,6 +174,7 @@ function App() {
               </h1>
             </div>
             <div className="metric">
+              <Icon name="photo" />
               <strong>{state.asset_count.toLocaleString()}</strong>
               <span>已索引成片与视频</span>
               <small className={state.worker_online ? "online" : "offline"}>
@@ -176,6 +182,7 @@ function App() {
               </small>
             </div>
           </section>
+          <CollectionOverview state={state} />
           <section className="section">
             <div className="section-title">
               <h2>
@@ -245,7 +252,10 @@ function App() {
               <article className="source" key={s.id}>
                 <div className="source-head">
                   <div>
-                    <h3>{s.name}</h3>
+                    <h3>
+                      <Icon name="server" />
+                      {s.name}
+                    </h3>
                     <p>
                       {s.url} · {s.root}
                     </p>
@@ -341,6 +351,7 @@ function App() {
               <article className="job" key={j.id}>
                 <div>
                   <span className={"status " + j.status}>
+                    <Icon name={statusIcon[j.status]} />
                     {labels[j.status]}
                   </span>
                   <h3>{j.root.split("/").pop()}</h3>
@@ -348,6 +359,7 @@ function App() {
                     {j.done_dirs} / {j.total_dirs} 个已发现目录 · 本次{" "}
                     {j.files_seen} 个成片与视频
                   </p>
+                  <DirectoryBar done={j.done_dirs} total={j.total_dirs} />
                   {j.error && (
                     <small className="error-text">
                       {errors[j.error] || j.error}
@@ -367,6 +379,7 @@ function App() {
                         act(() => api("/jobs/" + j.id + "/pause", "POST", {}))
                       }
                     >
+                      <Icon name="pause" />
                       暂停
                     </button>
                   )}
@@ -376,6 +389,7 @@ function App() {
                         act(() => api("/jobs/" + j.id + "/resume", "POST", {}))
                       }
                     >
+                      <Icon name="play" />
                       恢复
                     </button>
                   )}
@@ -386,6 +400,7 @@ function App() {
                         act(() => api("/jobs/" + j.id + "/cancel", "POST", {}))
                       }
                     >
+                      <Icon name="close" />
                       取消
                     </button>
                   )}
@@ -402,7 +417,11 @@ function App() {
             </div>
             {assets.map((a) => (
               <div className="asset" key={a.id}>
-                <span>{a.kind === "video_candidate" ? "▶" : "▧"}</span>
+                <span>
+                  <Icon
+                    name={a.kind === "video_candidate" ? "video" : "photo"}
+                  />
+                </span>
                 <div>
                   <strong>{a.path.split("/").pop()}</strong>
                   <small>

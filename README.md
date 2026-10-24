@@ -4,6 +4,8 @@
 
 **当前阶段：P0.5方向已接受；P1 WebDAV直连、馆主登录、可暂停恢复任务已实现并验证，待验收。** 正式照片缓存与观展接入在P2。进度与验收结果见 [STATUS](docs/STATUS.md)。
 
+最新视觉与交付顺序：[ADR 0003](docs/decisions/0003-black-ochre-gallery-home.md) · [纯黑/黄褐设计语言](docs/design/visual-language.md)。取消整页canvas，时光隧道为P2首版Gallery首页，右侧timeline逐项列出月份－活动。
+
 ## 运行正式本机服务
 
 ```bash
@@ -26,13 +28,13 @@ uv run python -m photo_museum
 ## 先看这里
 
 - [库规模与缓存预算](docs/research/library-census.md)：227活动、19,536图片候选；图片双缓存约8.52GB样本外推／35.16GB保守规划场景。
-- [最新架构决策](docs/decisions/0002-immersive-viewer-and-inference.md)：单canvas六模式、4K→原图冲印、同目录近邻补全。
+- [历史架构决策](docs/decisions/0002-immersive-viewer-and-inference.md)：历史单canvas决策、4K→原图冲印、同目录近邻补全。
 - [观展运行时](docs/architecture/viewer-runtime.md) · [元数据推断](docs/architecture/metadata-inference.md)。
 - [历史色彩概念](docs/design/concepts.html)：保留暖白Swiss气质；网页骨架与CSS演示不再作为正式交互蓝本。
 - [产品约定](docs/PRODUCT.md) · [推进路线](docs/ROADMAP.md) · [基础决策](docs/decisions/0001-foundations.md)。
 - [索引、WebDAV与provider研究](docs/research/architecture-providers.md) · [格式、色彩与媒体实验](docs/research/media-pipeline.md)。
 
-技术方向已确认：Python API＋独立worker，React用于登录/管理，Three.js/WebGL单canvas负责观展；SQLite放本地盘，暂不拆年表；识别在本地运行；先SDR后原生HDR；首版单馆主密码。
+技术方向已确认：Python API＋独立worker，React用于页面与状态，React/DOM与局部渲染负责观展，CSS透视优先实现首版Gallery时光隧道；SQLite放本地盘，暂不拆年表；识别在本地运行；先SDR后原生HDR；首版单馆主密码。
 
 ## 本轮可运行工具
 

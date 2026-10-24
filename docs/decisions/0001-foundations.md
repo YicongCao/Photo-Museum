@@ -1,5 +1,7 @@
 # ADR 0001 — 本地数据底座与可替换分析
 
+> 后续修订：[ADR 0003](0003-black-ochre-gallery-home.md)已取代本文的暖白/单canvas要求及A隧道延期顺序。本文保留历史；渐进媒体、推断和隐私约定仍有效。
+
 日期：2026-10-24。状态：产品方向与技术路线已确认；接口细节为设计提案，尚未成为生产实现。
 
 后续修订：[ADR 0002](0002-immersive-viewer-and-inference.md)将观展改为单canvas Three.js/WebGL，并加入渐进原图与近邻元数据补全。下面的React选择保留，但不再表示使用DOM相册作为观展实现。

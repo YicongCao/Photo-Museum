@@ -5,6 +5,8 @@ description: 运行并复验 photo-museum P0.5 单画布原型、4K到高分辨�
 
 # 全画布原型复验
 
+ADR 0003已取消正式产品的整页单canvas要求；本技能只复验历史P0.5代码。不要用其单canvas断言否定新的DOM/CSS/局部渲染方案。
+
 先读`docs/STATUS.md`、`prototype/README.md`和`docs/research/p05-validation.md`。使用仓库锁定依赖，不把旧DOM概念页当成WebGL证据。
 
 从仓库根执行`npm ci --prefix prototype`及`uv sync --extra media`。没有`data/prototype/manifest.json`时运行`uv run --extra media python tools/prepare_prototype.py`，默认只造合成素材；已有本机P0样本且在任务授权范围内时可加`--include-private`。无需NAS访问、凭据或全库重新扫描。

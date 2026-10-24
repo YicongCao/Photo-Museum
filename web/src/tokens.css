@@ -1,0 +1,11 @@
+:root {
+  color-scheme: dark;
+  --museum-background: #000000;
+  --museum-accent: #b88b4a;
+  --museum-accent-bright: #d8ae72;
+  --museum-text: #e9e4db;
+  --museum-muted: #a7a198;
+  --museum-line: #33291c;
+  --museum-control: #8c6b3f;
+  --museum-error: #e6a28d;
+}

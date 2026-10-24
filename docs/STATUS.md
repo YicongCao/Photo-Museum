@@ -14,9 +14,11 @@
 
 ## 最新计划修订
 
-[ADR 0002](decisions/0002-immersive-viewer-and-inference.md)记录本轮三项要求：缩略图→4K→后台NAS原始成片及冲印过渡；同目录文件名近邻补全并区分原始/推断/人工；A–F全部单canvas Three.js/WebGL全屏观展。
+[ADR 0003](decisions/0003-black-ochre-gallery-home.md)确认：取消整页canvas；所有页面纯黑底与黄褐主题，增加有意义的图标/图表。A时光隧道提升为P2首个可浏览版本的Gallery首页，右侧按年份分组，逐项显示`MM-活动主题`；无月活动显示`年度-主题`。
 
-P0.5已落实为`prototype/`中的单canvas程序，原型入口为http://127.0.0.1:8787。包含本机素材服务、分层加载与纹理预算、故障验证台及自动浏览器检查。[运行说明](../prototype/README.md)与[验收报告](research/p05-validation.md)明确其边界。P1现已建立正式数据与WebDAV接口，P2完成基础推断和正式主题浏览。
+[统一设计语言](design/visual-language.md)与[体验规范](design/experience.md)覆盖登录、Gallery、馆务、墙和后续展厅。[运行时](architecture/viewer-runtime.md)改为React/DOM、CSS透视、原生媒体及局部渲染。P0.5继续保留为历史原型，复用加载/取消/资源经验，不把单canvas作为新功能验收条件。
+
+本轮已同步P1登录与馆务的黑底黄褐主题、图标及真实目录图表，16组浏览器检查通过；Gallery隧道仍是P2首版交付要求，概念图不表示已实现。见[修订与验证日志](logs/2026-10-24-black-ochre-gallery.md)及[新版概念](design/imagegen-2026-10-24-v2/README.md)。
 
 ## 已完成与证据
 
@@ -42,7 +44,7 @@ P0.5已落实为`prototype/`中的单canvas程序，原型入口为http://127.0.
 ## 当前验收与下一阶段
 
 1. 在8790验收登录/锁馆、NAS连接、活动扫描、暂停后刷新与恢复、原文件读取。已保存的源配置和馆主密码继续使用。
-2. P2将正式索引接入单canvas，实施EXIF提取、准确SDR缓存、近邻补全、Live Photo/视频与4K→原图暗房流程。
+2. P2实施EXIF/准确SDR缓存，交付Gallery时光隧道首页及活动时间线，再完成近邻补全、Live Photo/视频与4K→原图暗房流程。
 3. P3继续可信TLS、HDR、跨浏览器/实机、Linux/Docker与备份恢复，当前不标为通过。
 
 P0日志：[发现与方案](logs/2026-10-24-discovery.md) · [全屏计划修订](logs/2026-10-24-viewer-plan-revision.md)。P0.5日志：[全画布原型](logs/2026-10-24-p05-prototype.md)。

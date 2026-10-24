@@ -28,6 +28,8 @@ PYTHONPATH=. uv run python tools/p1_validation_server.py
 node web/tests/browser.mjs
 ```
 
+黑底黄褐主题回归可用 `MUSEUM_SCREENSHOTS=docs/design/previews/black-ochre MUSEUM_EVIDENCE=docs/research/black-ochre-browser-evidence.json node web/tests/browser.mjs`，保留历史P1截图。脚本增加纯黑计算底色、主题色变量、图标和目录图表与实际任务计数一致的检查；分母仍发现时不称全库进度。当前Gallery实现顺序看ADR 0003，不再强制单canvas。
+
 8791 fixture 每次启动创建临时数据库，退出后清理；浏览器脚本每次需一个新启动的 fixture。公开截图只能来自合成服务。真实活动名、文件列表、照片、路径和验证私有材料写 `data/p1-verification/`，公开报告只保留汇总。
 
 真实验证先复用用户已经保存的源配置，选择一个小活动，不为测试修改 NAS。验证 `Depth:1` 目录完成、第二次扫描稳定 ID、已登录原文件读取、未登录拒绝。若测试字节续传，用 `photo_museum.download.download` 的取消回调中断小文件，再接续；只有强 ETag 且返回有效 206 才能记录为续传，200 必须重下，弱/缺 ETag 不能拼接。计算续传结果及独立完整 GET 的 SHA-256 进行比较。

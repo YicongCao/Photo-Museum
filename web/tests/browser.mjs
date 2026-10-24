@@ -3,7 +3,9 @@ import { chromium } from "../../prototype/node_modules/@playwright/test/index.mj
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 const base = "http://127.0.0.1:8791";
-const output = "docs/design/previews/p1";
+const output = process.env.MUSEUM_SCREENSHOTS || "docs/design/previews/p1";
+const evidencePath =
+  process.env.MUSEUM_EVIDENCE || "docs/research/p1-browser-evidence.json";
 await fs.mkdir(output, { recursive: true });
 const browser = await chromium.launch({
   executablePath:
@@ -46,6 +48,19 @@ async function waitFor(predicate) {
 try {
   await page.goto(base);
   await page.getByRole("heading", { name: "欢迎回来。" }).waitFor();
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.body).backgroundColor),
+    "rgb(0, 0, 0)",
+  );
+  assert.equal(
+    await page.evaluate(() =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--museum-accent")
+        .trim(),
+    ),
+    "#b88b4a",
+  );
+  check("Login uses pure black background and ochre design token");
   await screenshot("01-login-desktop");
   assert.equal((await state()).status, 401);
   check("Unauthenticated catalog denied");
@@ -88,6 +103,34 @@ try {
   check("Resume finishes complete directory queue");
   assert.equal((await state()).data.asset_count, 7);
   check("RAW directory and RAW files excluded");
+  const summary = await state();
+  const displayed = summary.data.jobs[0];
+  await page
+    .getByRole("img", {
+      name: `当前展示任务已完成 ${displayed.done_dirs} 个目录，共发现 ${displayed.total_dirs} 个目录`,
+    })
+    .waitFor();
+  assert.equal(
+    await page.locator(".directory-ring strong").innerText(),
+    String(displayed.done_dirs),
+  );
+  assert.equal(
+    await page.locator(".directory-ring span").innerText(),
+    `/ ${displayed.total_dirs}`,
+  );
+  check("Directory visualization agrees with actual task data");
+  assert.ok(
+    !(await page.locator(".collection-overview").innerText()).includes("%"),
+  );
+  check(
+    "Charts do not present discovered-directory ratio as whole-library percentage",
+  );
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.body).backgroundColor),
+    "rgb(0, 0, 0)",
+  );
+  assert.ok((await page.locator("svg.icon").count()) > 10);
+  check("Management uses pure black and consistent SVG status icons");
   await screenshot("03-completed-desktop");
   const asset = await page.evaluate(
     async () => (await (await fetch("/api/assets")).json()).items[0],
@@ -118,9 +161,6 @@ try {
   check("No uncaught browser errors");
 } finally {
   await browser.close();
-  await fs.writeFile(
-    "docs/research/p1-browser-evidence.json",
-    JSON.stringify(evidence, null, 2),
-  );
+  await fs.writeFile(evidencePath, JSON.stringify(evidence, null, 2));
 }
 console.log(JSON.stringify(evidence, null, 2));

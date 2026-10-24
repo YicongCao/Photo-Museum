@@ -7,7 +7,7 @@ description: 验证 photo-museum 的独立 HTML 概念与展览交互，记录�
 
 P0.5全画布原型请转用[WebGL复验技能](../photo-museum-webgl-validation/SKILL.md)。本技能以下仅用于旧HTML色彩概念。
 
-已确认暖白纸感＋Swiss场景排版、暗色单幅细看。先读`docs/design/experience.md`、ADR 0002和`docs/STATUS.md`。A–F正式观展全部采用一个Three.js/WebGL canvas，禁止将旧DOM/CSS研究当作已确认交互架构。
+先读`docs/design/visual-language.md`、`docs/design/experience.md`、ADR 0003和`docs/STATUS.md`。当前确认纯黑底、黄褐主题、Swiss排版；取消整页canvas限制，Gallery首版首页必须是时光隧道，timeline同月活动逐项显示。旧暖白/单canvas概念只解释历史，不作为新功能要求。
 
 历史入口`docs/design/concepts.html`使用虚构主题与内嵌SVG，无外部依赖，仅保留色彩/气质参考。以下流程是旧HTML已验证的复审步骤；不能照抄为新WebGL系统验收记录；新系统已有独立验证入口。需要浏览器复审时仅从`docs/`启动loopback静态服务，不暴露私密`data/`。
 
