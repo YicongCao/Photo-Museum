@@ -2,7 +2,20 @@
 
 一部可以不断重看的“人生照片集”。以活动主题作为展览，将照片、Live Photo 和视频组织成个人博物馆。服务目标是自托管于 Mac、内网 Linux 或 Docker，从 NAS WebDAV 只读取得成片。
 
-**当前阶段：P0完成；P0.5全屏WebGL核心原型已实现，准备验收。** 生产Webserver尚待P1/P2；旧HTML仅作色彩参考。进度与验收结果见 [STATUS](docs/STATUS.md)。
+**当前阶段：P0.5方向已接受；P1 WebDAV直连、馆主登录、可暂停恢复任务已实现并验证，待验收。** 正式照片缓存与观展接入在P2。进度与验收结果见 [STATUS](docs/STATUS.md)。
+
+## 运行正式本机服务
+
+```bash
+uv sync --locked
+npm ci --prefix web
+npm run build --prefix web
+uv run python -m photo_museum
+```
+
+打开 <http://127.0.0.1:8790>，首次由馆主设置密码、配置NAS。API与独立worker一起启动，Ctrl-C停止；重启后任务接续。NAS始终只读，数据与加密凭据留在被忽略的`data/server/`。
+
+[运行与验收步骤](docs/operations/p1-service.md) · [P1验证报告](docs/research/p1-validation.md) · [复验skill](.agents/skills/photo-museum-p1-validation/SKILL.md)
 
 ## 先体验原型
 
@@ -33,7 +46,7 @@ uv run python tools/inventory.py --root '/Volumes/Farmer.local/工程/拍照片'
 uv run python tools/report_inventory.py
 ```
 
-报告生成需要已完成的`data/research/inventory.json`与媒体实验`results.json`。媒体实验使用明确样本manifest，详见 [发现与容量验证skill](.agents/skills/photo-museum-discovery/SKILL.md)。生产增量刮削、Range续传、网站鉴权、视频播放与Docker尚待实施。
+报告生成需要已完成的`data/research/inventory.json`与媒体实验`results.json`。媒体实验使用明确样本manifest，详见 [发现与容量验证skill](.agents/skills/photo-museum-discovery/SKILL.md)。P1现已实现WebDAV目录增量、Range续传组件和网站鉴权；正式缓存、视频播放与Docker仍待后续阶段。
 
 概念可直接打开`docs/design/concepts.html`；若需本地预览：
 

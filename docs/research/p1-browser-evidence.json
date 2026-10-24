@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-24T12:02:41.006Z",
+  "browser": "155.0.8059.85",
+  "checks": [
+    {
+      "name": "Unauthenticated catalog denied",
+      "passed": true
+    },
+    {
+      "name": "Wrong password remains locked",
+      "passed": true
+    },
+    {
+      "name": "Owner session HttpOnly and SameSite Strict",
+      "passed": true
+    },
+    {
+      "name": "JavaScript cannot read owner session",
+      "passed": true
+    },
+    {
+      "name": "WebDAV connection and Chinese activity selection",
+      "passed": true
+    },
+    {
+      "name": "Pause persists across browser reload without progress loss",
+      "passed": true
+    },
+    {
+      "name": "Resume finishes complete directory queue",
+      "passed": true
+    },
+    {
+      "name": "RAW directory and RAW files excluded",
+      "passed": true
+    },
+    {
+      "name": "Authenticated original Range streams bytes",
+      "passed": true
+    },
+    {
+      "name": "390px mobile management has no horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "Logout revokes session and returns to login",
+      "passed": true
+    },
+    {
+      "name": "No uncaught browser errors",
+      "passed": true
+    }
+  ],
+  "screenshots": [
+    "01-login-desktop.png",
+    "02-paused-desktop.png",
+    "03-completed-desktop.png",
+    "04-completed-mobile.png",
+    "05-login-mobile.png"
+  ],
+  "uncaughtErrors": []
+}

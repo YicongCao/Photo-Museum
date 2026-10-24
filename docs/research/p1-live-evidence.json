@@ -1,0 +1,20 @@
+{
+  "connected": true,
+  "selected_activity_files": 10,
+  "source_version_quality": "strong_etag",
+  "download_size": 1992463,
+  "partial_bytes": 131072,
+  "resumed_bytes": 131072,
+  "sha256_verified": true,
+  "dav_depth0_matches_catalog": true,
+  "source_writes": 0,
+  "total_indexed_files": 54,
+  "repeat_scan_stable_assets": 10,
+  "schema_version": 2,
+  "anonymous_original_status": 401,
+  "authenticated_browser_jpeg_dimensions": [
+    6240,
+    4160
+  ],
+  "independent_full_get_hash_matches": true
+}

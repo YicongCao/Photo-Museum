@@ -1,12 +1,22 @@
 # 当前进度
 
-更新：2026-10-24（Asia/Shanghai）。阶段：**P0完成；P0.5核心原型已实现并通过本机验证，待用户体验验收；P1尚未开始**。已有本机单画布B/F原型及4K→高分辨率显影；生产WebDAV、馆主鉴权、近邻推断与正式Webserver尚未实现。
+更新：2026-10-24（Asia/Shanghai）。阶段：**P0完成；P0.5按用户接受的方向继续；P1请求功能已实现、验证完成，待用户验收**。正式本机服务 <http://127.0.0.1:8790> 已接 NAS WebDAV、馆主密码与持久刮削队列；原型 8787 保留。EXIF/近邻推断执行、4K缓存与正式观展接入留在P2。
+
+## P1最新交付
+
+- Python API＋独立worker＋React馆务室；本地SQLite迁移、租约、退避、暂停/恢复/取消、只读WebDAV、鉴权manifest/原文件Range。
+- 原始/推断/人工/effective、供体版本与原始记录ID、历史及提取状态已有底座；真实EXIF和推断算法尚未运行。
+- Python 39项（含P1新增21项）、P0.5 TypeScript 13项、P1浏览器12组通过；真实NAS两活动54个候选已索引，小活动10项重复扫描稳定。
+- 实际文件在128KiB处取消后通过强ETag续传；与独立完整GET的SHA-256相同。真实浏览器原图显示与匿名401通过。
+- 本次HTTP5005经用户授权；HTTPS证书仍未修复。P1不是HDR/全库媒体缓存/Linux-Docker验收。
+
+[验收报告](research/p1-validation.md) · [运行和用户验收](operations/p1-service.md) · [P1日志](logs/2026-10-24-p1-service.md) · [P1验证skill](../.agents/skills/photo-museum-p1-validation/SKILL.md)
 
 ## 最新计划修订
 
 [ADR 0002](decisions/0002-immersive-viewer-and-inference.md)记录本轮三项要求：缩略图→4K→后台NAS原始成片及冲印过渡；同目录文件名近邻补全并区分原始/推断/人工；A–F全部单canvas Three.js/WebGL全屏观展。
 
-P0.5已落实为`prototype/`中的单canvas程序，原型入口为http://127.0.0.1:8787。包含本机素材服务、分层加载与纹理预算、故障验证台及自动浏览器检查。[运行说明](../prototype/README.md)与[验收报告](research/p05-validation.md)明确其边界。P1仍将建立生产数据与WebDAV接口，P2完成基础推断和正式主题浏览。
+P0.5已落实为`prototype/`中的单canvas程序，原型入口为http://127.0.0.1:8787。包含本机素材服务、分层加载与纹理预算、故障验证台及自动浏览器检查。[运行说明](../prototype/README.md)与[验收报告](research/p05-validation.md)明确其边界。P1现已建立正式数据与WebDAV接口，P2完成基础推断和正式主题浏览。
 
 ## 已完成与证据
 
@@ -25,20 +35,14 @@ P0.5已落实为`prototype/`中的单canvas程序，原型入口为http://127.0.
 
 ## 本轮不宣称完成
 
-全库EXIF提取/去重/文件字节统计；生产WebDAV直连、真实断点字节下载；HDR色调映射；真实Live Photo配对播放；视频中帧SDR输出；本地识别模型推理；原生HDR跨浏览器；Linux/Docker部署与性能验收。
+全库EXIF提取/去重/文件字节统计；HDR色调映射；真实Live Photo配对播放；视频中帧SDR输出；本地识别模型推理；原生HDR跨浏览器；Linux/Docker部署与性能验收。
 
 盘点的resume只接续既有队列；它不是生产增量任务系统。静态概念中的日历、足迹、器材是未来入口，SVG的LIVE标志不是实际播放能力。缓存预算是小样本外推加显式保守假设，不是全库编码实测。
 
 ## 当前验收与下一阶段
 
-1. 用户验收P0.5的主题/照片墙、单幅显影、缩放、触摸和视觉气质；原型素材为合成示例及既有本机SDR小样。
-2. 接受体验后进入P1：API、worker、SQLite与馆主密码初始化，原始/推断/人工/effective元数据及源依赖。
-3. 实现生产只读WebDAV、可恢复队列、原图manifest/鉴权代理；再接入少量真实活动。地图适配探针、真实HDR转换与手机/Safari实机能力仍按验收报告单独推进。
+1. 在8790验收登录/锁馆、NAS连接、活动扫描、暂停后刷新与恢复、原文件读取。已保存的源配置和馆主密码继续使用。
+2. P2将正式索引接入单canvas，实施EXIF提取、准确SDR缓存、近邻补全、Live Photo/视频与4K→原图暗房流程。
+3. P3继续可信TLS、HDR、跨浏览器/实机、Linux/Docker与备份恢复，当前不标为通过。
 
-P1无需重复选技术路线；实际源凭据与站点密码在配置界面/本机初始化时由用户输入。旧WebDAV HTTPS证书存在过期检查结果，正式直连前需复核与处理，不能默认关闭TLS校验。
-
-阶段日志：[2026-10-24发现与方案](logs/2026-10-24-discovery.md)。
-
-修订日志：[2026-10-24全屏观展与补全](logs/2026-10-24-viewer-plan-revision.md)。
-
-P0.5日志：[全画布原型实现与验证](logs/2026-10-24-p05-prototype.md)。
+P0日志：[发现与方案](logs/2026-10-24-discovery.md) · [全屏计划修订](logs/2026-10-24-viewer-plan-revision.md)。P0.5日志：[全画布原型](logs/2026-10-24-p05-prototype.md)。
