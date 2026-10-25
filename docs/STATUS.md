@@ -43,3 +43,5 @@ Cover Flow滑动结束后自动以动画归位到最近活动、中央封面转�
 Cover Flow倒影已改为真实前后遮挡并压暗，展签去底色；照片墙主题与数量横排、黄褐线分隔，缩减底部占位。6项视觉检查＋6项归位回归通过，见[本轮复审](research/coverflow-polish-validation.md)。
 
 Cover Flow主封面与活动标题已按视口中轴居中，左右切换移至左下/右下；1280px及390px人工验证通过。见[布局记录](research/coverflow-center-validation.md)。
+
+Timeline已增加统一尺寸的评分Top3–5照片气泡、向左弹出/收起与键盘预览，并放大年/月/主题字号。3项拼贴测试、13项气泡浏览器检查、6项Dock回归通过，见[验收记录](research/timeline-preview-validation.md)。

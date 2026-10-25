@@ -27,3 +27,5 @@ description: 复验 photo-museum 正式媒体缓存、Gallery、单图进度与�
 经典Cover Flow专项复验：`PYTHONPATH=. uv run --all-extras python tools/coverflow_validation_server.py`（8794，24活动/432合成图，准备需数分钟），ready后运行 `node web/tests/coverflow.mjs`。覆盖5–20封面、严格Top10后端测试、预取15项不取原图、飞散/中心落位及克隆清理、返回保位、档案合并、浏览器内铺满和减少动态效果。公开证据只用合成图。用户要求验收Gallery时留8790/#gallery，后台刮削继续；真实截图仅存data。
 
 手动IAB验证fixture时使用 `http://localhost:8793` / `http://localhost:8794`；正式页使用 `127.0.0.1:8790`。Cookie不区分端口，同主机名的fixture登录会覆盖正式会话；自动Playwright须始终使用独立browser context。倒影/展签专项运行 `node web/tests/coverflow-polish.mjs`，以像素遮挡与桌面/390px横排位置检查确认，不只检查CSS值。
+
+Timeline气泡复验：`node --test web/tests/timeline-collage.test.mjs` 与 `node web/tests/timeline-preview.mjs`（8793合成fixture），再跑既有 `web/tests/timeline.mjs` 检查Dock。重点确认评分顺序、3/4/5拼贴统一尺寸、列表裁切之外的锚定、快切/收起Blob释放、零NAS原图请求、720px可读性、键盘与减少动态效果。
