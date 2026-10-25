@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-25T13:45:49.206Z",
+  "checks": [
+    "Four cover styles in both themes: 2px gold, 3px black/white inset, 6px frame and 3px photo corners, all-around shadow; mirrors have no border/outline/shadow, 14px gap and 5px blur",
+    "1280/1440/1600/1920 16:9 = 9 covers; phone 5, tablet/short landscape 7, wide 13, ultra-wide 19; equal wings and no document overflow",
+    "Pixel check: blurred mirrors still occlude rear colors instead of adding them",
+    "Spacetime shares the finish and nine desktop boards; opaque gold gutters remain, phone/short-screen slider stays above reflections",
+    "Reduced motion retains direct room navigation without leftover animation clones",
+    "Three immediate reloads after cover changes preserve the selected activity before the coalescing timer expires",
+    "Zero original-file requests and uncaught browser errors"
+  ],
+  "errors": [],
+  "fixture": "Synthetic assets; 25 cover records expanded only in browser response, no private NAS data. Visual layout evidence, not real photo color acceptance."
+}

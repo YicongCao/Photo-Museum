@@ -1,5 +1,6 @@
 import React,{forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react';
 import './spacetime.css';
+import {coverCount} from '../cover-layout.js';
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const SpacetimeRoom=forwardRef(function SpacetimeRoom({activities,index,onIndex,onOpen,state,onState},ref){
@@ -29,7 +30,8 @@ export const SpacetimeRoom=forwardRef(function SpacetimeRoom({activities,index,o
  useEffect(()=>{const media=matchMedia('(prefers-reduced-motion: reduce)'),f=()=>setReduced(media.matches);media.addEventListener('change',f);return()=>media.removeEventListener('change',f)},[]);
  useEffect(()=>{if(Math.round(pos.current)!==index&&!gesture.current)goTo(index)},[index]);
  const boardWidth=Math.min(size.w*(size.w<700?.75:.51),size.h*.99,820),boardHeight=boardWidth/1.5;
- const visible=activities.map((a,i)=>({a,i,d:i-position})).filter(({d,i})=>reduced?i===Math.round(position):d>=-1.35&&d<=5);
+ const count=coverCount(size.w,size.h+(size.w<700?300:140),activities.length);
+ const visible=activities.map((a,i)=>({a,i,d:i-position})).filter(({d,i})=>reduced?i===Math.round(position):d>=-1.35&&d<=count-1);
  const end=e=>{gesture.current=null;if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);goTo(Math.round(target.current))};
  return <section className="spacetime-room" aria-label="时空隧道展厅" ref={root}
   onPointerDown={e=>{if(e.button!==0)return;suppress.current=false;gesture.current={id:e.pointerId,x:e.clientX,y:e.clientY,pos:pos.current};cancelAnimationFrame(frame.current)}}
@@ -42,7 +44,7 @@ export const SpacetimeRoom=forwardRef(function SpacetimeRoom({activities,index,o
     const scale=reduced?1:Math.pow(.71,d),origin=size.w<700?size.w*.43:size.w*.30,
       vanish=size.w*(size.w<700?.90:.80),center=vanish-(vanish-origin)*scale-Math.max(0,-d)*size.w*.90,
       y=size.h*.44+(1-scale)*size.h*.015,angle=reduced?0:-14;
-    return <button key={a.id} data-activity={a.id} className={'spacetime-board '+(i===index?'space-current':'')} tabIndex={i===index?0:-1}
+    return <button key={a.id} data-activity={a.id} data-cover-offset={d} className={'spacetime-board '+(i===index?'space-current':'')} tabIndex={i===index?0:-1}
      aria-label={'展开活动 '+a.event.theme} onClick={e=>{if(suppress.current&&e.detail!==0)return;if(i!==Math.round(pos.current)){goTo(i);return}onOpen(a.id)}}
      style={{width:boardWidth,height:boardHeight,left:reduced?'50%':center,top:y,zIndex:1000-i,
       transform:`translate(-50%,-50%) perspective(1800px) rotateY(${angle}deg) scale(${scale})`,'--space-light':Math.max(.3,1-Math.max(0,d)*.13),'--space-height':boardHeight+'px'}}>

@@ -170,7 +170,7 @@ export const Tunnel = forwardRef(function Tunnel(
       ref={stage}
       className={"tunnel-stage continuous-tunnel classic-coverflow cover-style-"+style}
       data-cover-count={count}
-      style={{"--floor-y":`${top+coverWidth/ratio+7}px`}}
+      style={{"--floor-y":`${top+coverWidth/ratio+14}px`}}
       aria-label="时光隧道"
       data-position={position.toFixed(3)}
       onPointerDown={(e) => {

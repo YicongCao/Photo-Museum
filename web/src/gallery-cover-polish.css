@@ -1,0 +1,28 @@
+/* Shared cover finish. Frame and photo filters are separate so gold stays legible
+   on distant panels. Mirrors retain opaque backing to occlude the next mirror. */
+.gallery-shell{--cover-paper:#000;--cover-shadow:0 0 18px 6px #000c,0 8px 30px 5px #0009;--cover-radius:6px;--cover-cell-radius:3px;--cover-mirror-gap:14px}
+.gallery-shell[data-theme=light]{--cover-paper:#fff;--cover-shadow:0 0 18px 4px #36271125,0 8px 30px 4px #36271120}
+.gallery-shell .classic-coverflow .activity-panel>.photo-mosaic,
+.gallery-shell .spacetime-board>.photo-mosaic{
+ box-sizing:border-box;border:3px solid var(--cover-paper);outline:2px solid #b88b4a;outline-offset:0;
+ border-radius:var(--cover-radius);box-shadow:var(--cover-shadow);overflow:hidden;filter:none;
+}
+.gallery-shell .classic-coverflow .activity-panel>.photo-mosaic img{filter:brightness(var(--cover-light,1))}
+.gallery-shell .classic-coverflow .mosaic-cell,
+.gallery-shell .spacetime-board .mosaic-cell{border-radius:var(--cover-cell-radius);overflow:hidden}
+.gallery-shell .classic-coverflow .panel-reflection,
+.gallery-shell .space-reflection{
+ top:calc(100% + var(--cover-mirror-gap));border:0;outline:none;box-shadow:none;
+ border-radius:var(--cover-radius);overflow:hidden;background:var(--cover-paper);
+}
+.gallery-shell .classic-coverflow .panel-reflection>.photo-mosaic,
+.gallery-shell .space-reflection>.photo-mosaic{
+ border:0;outline:none;box-shadow:none;border-radius:var(--cover-radius);background:var(--cover-paper);
+}
+.gallery-shell .classic-coverflow .panel-reflection>.photo-mosaic{filter:blur(5px) brightness(calc(var(--cover-light,1) * .30)) saturate(.76)}
+.gallery-shell[data-theme=light] .classic-coverflow .panel-reflection>.photo-mosaic{filter:blur(5px) brightness(calc(var(--cover-light,1) * .85)) saturate(.76)}
+.gallery-shell .space-reflection>.photo-mosaic{filter:blur(5px) brightness(calc(var(--space-light,1) * .28)) saturate(.76)}
+.gallery-shell .classic-coverflow::after{backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);background:linear-gradient(#0000 15%,#0001 55%,#000 100%)}
+.gallery-shell[data-theme=light] .classic-coverflow::after{background:linear-gradient(#fff0 15%,#fff1 55%,#fff 100%)}
+/* Do not inherit focus outlines into a reflection; keyboard focus remains on the cover. */
+.gallery-shell :is(.activity-panel,.spacetime-board):focus-visible{border-radius:var(--cover-radius)}

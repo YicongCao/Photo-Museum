@@ -15,8 +15,10 @@ export function useGalleryHistory(scope,ready,snapshot,onRestore){
  };
  useEffect(()=>{
   const pop=e=>{cancel();const old=e.state?.[key];if(old?.version===1&&old.scope===scope)restore.current(old.snapshot,{initial:false})};
-  window.addEventListener('popstate',pop);window.addEventListener('pagehide',flush);
-  return()=>{flush();window.removeEventListener('popstate',pop);window.removeEventListener('pagehide',flush)};
+  // Reload captures its destination before pagehide; flush coalesced selection
+  // earlier too, without preventing unload or showing a confirmation dialog.
+  window.addEventListener('popstate',pop);window.addEventListener('pagehide',flush);window.addEventListener('beforeunload',flush);
+  return()=>{flush();window.removeEventListener('popstate',pop);window.removeEventListener('pagehide',flush);window.removeEventListener('beforeunload',flush)};
  },[scope]);
  useEffect(()=>{
   if(!ready||initialized.current)return;initialized.current=true;

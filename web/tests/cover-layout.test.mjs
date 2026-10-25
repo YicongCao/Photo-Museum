@@ -1,4 +1,9 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {coverLayout,coverPose,coverStyles} from '../src/cover-layout.js';
+import test from 'node:test';import assert from 'node:assert/strict';import {coverCount,coverLayout,coverPose,coverStyles} from '../src/cover-layout.js';
+test('normal 16:9 desktop screens show nine covers with progressively bounded wings',()=>{
+ for(const width of [1280,1440,1600,1920])assert.equal(coverCount(width,width*9/16,200),9);
+ for(const [w,h,n] of [[390,844,5],[820,1180,7],[2560,1440,13],[3440,1440,19],[844,390,7]])assert.equal(coverCount(w,h,200),n);
+ assert.equal(coverCount(1920,1080,6),5);assert.equal(coverCount(1920,1080,1),1);
+});
 test('cover size has no abrupt width breakpoint and bounded residency',()=>{for(const style of Object.keys(coverStyles)){let last;for(let w=320;w<=3440;w++){const l=coverLayout(w,822,400,20,style);assert.ok(l.count>=5&&l.count<=20);assert.ok(Number.isFinite(l.cover)&&l.cover>=110&&l.cover<=945);if(last)assert.ok(Math.abs(l.cover-last)<3,`${style}@${w}`);last=l.cover}}});
 test('every style settles its main cover upright and preserves finite poses',()=>{for(const style of Object.keys(coverStyles)){const l=coverLayout(1440,822,200,5,style);assert.equal(Math.abs(coverPose(0,l,style).angle),0);for(let d=-10;d<=10;d+=.1){const p=coverPose(d,l,style);for(const v of Object.values(p))assert.ok(Number.isFinite(v));assert.ok(p.scale>0)}}});
 test('short and compact viewport rail reflows do not jump the main cover size',()=>{

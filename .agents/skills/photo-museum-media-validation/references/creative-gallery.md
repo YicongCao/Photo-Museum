@@ -16,3 +16,5 @@
 原生返回/统一加载专项：以最新构建启动8793合成fixture，再运行 `node web/tests/gallery-navigation.mjs`。覆盖Back/Forward/刷新、铺满层级、同一墙位置和键盘焦点、动画中返回、首尾对称封面、慢4K下thumb先绘制、循环Logo与减少动态效果、源文件体积和显影。不要只数DOM封面，还要检查时间线空间是否双侧预留、实际截图是否对称。Logo导出PNG须检查RGBA alpha范围0–255；SVG和折叠预览在docs/design/brand。P6回归使用独立8796 fixture与fake provider，不自动重发真实任务；请求并发不等于HTTP/2已启用。
 
 活动保位补充：运行 `node web/tests/coverflow-refresh.mjs`，以网络替身旋转活动列表顺序并加速15秒刷新，验证重复更新和整页刷新后活动ID不变；不要让外部index同步与列表锚点校正各改一次位置。
+
+封面边框/镜面/密度复验：按上述方式以最新隔离构建运行8793，再执行 `node web/tests/cover-finish.mjs`。脚本只在浏览器里扩展合成活动至25项、复用合成图，用命中采样检查四样式实际露出9张，核对日夜双边框、轻圆角、投影、14px间隔及无框5px模糊镜面。不能把创建9个DOM节点当成看到9张封面。模糊及地面backdrop有采样半径，像素遮挡测试应在镜面内部64px处取样，不在镜面接缝上断言零颜色变化；接缝另用截图检查。Chrome可能为outline-style:none报告3px的默认outline-width，应检查style而非width。保留减少动态效果、手机/矮屏控件命中及零原图请求断言。当前结果见docs/research/cover-finish-validation.md。

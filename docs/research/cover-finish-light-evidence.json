@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-25T13:45:32.612Z",
+  "checks": [
+    "Default remains pure black with a vector sun action; fullscreen stays rightmost",
+    "Day uses pure white, a moon action and leaves photo pixels unchanged; no original request is added",
+    "Title, date, navigation, timeline and arrows reach 4.5:1 text contrast against white",
+    "Menu and the body-portal timeline bubble follow day colors, including its arrow and loading cells",
+    "Day reflections use opaque white backing and retain rear-mirror occlusion",
+    "Theme and selected activity survive reload",
+    "Activity wall remains dark; returning restores day mode and the same activity",
+    "Other exhibition rooms keep their existing dark palette",
+    "Short desktop and mobile stay one page with all controls visible; Enter toggles the focused vector button",
+    "Reduced-motion mode retains direct theme switching",
+    "Unavailable browser storage falls back to dark and does not prevent toggling",
+    "No uncaught browser errors or external requests"
+  ],
+  "errors": [],
+  "colors": {
+    "bg": "rgb(255, 255, 255)",
+    "items": [
+      {
+        "selector": ".gallery-nav button",
+        "color": "rgb(101, 94, 84)"
+      },
+      {
+        "selector": ".gallery-caption h1",
+        "color": "rgb(134, 97, 40)"
+      },
+      {
+        "selector": ".caption-date",
+        "color": "rgb(101, 94, 84)"
+      },
+      {
+        "selector": ".timeline-year",
+        "color": "rgb(48, 42, 34)"
+      },
+      {
+        "selector": ".timeline-month",
+        "color": "rgb(134, 97, 40)"
+      },
+      {
+        "selector": ".dock-timeline button",
+        "color": "rgb(134, 97, 40)"
+      },
+      {
+        "selector": ".tunnel-controls button",
+        "color": "rgb(101, 94, 84)"
+      }
+    ],
+    "reflection": "rgb(255, 255, 255)"
+  },
+  "fixture": "84 generated photos and synthetic metadata; no private photos or real NAS"
+}
