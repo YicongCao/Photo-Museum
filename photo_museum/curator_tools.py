@@ -77,6 +77,17 @@ class SearchInput(Input):
     order:str='diverse'
     limit:int=Field(default=32,ge=1,le=100)
     offset:int=Field(default=0,ge=0,le=10000)
+    @field_validator('filters',mode='before')
+    @classmethod
+    def object_filters(cls,v):
+        # Some compatible providers serialize an object-valued argument a second time.
+        # Decode only this declared object; normal validation still rejects bad/extra fields.
+        if isinstance(v,str):
+            if len(v)>16000:raise ValueError('filters JSON对象过大')
+            try:v=json.loads(v)
+            except json.JSONDecodeError:raise ValueError('filters必须是JSON对象，字符串内容不是有效JSON') from None
+            if not isinstance(v,dict):raise ValueError('filters必须是JSON对象，不能是数组、null或标量')
+        return v
     @field_validator('order')
     @classmethod
     def order_valid(cls,v):
@@ -104,14 +115,26 @@ TOOL_SPECS=[
  ('photo_details','读取本轮已检索候选的精简元数据，不读取图片或NAS。',DetailsInput),
  ('create_exhibition','根据本轮search_id/候选创建本地展览草案；photo_ids为空时使用该查询前max_photos张。只生成草案，不改原图或人工标记。',DraftInput),
 ]
-TOOLS=[{'type':'function','function':{'name':n,'description':d,'parameters':m.model_json_schema()}} for n,d,m in TOOL_SPECS]
+def tool_parameters(model):
+    """Inline local definitions for providers that do not resolve nested $ref schemas."""
+    source=model.model_json_schema();definitions=source.get('$defs',{})
+    def inline(value):
+        if isinstance(value,list):return [inline(v) for v in value]
+        if not isinstance(value,dict):return value
+        if '$ref' in value:
+            name=value['$ref'].removeprefix('#/$defs/')
+            return inline({**definitions[name],**{k:v for k,v in value.items() if k!='$ref'}})
+        return {k:inline(v) for k,v in value.items() if k!='$defs'}
+    return inline(source)
+
+TOOLS=[{'type':'function','function':{'name':n,'description':d,'parameters':tool_parameters(m)}} for n,d,m in TOOL_SPECS]
 MODELS={n:m for n,_,m in TOOL_SPECS}
 
 
 def schema():
     return {'fields':{'date':'effective拍摄日期；年/月/日精度分开，目录年度不补一月，接受推断有标记',
         'activity':'目录活动主题；不是摄影topic','camera':'相机型号/厂商','lens':'镜头型号',
-        'place':'有效GPS解析的国家/省/最近城市；精确GPS不出本机','style':'本地CLIP摄影风格候选与相似度',
+        'place':'有效GPS解析的国家/省/最近城市或镇；city不是地级市行政归属，不能自动把附近镇名归为用户要求的市；精确GPS不出本机','style':'本地CLIP摄影风格候选与相似度',
         'topic':'本地CLIP摄影主题候选与相似度','subject':'本地主体类别候选','score':'0–100技术/构图分，不是喜爱概率',
         'pinned':'馆主标记','people':'仅本地按有人/人物标签筛选，姓名/脸框/特征不回传',
         'orientation':'landscape/portrait/square，按有效宽高','exposure':'真实ISO、光圈、快门秒数、实际/35mm等效焦距，逐文件事实不能近邻复制',
@@ -169,7 +192,12 @@ class LocalTools:
         if field=='year':return [p['period'][:4]] if p['period'] else []
         if field=='activity':return [p['event'].get('theme') or '',p['activity_id']]
         if field in ('camera','lens'):return [p[field],p[field+'_id'],p.get('make','')+' '+p[field]]
-        if field in ('country','province','city'):return [place_label(p['place'],field),p['place'].get(field,'')] if p.get('place') else []
+        if field in ('country','province','city'):
+            place=p.get('place')
+            if not place:return []
+            # Missing raw fields are common (especially province). Unknown labels are
+            # display placeholders, not searchable facts; never casefold/join None.
+            return list(dict.fromkeys(v for v in ((place.get('display_zh') or {}).get(field),place.get(field)) if isinstance(v,str) and v))
         if field in ('style','topic','subject'):
             return [str(t[k]) for t in p[{'style':'styles','topic':'topics','subject':'subjects'}[field]] for k in ('id','label')]
         raise ValueError('分类字段无效')
@@ -230,7 +258,12 @@ class LocalTools:
                 # One canonical label per photo for devices/place; candidate labels for taxonomy.
                 if body.field in ('style','topic','subject'):vals=[t['label'] for t in p[{'style':'styles','topic':'topics','subject':'subjects'}[body.field]]]
                 else:vals=vals[:1]
-                counts.update(v for v in set(vals) if v and body.query.casefold() in str(v).casefold())
+                # A translated label and its source spelling identify the same fact.
+                # Match either alias, but count one canonical label per photo.
+                if body.field in ('country','province','city'):
+                    aliases=self.values(p,body.field)
+                    if aliases and any(body.query.casefold() in v.casefold() for v in aliases):counts.update(vals)
+                else:counts.update(v for v in set(vals) if v and body.query.casefold() in str(v).casefold())
             return {'field':body.field,'values':[{'value':k,'count':v} for k,v in counts.most_common(body.limit)],'distinct':len(counts)}
         if name=='search_photos':
             if body.filters.date_from and body.filters.date_to and span(body.filters.date_from)[0]>span(body.filters.date_to)[1]:raise ValueError('日期范围无效')

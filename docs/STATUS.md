@@ -79,3 +79,7 @@ Cover Flow首页新增太阳/月亮SVG切换，支持当前浏览器记忆；白
 人生年轮、记忆星图、记忆长卷、故地重游已实现，带共享暗房、可打断过渡、集合约束及本地持久化；P6可Show至新增四厅。故地重游仍为同城候选＋人工同地点确认，不包含自动同机位配准。横向记忆长卷不等同于原计划B的纵向主题/横向照片双轴体验，F高级屏保仍未交付。
 
 [概念与实装对照](design/gallery-refinement-review.html) · [细节、动画与验收记录](research/gallery-concept-refinement.md) · [数据接口与边界](research/creative-gallery-data.md)。正式SQLite已备份并迁移到schema9，服务已启动。真实图库聚合首次约6–8秒，界面有读取状态；用户主观视觉验收仍待确认。
+
+## 策展检索工具修复（2026-10-25）
+
+已定位并修复Provider把filters再次JSON编码导致参数校验失败，以及空地址字段导致省份/关键词检索异常。嵌套schema展开、工具错误字段提示、连续错误停止及双语facets已补齐。真实库只读重放通过；真实hy4-preview使用三张合成照片完成检索与展览准备。最近城市/镇不等于地级市行政归属，行政层级补全仍待实现；原失败任务不会自动重发。见[修复与验证](research/curator-search-tool-fix.md)。

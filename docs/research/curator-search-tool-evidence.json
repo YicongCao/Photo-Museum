@@ -1,0 +1,58 @@
+{
+  "synthetic_only": true,
+  "model": "hy4-preview",
+  "temperature": 1.1,
+  "status": "completed",
+  "error": null,
+  "elapsed": 24.47,
+  "tool_names": [
+    "catalog_schema",
+    "library_overview",
+    "search_photos",
+    "create_exhibition"
+  ],
+  "thinking_characters": 1091,
+  "usage": [
+    {
+      "prompt_tokens": 3307,
+      "completion_tokens": 166,
+      "total_tokens": 3473
+    },
+    {
+      "prompt_tokens": 5114,
+      "completion_tokens": 51,
+      "total_tokens": 5165
+    },
+    {
+      "prompt_tokens": 5764,
+      "completion_tokens": 222,
+      "total_tokens": 5986
+    },
+    {
+      "prompt_tokens": 6046,
+      "completion_tokens": 206,
+      "total_tokens": 6252
+    }
+  ],
+  "preparation": [
+    {
+      "checked": 0,
+      "total": 3,
+      "ready": 0,
+      "skipped": 0
+    },
+    {
+      "checked": 3,
+      "total": 3,
+      "ready": 3,
+      "skipped": 0
+    }
+  ],
+  "created_exhibition": true,
+  "date": "2026-10-25T12:03:09.775010+00:00",
+  "real_index_replay": "read-only local SQLite only; no original fetch, private receipt ignored",
+  "backend_tests": {
+    "passed": 132,
+    "duration_seconds": 126.71
+  }
+}
