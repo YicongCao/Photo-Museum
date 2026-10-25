@@ -1,0 +1,24 @@
+{
+  "checks": [
+    "Black-page material is visibly shaded rather than flat black; independent rounded glass frame has 24px backdrop blur and no rail-side divider",
+    "Selected event uses a local amber pill and luminous dot, retaining stable row hit areas",
+    "Selecting another event replaces one local thumbnail light field and revokes the previous Blob",
+    "Day mode uses an ivory surface, dark readable labels and matching rounded preview frame",
+    "Reduced motion keeps the material without the arrival fade",
+    "Desktop, tablet, 320/390px horizontal rails and short landscape frames stay inside the viewport without page scrolling",
+    "Leaving Cover Flow releases the decorative thumbnail; other rooms retain their existing timelines",
+    "No NAS-original requests, no external requests and no uncaught errors"
+  ],
+  "errors": [],
+  "material": {
+    "radius": "16px",
+    "blur": "blur(24px) saturate(1.15)",
+    "bg": "rgb(33, 42, 41)",
+    "railBorder": "0px"
+  },
+  "materialPixels": {
+    "mean": 33.025925925925925,
+    "range": 26.333333333333332
+  },
+  "fixture": "Generated P5 photos. Material samples taken inside the empty frame gutters over a pure black Gallery."
+}

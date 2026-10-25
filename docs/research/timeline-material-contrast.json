@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "Year, month, events and selected row all retain at least 4.5:1 against the rendered material with an entirely white source thumbnail",
+    "Missing cached thumbnail retains the mineral fallback surface and readable text, without original fallback"
+  ],
+  "night": 5.495753678595831,
+  "day": 5.794926848108008,
+  "fallback": 6.8162463245164595,
+  "method": "Measured foreground computed RGB against underlying rendered pixels in each label area after hiding only label contents; synthetic all-white source stresses maximum photo brightness."
+}

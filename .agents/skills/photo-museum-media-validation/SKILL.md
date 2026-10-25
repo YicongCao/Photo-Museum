@@ -5,6 +5,8 @@ description: 复验 photo-museum 媒体缓存、Gallery/P5展厅、P6策展助�
 
 # 正式媒体与馆务复验
 
+烟色玻璃时间线复验见docs/research/timeline-smoke-glass.md：隔离P5 fixture运行web/tests/timeline-material.mjs与timeline-material-contrast.mjs，检查黑底实测像素、全白/缺失缩略图对比度、月份固定、源图切换和Blob撤销。再用timeline-preview.mjs与coverflow-light.mjs回归。字体/材质截图须等待对应图片解码及自身淡入完成；镜面像素比较串行运行，沿用既有容差，不因并行GPU抖动随意放宽。
+
 档案字段与风格覆盖复验见docs/research/archive-refinement.md：隔离P5 fixture运行node web/tests/archive-refinement.mjs，区分SDR/HDR标签、等效焦距缺失、城市/GPS记录变更、无坐标文本及EXIF/生成数据同样式。tools/audit_photography_style.py只读正式SQLite和本地缓存，禁网抽样复测当前模型门槛，不写回标签；明细留data，仅汇总入docs。截图须等待入场完成，不能把DOM存在误当已绘制。
 
 统一主导航复验见docs/research/navigation-unification.md：隔离P5 fixture运行node web/tests/museum-nav.mjs，覆盖三大入口及策展页、5种视口、日夜、全屏跨页和锁定。只能在合成会话测试登出；不要锁定用户正式浏览器来验证按钮。旧测试中的Dashboard/Settings现在用语义link选择器，Gallery在自身页面仍为展厅menu按钮。

@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 
 import {createPortal} from "react-dom";
 import {TimelinePreview} from "./timeline-preview";
+import {TimelineSurface} from "./timeline-surface";
 
 const monthLabels=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) {
+export function ActivityTimeline({ activities, index, onSelect, theme="dark", material=false }) {
   const root = useRef(null), frame = useRef(0), pointer = useRef(null),pointerFocus=useRef(false);
   const [preview,setPreview]=useState(null);
   const showTimer=useRef(null),closeTimer=useRef(null),removeTimer=useRef(null),pendingFocus=useRef(null);
@@ -71,7 +72,7 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) 
     const schedule=()=>{clearTimeout(timer);timer=setTimeout(reveal,180)};
     const observer=new ResizeObserver(schedule);observer.observe(node);schedule();
     return()=>{clearTimeout(timer);observer.disconnect()};
-  },[index,activities[index]?.id,activities.length]);
+  },[index,activities[index]?.id,activities.length,material]);
   const magnify = (e) => {
     if (e.pointerType === "touch" || !matchMedia("(hover: hover)").matches) return;
     pointer.current = e.clientY;
@@ -89,7 +90,7 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) 
       });
     });
   };
-  return <><aside ref={root} className="activity-timeline dock-timeline" aria-label="活动时间线"
+  const rail=<aside ref={root} className="activity-timeline dock-timeline" aria-label="活动时间线"
     onPointerDown={()=>{pointerFocus.current=true;}} onKeyDown={()=>{pointerFocus.current=false;}} onBlur={()=>{pointerFocus.current=false;}}
     onPointerMove={magnify} onPointerLeave={()=>{reset();leavePreview();}} onScroll={()=>{
       // Native focus can scroll both narrow-layout rails before its preview opens.
@@ -112,5 +113,6 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) 
         </li>)}</ul>
       </section>)}
     </section>)}
-  </aside>{preview && createPortal(<TimelinePreview key={preview.activity.id} activity={preview.activity} anchor={preview.anchor} closing={preview.closing} theme={theme}/>,document.body)}</>;
+  </aside>;
+  return <>{material?<div className="timeline-glass-frame"><TimelineSurface source={activities[index]?.selected?.[0]?.thumbnail}/>{rail}</div>:rail}{preview && createPortal(<TimelinePreview key={preview.activity.id} activity={preview.activity} anchor={preview.anchor} closing={preview.closing} theme={theme}/>,document.body)}</>;
 }
