@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-25T02:06:32.582Z",
+  "checks": [
+    "Value present before bootstrap automatically unlocks the requested Dashboard",
+    "Silent delayed password-manager fill needs no input event or button click",
+    "Replacement and paste events submit once even when emitted repeatedly",
+    "Automatic unlock also opens Gallery and preserves its route",
+    "Typing pauses do not submit partial passwords; Enter still unlocks",
+    "Wrong autofill is attempted once, preserves error and accepts corrected fill",
+    "Concurrent automatic and manual submission cannot create duplicate requests",
+    "Explicit lock stays locked after autofill; manual unlock remains available",
+    "First-time password setup never submits an automatically populated field",
+    "No uncaught browser errors"
+  ],
+  "errors": [],
+  "fixture": "isolated synthetic credentials; silent DOM fill and input events simulate password managers; no real saved passwords read"
+}

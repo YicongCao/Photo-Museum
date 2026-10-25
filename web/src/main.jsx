@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./tokens.css";
 import "./style.css";
 import { Icon } from "./icons";
 import { Gallery } from "./gallery";
 import { Manager } from "./manager";
+import { watchAutoUnlock } from "./auto-unlock";
 const errors = {
   credentials_or_permission: "NAS 拒绝访问，请检查凭据与目录权限。",
   network_unavailable: "暂时无法连接 NAS。",
@@ -34,7 +35,13 @@ function App() {
     [state, setState] = useState(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
+    [autoUnlockAllowed, setAutoUnlockAllowed] = useState(true),
     [route, setRoute] = useState(location.hash);
+  const passwordInput = useRef(null), loginPending = useRef(false);
+  useEffect(() => {
+    if (initialized !== true || state || !autoUnlockAllowed || !passwordInput.current) return;
+    return watchAutoUnlock(passwordInput.current, () => !loginPending.current);
+  }, [initialized, Boolean(state), autoUnlockAllowed]);
   async function refresh() {
     try {
       setState(await api("/state"));
@@ -59,6 +66,7 @@ function App() {
   async function logout() {
     try {
       await api("/logout", "POST", {});
+      setAutoUnlockAllowed(false);
       setState(null);
     } catch (e) {
       setError(e.message);
@@ -66,6 +74,8 @@ function App() {
   }
   async function login(e) {
     e.preventDefault();
+    if (loginPending.current || initialized === null) return;
+    loginPending.current = true;
     setBusy(true);
     setError("");
     const form = e.currentTarget;
@@ -75,10 +85,12 @@ function App() {
       });
       form.reset();
       setInitialized(true);
+      setAutoUnlockAllowed(true);
       await refresh();
     } catch (e) {
       setError(e.message);
     } finally {
+      loginPending.current = false;
       setBusy(false);
     }
   }
@@ -105,9 +117,10 @@ function App() {
           <label>
             {initialized === false ? "设置馆主密码" : "馆主密码"}
             <input
+              ref={passwordInput}
               name="password"
               type="password"
-              autoComplete={initialized ? "current-password" : "new-password"}
+              autoComplete={initialized === false ? "new-password" : "current-password"}
               minLength={initialized ? 1 : 12}
               maxLength="256"
               required
