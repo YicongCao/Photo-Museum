@@ -7,11 +7,12 @@ import subprocess
 from pathlib import Path
 from PIL import Image, ImageCms, ImageOps
 import pillow_heif
-from tools.media_probe import hdr_reason
+from tools.media_probe import hdr_reason, has_gain_map
 
 pillow_heif.register_heif_opener()
 Image.MAX_IMAGE_PIXELS = 110_000_000
 VERSION = 'media-srgb-v2'
+HDR_VERSION = 'media-hdr-sdr-v3'
 
 class MediaUnsupported(Exception):
     pass
@@ -55,23 +56,32 @@ def still(path, folder, meta, progress=lambda *args: None, *, compatible=False):
     source_bits = h.info.get('bit_depth') if h else meta.get('BitsPerSample') or meta.get('BitDepth')
     source_color = meta.get('ProfileDescription') or {1:'sRGB / BT.709',9:'BT.2020',12:'Display P3'}.get(nclx.get('color_primaries'))
     reason = hdr_reason(meta,nclx,auxiliaries)
+    gain_map = has_gain_map(meta, auxiliaries)
     apple_sdr_base = (meta.get('FileType') in ('HEIC','HEIF','HIF') and meta.get('Make')=='Apple' and meta.get('ProfileDescription') in ('Display P3','sRGB IEC61966-2.1') and nclx.get('transfer_characteristics') not in (16,18))
     jpeg_sdr_base = meta.get('FileType')=='JPEG' and meta.get('ProfileDescription') in ('Display P3','sRGB IEC61966-2.1','sRGB') and meta.get('TransferCharacteristics') not in (16,18)
     primary_hdr = nclx.get('transfer_characteristics') in (16, 18)
     # ExifTool may report an auxiliary item's PQ tag. Primary 8-bit ICC SDR is authoritative.
     icc_sdr_base = bool(h and h.info.get('bit_depth') == 8 and h.info.get('icc_profile')
                         and meta.get('ProfileDescription') in ('Display P3','sRGB IEC61966-2.1','sRGB') and not primary_hdr)
-    if reason and not (primary_hdr or apple_sdr_base or jpeg_sdr_base or icc_sdr_base):
+    from . import apple_sdr
+    use_apple = bool(reason and apple_sdr.available())
+    if gain_map and primary_hdr and not use_apple:
+        raise MediaUnsupported('gainmap_hdr_base_requires_native_sdr')
+    if reason and not (use_apple or primary_hdr or apple_sdr_base or jpeg_sdr_base or icc_sdr_base):
         raise MediaUnsupported(reason)
     srgb = ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB'))
     assumed = False
-    if primary_hdr:
+    if use_apple:
+        del h
+        image, original_size = apple_sdr.render(path, folder, command, max_edge=None if compatible else 3840)
+        color = 'apple_native_sdr'
+    elif primary_hdr:
         from .hdr import tone_map
         if nclx.get('color_primaries') not in (1,9,12):
             raise MediaUnsupported('unsupported_hdr_primaries')
         original_size = h.size
         image = tone_map(h, folder, command, max_edge=None if compatible else 3840)
-        color = 'primary_nclx_mobius_srgb'
+        color = 'primary_nclx_mobius_203_srgb'
         del h
     else:
         del h
@@ -95,6 +105,10 @@ def still(path, folder, meta, progress=lambda *args: None, *, compatible=False):
         original_size = image.size
     try:
         result = {'width':original_size[0],'height':original_size[1],'color':color,'hdr':False,'hdr_source':bool(reason),'sdr_base':apple_sdr_base or jpeg_sdr_base or icc_sdr_base,'assumed_color':assumed,'score_penalty':15 if assumed else 0,'cache_policy':'preview-only-v1','source_bit_depth':source_bits,'source_color':source_color}
+        if reason:
+            result.update(render_version=HDR_VERSION, hdr_policy='explicit-sdr-v3',
+                          source_gain_map=gain_map,
+                          hdr_renderer='apple-coreimage' if use_apple else 'portable-sdr-base' if not primary_hdr else 'portable-mobius-203')
         for profile,edge,quality in [('display',3840,80),('thumb',640,74)]:
             progress(profile, 'running')
             out = image.copy()

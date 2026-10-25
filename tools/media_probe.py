@@ -32,13 +32,19 @@ def target_size(width: int, height: int, edge: int) -> tuple[int, int]:
     return max(1, round(width * scale)), max(1, round(height * scale))
 
 
+def has_gain_map(metadata: dict, auxiliary_types: list[str] | None = None) -> bool:
+    return (any('gainmap' in name.lower().replace('-', '') or 'hdrgm' in name.lower()
+                or name.lower().startswith('urn:iso:std:iso:ts:21496') for name in auxiliary_types or [])
+            or any('gainmap' in key.lower().replace('-', '') for key in metadata))
+
+
 def hdr_reason(metadata: dict, nclx: dict | None = None, auxiliary_types: list[str] | None = None) -> str | None:
-    """Conservatively defer HDR/gain-map sources until reference QA exists."""
+    """Flag HDR/gain-map inputs for explicit SDR rendition, not automatic expansion."""
     nclx = nclx or {}
     transfer = nclx.get("transfer_characteristics")
     if transfer in (16, 18) or metadata.get("TransferCharacteristics") in (16, 18):
         return "pq_or_hlg_transfer"
-    if any("gainmap" in name.lower() or "gain-map" in name.lower() for name in auxiliary_types or []):
+    if has_gain_map(metadata, auxiliary_types):
         return "gainmap_requires_sdr_base_validation"
     text = " ".join(str(metadata.get(k, "")) for k in
                     ("TransferCharacteristics", "ProfileDescription" )).lower()

@@ -33,7 +33,10 @@ def event_id(source,path):
     return hashlib.sha256((source+'\0'+path).encode()).hexdigest()[:24]
 
 def media_url(row,profile):
-    return f"/api/assets/{row['id']}/media/{profile}?revision={row['revision']}"
+    row=dict(row)
+    info=json.loads(row.get('data_json') or '{}')
+    preview='&render='+info['version'] if info.get('hdr_policy') else ''
+    return f"/api/assets/{row['id']}/media/{profile}?revision={row['revision']}"+preview
 
 class QueueControl(BaseModel):
     action: str
@@ -52,9 +55,8 @@ class BudgetInput(BaseModel):
 def register(app,database,owner):
     cache=Cache(database)
     def pipeline(c):
-        from .media import VERSION
         version=c.execute("SELECT value FROM settings WHERE key='analysis_version'").fetchone()
-        return VERSION+'|'+(version['value'] if version and os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1' else 'disabled')
+        return '|'+(version['value'] if version and os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1' else 'disabled')
     @app.get('/api/media/state',dependencies=[Depends(owner)])
     def media_state(after: int | None = None):
         with database.connect() as c:
@@ -75,18 +77,18 @@ def register(app,database,owner):
                     item['steps'].update(json.loads(p['steps_json']))
                     if p['lane']=='media':
                         item.update(bytes_done=p['bytes_done'],bytes_total=p['bytes_total'] if p['bytes_total'] is not None else item['size'])
-            recent=[pack(dict(r)) for r in c.execute("""SELECT e.*,m.data_json,f.completed completed_at FROM media_info m JOIN entries e ON e.id=m.asset_id AND e.revision=m.revision JOIN file_completions f ON f.asset_id=e.id AND f.revision=e.revision AND f.pipeline IN (?,?) JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND EXISTS(SELECT 1 FROM cache_files f WHERE f.asset_id=e.id AND f.revision=e.revision AND f.profile='thumb') AND EXISTS(SELECT 1 FROM cache_files f WHERE f.asset_id=e.id AND f.revision=e.revision AND f.profile='display') ORDER BY f.completed DESC,e.id LIMIT 20""",(current_pipeline,current_pipeline.split('|')[0]+'|metadata-only'))]
+            recent=[pack(dict(r)) for r in c.execute("""SELECT e.*,m.data_json,f.completed completed_at FROM media_info m JOIN entries e ON e.id=m.asset_id AND e.revision=m.revision JOIN file_completions f ON f.asset_id=e.id AND f.revision=e.revision AND f.pipeline IN (json_extract(m.data_json,'$.version')||?,json_extract(m.data_json,'$.version')||?) JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND EXISTS(SELECT 1 FROM cache_files f WHERE f.asset_id=e.id AND f.revision=e.revision AND f.profile='thumb') AND EXISTS(SELECT 1 FROM cache_files f WHERE f.asset_id=e.id AND f.revision=e.revision AND f.profile='display') ORDER BY f.completed DESC,e.id LIMIT 20""",(current_pipeline,'|metadata-only'))]
             recent.reverse()
             cursor=c.execute('SELECT coalesce(max(id),0) FROM file_completions').fetchone()[0] if after is None else max(0,after)
             events=[]
             if after is not None:
-                for r in c.execute("""SELECT e.*,m.data_json,f.id completion_id,f.steps_json,f.completed completed_at FROM file_completions f JOIN media_info m ON m.asset_id=f.asset_id AND m.revision=f.revision JOIN entries e ON e.id=f.asset_id AND e.revision=f.revision WHERE f.id>? AND e.missing=0 AND e.scope_excluded=0 AND f.pipeline IN (?,?) ORDER BY f.id LIMIT 100""",(cursor,current_pipeline,current_pipeline.split('|')[0]+'|metadata-only')):
+                for r in c.execute("""SELECT e.*,m.data_json,f.id completion_id,f.steps_json,f.completed completed_at FROM file_completions f JOIN media_info m ON m.asset_id=f.asset_id AND m.revision=f.revision JOIN entries e ON e.id=f.asset_id AND e.revision=f.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE q.status IN ('ready','indexed') AND f.id>? AND e.missing=0 AND e.scope_excluded=0 AND f.pipeline IN (json_extract(m.data_json,'$.version')||?,json_extract(m.data_json,'$.version')||?) ORDER BY f.id LIMIT 100""",(cursor,current_pipeline,'|metadata-only')):
                     event=pack(dict(r))
                     event.update(completion_id=r['completion_id'],asset_id=r['id'],path=r['path'],steps=json.loads(r['steps_json']),completed=True)
                     events.append(event)
                     cursor=r['completion_id']
             if after is not None and not events:cursor=c.execute('SELECT coalesce(max(id),0) FROM file_completions').fetchone()[0]
-            fully_done=c.execute('SELECT count(DISTINCT f.asset_id) FROM file_completions f JOIN entries e ON e.id=f.asset_id AND e.revision=f.revision WHERE e.missing=0 AND e.scope_excluded=0 AND f.pipeline IN (?,?)',(current_pipeline,current_pipeline.split('|')[0]+'|metadata-only')).fetchone()[0]
+            fully_done=c.execute("SELECT count(DISTINCT f.asset_id) FROM file_completions f JOIN entries e ON e.id=f.asset_id AND e.revision=f.revision JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE q.status IN ('ready','indexed') AND e.missing=0 AND e.scope_excluded=0 AND f.pipeline IN (json_extract(m.data_json,'$.version')||?,json_extract(m.data_json,'$.version')||?)",(current_pipeline,'|metadata-only')).fetchone()[0]
             settings=dict(c.execute("SELECT key,value FROM settings WHERE key IN ('media_paused','cache_budget')"))
             bytes_used=c.execute('SELECT coalesce(sum(size),0) FROM cache_files').fetchone()[0]
         temporary_bytes=0
@@ -109,13 +111,13 @@ def register(app,database,owner):
                 sum(q.status='ready') cached,
                 sum(q.status IN ('failed','unsupported') OR (?=1 AND q.status='ready' AND EXISTS(SELECT 1 FROM analysis a JOIN media_info m ON m.asset_id=a.asset_id AND m.revision=a.revision WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual' AND a.version=(SELECT value FROM settings WHERE key='analysis_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL))) errors,
                 sum(q.status='running' AND q.lease_until>unixepoch('now')) active,
-                sum(EXISTS(SELECT 1 FROM file_completions f WHERE f.asset_id=e.id AND f.revision=e.revision AND f.pipeline IN (?,?))) done,
+                sum(EXISTS(SELECT 1 FROM file_completions f WHERE f.asset_id=e.id AND f.revision=e.revision AND q.status IN ('ready','indexed') AND f.pipeline IN (json_extract(m.data_json,'$.version')||?,json_extract(m.data_json,'$.version')||?))) done,
                 min(CASE WHEN q.status='running' AND q.lease_until>unixepoch('now') THEN e.path END) current_file
-              FROM entries e LEFT JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision
+              FROM entries e LEFT JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision LEFT JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision
               WHERE e.missing=0 AND e.scope_excluded=0 AND e.is_dir=0 GROUP BY e.source_id,e.parent
             ) SELECT l.source_id,l.path,l.source_root,l.state,l.lease_until,l.job_status,l.error,coalesce(t.total,0) total,
                 coalesce(t.cached,0) cached,coalesce(t.errors,0) errors,coalesce(t.active,0) active,coalesce(t.done,0) done,t.current_file
-              FROM latest l LEFT JOIN totals t ON t.source_id=l.source_id AND t.parent=l.path WHERE l.position=1 AND l.state!='excluded' AND NOT EXISTS(SELECT 1 FROM entries gone WHERE gone.source_id=l.source_id AND gone.path=l.path AND gone.missing=1) ORDER BY l.path DESC""",(int(os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1'),pipeline(c),pipeline(c).split('|')[0]+'|metadata-only'))]
+              FROM latest l LEFT JOIN totals t ON t.source_id=l.source_id AND t.parent=l.path WHERE l.position=1 AND l.state!='excluded' AND NOT EXISTS(SELECT 1 FROM entries gone WHERE gone.source_id=l.source_id AND gone.path=l.path AND gone.missing=1) ORDER BY l.path DESC""",(int(os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1'),pipeline(c),'|metadata-only'))]
             analysis_dirs={tuple(r) for r in c.execute("SELECT e.source_id,e.parent FROM processing_progress p JOIN entries e ON e.id=p.asset_id AND e.revision=p.revision WHERE p.status='running' AND p.lane='analysis' AND p.updated>? AND e.missing=0 AND e.scope_excluded=0",(time.time()-60,))}
             focus_row=c.execute("SELECT value FROM settings WHERE key='media_directory'").fetchone()
             focus=json.loads(focus_row['value']) if focus_row else None

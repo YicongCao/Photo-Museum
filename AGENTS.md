@@ -48,6 +48,8 @@ Dashboard右上仅Settings、Dashboard、Gallery和锁定；照片源配置在Se
 
 常驻只保留 thumb/display 预览，不预制兼容全尺寸 JPEG 或视频转码文件。兼容原图只在暗房请求时临时生成并于响应结束/取消时删除。未标记色域照片按 sRGB 入库，记录假定、保留原始技术分并扣 15 分。超过 256 MiB 或 1.1 亿像素的图片、超过 2 GiB 的视频仅索引，使用预制“此图片超大/此视频超大”占位；已知超限时不 GET，不参与评分/自动十图精选。主图 NCLX 决定 PQ/HLG 转换，辅助图 HDR 标签不能误伤有效 ICC SDR 主图。验证与定向迁移见 docs/research/preview-cache-hdr-policy.md。
 
+Mac 的 HDR/gain-map 成片使用 Apple 原生 SDR 解码，明确不展开 SDR gain-map 基底；纯 PQ/HLG 的便携转换采用 203 参考白并保留高位深。HDR 基底 gain map 无可靠解码器时保留需适配。HDR 缓存用独立版本定向重建并重算机器分析，不升级普通 SDR 版本触发全库重刮。见 docs/research/gainmap-sdr-validation.md。
+
 ## 经典 Cover Flow 定稿（2026-10-25）
 
 Gallery采用已选择的B经典Cover Flow，随宽度显示5–20张活动封面；长倒影融入黑色底边并带轻微毛玻璃。封面严格有效技术评分Top10（排除隐藏、占位和未评分），手工标记不覆盖排名；活动墙按拍摄时间升序，缺时间按文件名后置。停留活动预加载前15项本地4K，切换取消并释放Blob，不预取NAS原图。封面到墙、墙到单图使用旧图四散/新图中心入场同一时间轴，档案同步淡入；减少动态效果直接切换。返回必须保留封面及墙位置。墙左下黄褐竖线显示照片/非零视频数量；单图点击切换浏览器内铺满和档案。尺寸、色彩/位深/HDR、曝光三参数合并，镜头与相机相邻分行。复验见docs/research/classic-coverflow-validation.md。

@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from .auth import Security
 from .db import Database
 from .cache import Cache
-from .gallery import register as register_gallery, live_pair
+from .gallery import register as register_gallery, live_pair, media_url
 from .webdav import WebDAV, DAVError, normalize, within, strong
 from tools.inventory import excluded_directory, parse_event
 
@@ -231,14 +231,15 @@ def create_app(directory=None, dav_factory=WebDAV):
         with db.connect() as c:
             media = c.execute('SELECT data_json FROM media_info WHERE asset_id=? AND revision=?',(aid,row['revision'])).fetchone()
         media_info = json.loads(media[0]) if media else {}
+        preview_row = row | {'data_json':media[0] if media else '{}'}
         return {'id': aid, 'revision': row['revision'], 'version_quality': row['version_quality'],
                 'placeholder': media_info.get('placeholder'),
                 'media': media_info,
                 'original': None if media_info.get('placeholder') else f"/api/assets/{aid}/original?revision={row['revision']}",
                 'original_compatible': None if media_info.get('placeholder') else f"/api/assets/{aid}/original-compatible?revision={row['revision']}" if media_info.get('hdr_source') or Cache(db).lookup(aid,row['revision'],'compatible') or Path(row['path']).suffix.lower() in ('.heic','.heif','.hif','.avif') else None,
                 'live': live_pair(db,row),
-                'preview': f"/api/assets/{aid}/media/display?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'display') else None,
-                'thumbnail': f"/api/assets/{aid}/media/thumb?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'thumb') else None,
+                'preview': media_url(preview_row,'display') if Cache(db).lookup(aid,row['revision'],'display') else None,
+                'thumbnail': media_url(preview_row,'thumb') if Cache(db).lookup(aid,row['revision'],'thumb') else None,
                 'compatible': f"/api/assets/{aid}/media/compatible?revision={row['revision']}" if Cache(db).lookup(aid,row['revision'],'compatible') else None,
                 'playback': f"/api/assets/{aid}/original?revision={row['revision']}" if row['kind']=='video_candidate' and not media_info.get('placeholder') else None,
                 'derivatives_status': 'ready' if Cache(db).lookup(aid,row['revision'],'display') else 'pending',

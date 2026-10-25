@@ -34,7 +34,7 @@ API、目录 worker、媒体 worker、智能 worker 分进程。停止 superviso
 
 默认 80 GiB，可通过 `/api/cache/budget` 设置 4–200 GiB；需暂停媒体写入后修改。缓存预算包含临时下载/编码空间。常驻仅显示图（最长边 3840、WebP quality 80）和缩略图（640、quality 74），不放大低分辨率源。兼容全尺寸 JPEG 仅在暗房请求时临时生成，响应结束/取消即删除。
 
-ICC 转 sRGB；PQ/HLG HEIF 以主图 NCLX 和高位深解码经 zscale/Mobius 转 SDR，不能用辅助图标签误判 SDR 主图。缺失色域标记的成片按 sRGB 假定并降 15 分，原始分数保留。尚未验证的 gain-map 等编码保持待适配。
+ICC 转 sRGB；Mac 的 HDR/gain-map 成片优先用 Apple 原生 SDR 解码（macOS14+、Command Line Tools），纯 PQ/HLG 的便携路径保留高位深并使用 203 参考白。不能用辅助图标签误判 SDR 主图，也不能把 SDR gain-map 基底再次展开并映射。HDR 基底 gain map 在无可靠解码器时保持需适配。缺失色域标记的成片按 sRGB 假定并降 15 分，原始分数保留。策略、环境边界和定向重建见 [SDR 修复](../research/gainmap-sdr-validation.md)。
 
 超大图片（>256 MiB 或 >1.1 亿像素）和超大视频（>2 GiB）仅索引并使用预制 SVG 占位；已知大小超限不 GET，不做主体/人脸/评分或精选。普通 Live 候选可抽取 SDR 中帧，不再预制播放转码；播放按需从 NAS 原路径读取，依赖浏览器原生解码。原图浏览代理仍限制单请求 256 MiB / 120 秒；未提供按需视频转码。
 

@@ -16,7 +16,7 @@ from .auth import Security
 from .cache import Cache, CacheFull
 from .db import Database
 from .download import download, TransferCancelled
-from .media import metadata, facts, still, video, MediaUnsupported, VERSION
+from .media import metadata, facts, still, video, MediaUnsupported, VERSION, HDR_VERSION
 from .webdav import WebDAV, Entry, DAVError
 
 class MediaWorker:
@@ -31,7 +31,7 @@ class MediaWorker:
     def synchronize(self):
         with self.db.connect() as c:
             c.execute("INSERT OR IGNORE INTO media_jobs(asset_id,revision) SELECT id,revision FROM entries WHERE is_dir=0 AND missing=0 AND scope_excluded=0")
-            c.execute("UPDATE media_jobs SET status='pending',available=0 WHERE status='ready' AND EXISTS(SELECT 1 FROM media_info m WHERE m.asset_id=media_jobs.asset_id AND m.revision=media_jobs.revision AND json_extract(m.data_json,'$.version')!=?)",(VERSION,))
+            c.execute("UPDATE media_jobs SET status='pending',available=0 WHERE status='ready' AND EXISTS(SELECT 1 FROM media_info m WHERE m.asset_id=media_jobs.asset_id AND m.revision=media_jobs.revision AND json_extract(m.data_json,'$.version') NOT IN (?,?))",(VERSION,HDR_VERSION))
             stamp=tuple(c.execute('SELECT coalesce(max(updated),0),count(*) FROM entries').fetchone())
             if stamp!=self.policy_stamp:
                 photos={(r['source_id'],r['parent'],PurePosixPath(r['path']).stem.casefold()) for r in c.execute("SELECT source_id,parent,path FROM entries WHERE kind='image_candidate' AND missing=0 AND scope_excluded=0")}
@@ -194,7 +194,7 @@ class MediaWorker:
                     self.index_placeholder(t,progress,'image',locked=True)
                     shutil.rmtree(scratch,ignore_errors=True)
                     return True
-                result.update(file_type=meta.get('FileType'),version=VERSION)
+                result.update(file_type=meta.get('FileType'),version=result.pop('render_version',VERSION))
                 self.stage(t,'publish')
                 progress.report('publish')
                 target=self.cache.root/(t['id']+'-'+t['revision'])

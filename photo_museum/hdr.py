@@ -24,9 +24,12 @@ def tone_map(heif, folder, command, max_edge=3840):
         with raw.open('wb') as stream:
             for y in range(height): stream.write(data[y*heif.stride:y*heif.stride+row_bytes])
         del data
+        # ISO still-image reference white is 203 cd/m². Keep the full encoded
+        # range in the operator: a fixed peak=10 clips PQ values above 1000 nits.
+        peak=(10000 if transfer==16 else 1000)/203
         vf = (f'format=gbrp16le,zscale=w={w}:h={h}:pin={primaries}:tin={transfer}:min=0:rin=full:'
-              'p=1:t=linear:m=0:r=full:npl=100,format=gbrpf32le,'
-              'tonemap=mobius:param=0.3:desat=2:peak=10,'
+              'p=1:t=linear:m=0:r=full:npl=203,format=gbrpf32le,'
+              f'tonemap=mobius:param=0.3:desat=2:peak={peak:.8f},'
               'zscale=t=iec61966-2-1:p=1:m=0:r=full,format=rgb24')
         command(['ffmpeg','-v','error','-y','-threads','1','-filter_threads','1',
                  '-f','rawvideo','-pixel_format','rgba64le' if channels==4 else 'rgb48le',

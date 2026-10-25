@@ -31,3 +31,5 @@ description: 复验 photo-museum 正式媒体缓存、Gallery、单图进度与�
 Timeline气泡复验：`node --test web/tests/timeline-collage.test.mjs` 与 `node web/tests/timeline-preview.mjs`（8793合成fixture），再跑既有 `web/tests/timeline.mjs` 检查Dock。重点确认评分顺序、3/4/5拼贴统一尺寸、列表裁切之外的锚定、快切/收起Blob释放、零NAS原图请求、720px可读性、键盘与减少动态效果。
 
 中文显示复验见docs/research/chinese-labels-validation.md：后端tests/p1/test_localization.py验证原数据/置信度不变、歧义回退与GPS过期隔离。以MUSEUM_VALIDATION_CHINESE=1启动8793 fixture后运行web/tests/chinese-labels.mjs，核对Dashboard及单图档案。词表再生工具只读公共数据，须核验来源SHA-256并保留GeoNames/Chinese-CLIP/timm许可；不为显示翻译升级模型版本或触发全量重刮。
+
+HDR/gain-map SDR 修复见 docs/research/gainmap-sdr-validation.md，运行 tests/p1/test_hdr_sdr.py。Mac 原生 helper 需 macOS14+/Swift，显式请求 SDR，不先展开 gain map；编译物在数据目录，转换 PNG 在临时目录。合成 HEIC 编码须使用 transfer_characteristics（复数）并读回 NCLX 断言，文档中的单数参数会被 pillow-heif 忽略。真实对照分别检查 SDR 基底 gain-map 与纯 PQ，不将两者混称；白色比例只是同图辅助指标。定向重建用 tools/apply_hdr_sdr_policy.py，停 supervisor 等租约过期后先 dry-run 再 apply，保留私密收据；HDR 单独版本，不能升级全局 VERSION 导致全库重刮。完成后确认新版本 ready、分析重算、完成事件、thumb/display 账本和正常队列继续，入队数量不是已完成数量。
