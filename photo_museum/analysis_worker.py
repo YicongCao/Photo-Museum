@@ -7,7 +7,8 @@ from pathlib import Path
 from .db import Database
 from .processing import Progress, complete_file
 from .cache import Cache
-from .work_queue import directory_focus
+from .work_queue import choose_directory
+from .worker_runtime import is_database_busy, run_loop
 from .preferences import load_preferences,read_preferences,geography_version,geography_stamp,geocode_query
 
 class AnalysisWorker:
@@ -41,12 +42,16 @@ class AnalysisWorker:
  def tick(self):
   with self.db.connect() as c:
    if c.execute("SELECT value FROM settings WHERE key='media_paused'").fetchone()[0]=='true':return False
-   c.execute("INSERT OR REPLACE INTO settings VALUES('analysis_version',?)",(self.provider.version,))
+   versions={'analysis_version':self.provider.version}
    if self.geo:
     p=read_preferences(c);g=c.execute("SELECT value FROM settings WHERE key='geography_generation'").fetchone();g=int(g[0]) if g else 0
-    c.execute("INSERT OR REPLACE INTO settings VALUES('geography_version',?)",(geography_version(self.geo.version,p,g),))
-    c.execute("INSERT OR REPLACE INTO settings VALUES('geography_policy_stamp',?)",(geography_stamp(p,g),))
-   focus=directory_focus(c)
+    versions.update(geography_version=geography_version(self.geo.version,p,g),geography_policy_stamp=geography_stamp(p,g))
+   for key,value in versions.items():
+    previous=c.execute('SELECT value FROM settings WHERE key=?',(key,)).fetchone()
+    if not previous or previous['value']!=value:
+     c.execute('INSERT OR REPLACE INTO settings VALUES(?,?)',(key,value))
+  focus=choose_directory(self.db)
+  with self.db.connect() as c:
    r=c.execute("""SELECT e.id,e.revision,m.updated media_updated FROM entries e JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE q.status='ready' AND e.missing=0 AND e.scope_excluded=0 AND coalesce(json_extract(m.data_json,'$.metadata_only'),0)=0 AND (? IS NULL OR (e.source_id=? AND e.parent=?)) AND NOT EXISTS(SELECT 1 FROM analysis a WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider=? AND a.version=? AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version')) ORDER BY e.parent DESC,e.path DESC LIMIT 1""",(focus['source_id'] if focus else None,focus['source_id'] if focus else None,focus['parent'] if focus else None,self.provider.id,self.provider.version)).fetchone()
   self.geo_ticks+=1
   if (not r or self.geo_ticks%5==0) and self.geocode_one():return True
@@ -63,6 +68,7 @@ class AnalysisWorker:
    if 'progress' not in inspect.signature(self.provider.analyze).parameters:
     for step in ('subject','faces','score'):progress.report(step,'done')
   except Exception as exc:
+   if is_database_busy(exc):raise
    progress.finish('failed')
    result={'error':type(exc).__name__,'offline':True}
   progress.report('address')
@@ -118,12 +124,5 @@ def main():
  p=argparse.ArgumentParser();p.add_argument('--data',default='data/server');p.add_argument('--models',default='data/models');p.add_argument('--once',action='store_true');a=p.parse_args()
  from .providers import LocalVision
  worker=AnalysisWorker(Database(a.data),LocalVision(a.models))
- while True:
-  try:
-   worked=worker.tick()
-  except Exception as exc:
-   print('Analysis retry: '+type(exc).__name__,flush=True)
-   worked=False
-  if a.once:break
-  if not worked:time.sleep(2)
+ run_loop(worker.tick,idle=2,once=a.once)
 if __name__=='__main__':main()

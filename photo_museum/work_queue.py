@@ -1,8 +1,9 @@
 """One directory at a time, descending source-relative path, including analysis."""
 import json
 import os
+import sqlite3
 
-def directory_focus(c):
+def directory_focus(c, *, persist=True):
     enabled=os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1'
     row=c.execute("SELECT value FROM settings WHERE key='analysis_version'").fetchone()
     version=row['value'] if row else ''
@@ -27,5 +28,28 @@ def directory_focus(c):
         return focus
     row=c.execute(query+' ORDER BY e.parent DESC,e.source_id LIMIT 1',params).fetchone()
     focus=dict(row) if row else None
-    c.execute("INSERT OR REPLACE INTO settings VALUES('media_directory',?)",(json.dumps(focus),))
+    if persist and (saved is None or saved['value'] != json.dumps(focus)):
+        c.execute("INSERT OR REPLACE INTO settings VALUES('media_directory',?)",(json.dumps(focus),))
     return focus
+
+
+def choose_directory(database):
+    """Read the expensive projection outside the short compare-and-set write."""
+    for _ in range(3):
+        with database.connect() as c:
+            c.execute('BEGIN')
+            saved = c.execute("SELECT value FROM settings WHERE key='media_directory'").fetchone()
+            expected = saved['value'] if saved else None
+            focus = directory_focus(c, persist=False)
+        value = json.dumps(focus)
+        if expected == value:
+            return focus
+        with database.connect() as c:
+            c.execute('BEGIN IMMEDIATE')
+            current = c.execute("SELECT value FROM settings WHERE key='media_directory'").fetchone()
+            if (current['value'] if current else None) != expected:
+                continue
+            c.execute("INSERT OR REPLACE INTO settings VALUES('media_directory',?)", (value,))
+            return focus
+    # Another lane moved the focus; retry from a fresh snapshot next tick.
+    raise sqlite3.OperationalError('database is busy')

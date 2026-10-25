@@ -5,7 +5,8 @@ import time
 from .cache import Cache
 from .db import Database
 from .processing import Progress,complete_file
-from .work_queue import directory_focus
+from .work_queue import choose_directory
+from .worker_runtime import is_database_busy, run_loop
 
 
 class PhotographyWorker:
@@ -18,7 +19,8 @@ class PhotographyWorker:
     def tick(self):
         with self.db.connect() as c:
             if c.execute("SELECT value FROM settings WHERE key='media_paused'").fetchone()[0]=='true':return False
-            focus=directory_focus(c)
+        focus=choose_directory(self.db)
+        with self.db.connect() as c:
             r=c.execute("""SELECT e.id,e.revision,e.kind,m.updated media_updated,m.data_json FROM entries e
                 JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision
                 JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision
@@ -47,6 +49,7 @@ class PhotographyWorker:
             else:
                 try:result=self.provider.analyze(path,progress=progress.report)
                 except Exception as exc:
+                    if is_database_busy(exc):raise
                     result={'error':type(exc).__name__,'offline':True}
                     for step in ('style','topic'):progress.report(step,'failed')
         with self.db.connect() as c:
@@ -72,12 +75,7 @@ def main():
     p.add_argument('--models',default='data/models');p.add_argument('--once',action='store_true');a=p.parse_args()
     from .photography import LocalPhotography
     worker=PhotographyWorker(Database(a.data),LocalPhotography(a.models))
-    while True:
-        try:worked=worker.tick()
-        except Exception as exc:
-            print('Photography retry: '+type(exc).__name__,flush=True);worked=False
-        if a.once:break
-        if not worked:time.sleep(2)
+    run_loop(worker.tick,idle=2,once=a.once)
 
 
 if __name__=='__main__':main()

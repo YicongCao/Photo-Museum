@@ -8,6 +8,7 @@ import uuid
 from .auth import Security
 from .db import Database, invalidate
 from .webdav import WebDAV, DAVError
+from .worker_runtime import is_database_busy, run_loop
 from tools.inventory import classify, excluded_directory, parse_event
 
 LEASE = 30
@@ -46,7 +47,11 @@ class Worker:
         stop = threading.Event()
         def heartbeat():
             while not stop.wait(5):
-                self.renew(task)
+                try:
+                    self.renew(task)
+                except Exception as exc:
+                    if not is_database_busy(exc):
+                        raise
         thread = threading.Thread(target=heartbeat, daemon=True)
         thread.start()
         dav = None
@@ -58,7 +63,9 @@ class Worker:
             self.commit(task, entries)
         except DAVError as exc:
             self.failure(task, exc.code, exc.retryable)
-        except Exception:
+        except Exception as exc:
+            if is_database_busy(exc):
+                raise
             self.failure(task, 'worker_internal_error', False)
         finally:
             stop.set()
@@ -145,9 +152,7 @@ def main():
     args = parser.parse_args()
     worker = Worker(Database(args.data))
     try:
-        while True:
-            if not worker.tick():
-                time.sleep(1)
+        run_loop(worker.tick)
     except KeyboardInterrupt:
         pass
 

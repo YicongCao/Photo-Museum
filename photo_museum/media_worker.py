@@ -11,7 +11,8 @@ import uuid
 from pathlib import Path, PurePosixPath
 from PIL import Image
 from .processing import Progress, complete_file
-from .work_queue import directory_focus
+from .work_queue import choose_directory
+from .worker_runtime import is_database_busy, run_loop
 from .auth import Security
 from .cache import Cache, CacheFull
 from .db import Database
@@ -47,13 +48,13 @@ class MediaWorker:
 
     def claim(self):
         self.synchronize()
+        focus=choose_directory(self.db)
         now=time.time()
         with self.db.connect() as c:
             c.execute('BEGIN IMMEDIATE')
             c.execute('INSERT OR REPLACE INTO workers VALUES(?,?)',(self.id,now))
             if c.execute("SELECT value FROM settings WHERE key='media_paused'").fetchone()[0]=='true':
                 return None
-            focus=directory_focus(c)
             if not focus:return None
             row=c.execute("""SELECT e.*,q.attempts FROM media_jobs q JOIN entries e ON e.id=q.asset_id AND e.revision=q.revision JOIN jobs j ON j.id=e.seen_job
                 WHERE e.missing=0 AND e.scope_excluded=0 AND e.source_id=? AND e.parent=? AND j.status NOT IN ('paused','cancelled','blocked') AND ((q.status='pending' AND q.available<=?) OR (q.status='running' AND q.lease_until<?)) ORDER BY e.path DESC LIMIT 1""",(focus['source_id'],focus['parent'],now,now)).fetchone()
@@ -143,10 +144,13 @@ class MediaWorker:
         stop=threading.Event()
         def renew():
             while not stop.wait(5):
-                with self.db.connect() as c:
-                    c.execute('UPDATE media_jobs SET lease_until=? WHERE asset_id=? AND revision=? AND token=?',(time.time()+30,t['id'],t['revision'],t['token']))
-                    c.execute('INSERT OR REPLACE INTO workers VALUES(?,?)',(self.id,time.time()))
-                    c.execute("UPDATE processing_progress SET updated=? WHERE asset_id=? AND revision=? AND lane='media' AND token=?",(time.time(),t['id'],t['revision'],t['token']))
+                try:
+                    with self.db.connect() as c:
+                        c.execute('UPDATE media_jobs SET lease_until=? WHERE asset_id=? AND revision=? AND token=?',(time.time()+30,t['id'],t['revision'],t['token']))
+                        c.execute('INSERT OR REPLACE INTO workers VALUES(?,?)',(self.id,time.time()))
+                        c.execute("UPDATE processing_progress SET updated=? WHERE asset_id=? AND revision=? AND lane='media' AND token=?",(time.time(),t['id'],t['revision'],t['token']))
+                except Exception as exc:
+                    if not is_database_busy(exc):raise
         thread=threading.Thread(target=renew,daemon=True)
         thread.start()
         dav=None
@@ -238,18 +242,19 @@ class MediaWorker:
         except subprocess.TimeoutExpired:
             self.finish(t,'failed','codec_timeout')
         except Exception as exc:
+            if is_database_busy(exc):raise
             # Never expose ExifTool/ffmpeg stderr, filenames or credentials in public logs.
             self.finish(t,'failed','media_'+type(exc).__name__)
         finally:
+            stop.set()
+            thread.join()
+            if dav:
+                dav.close()
             with self.db.connect() as c:
                 status=c.execute('SELECT status FROM media_jobs WHERE asset_id=? AND revision=?',(t['id'],t['revision'])).fetchone()
             if status:
                 if status['status']=='running':self.finish(t,'pending')
                 progress.finish(status['status'] if status['status']!='running' else 'pending')
-            stop.set()
-            thread.join()
-            if dav:
-                dav.close()
         return True
 
 def main():
@@ -261,12 +266,7 @@ def main():
         raise SystemExit(0)
     signal.signal(signal.SIGTERM,shutdown)
     worker=MediaWorker(Database(a.data))
-    while True:
-        work=worker.tick()
-        if a.once:
-            break
-        if not work:
-            time.sleep(1)
+    run_loop(worker.tick,once=a.once)
 
 if __name__=='__main__':
     main()

@@ -4,9 +4,8 @@ import importlib.util
 import os
 from pathlib import Path
 import signal
-import subprocess
 import sys
-import time
+from .supervisor import supervise
 
 
 def main():
@@ -41,34 +40,13 @@ def main():
     if (models/'photography/manifest.json').exists() and importlib.util.find_spec('open_clip'):
         env['MUSEUM_PHOTOGRAPHY_ENABLED']='1'
         commands.append([sys.executable,'-m','photo_museum.photography_worker','--data',env['MUSEUM_DATA'],'--models',str(models)])
-    children = []
     stopping = False
     def stop(*_):
         nonlocal stopping
         stopping = True
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
-    result = 0
-    try:
-        for cmd in commands:
-            children.append(subprocess.Popen(cmd, env=env))
-        while not stopping:
-            failed = next((p for p in children if p.poll() is not None), None)
-            if failed:
-                result = failed.returncode or 1
-                break
-            time.sleep(.25)
-    finally:
-        for child in children:
-            if child.poll() is None:
-                child.terminate()
-        for child in children:
-            try:
-                child.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                child.kill()
-                child.wait()
-    return result
+    return supervise(commands, env, lambda: stopping)
 
 if __name__ == '__main__':
     sys.exit(main())

@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-26",
+  "full_regression": {
+    "passed": 142,
+    "new_contention_tests_included": 10
+  },
+  "contention_final": {
+    "passed": 12,
+    "unique_additional_tests": 2
+  },
+  "distinct_verified_tests": 144,
+  "fault_injection_scope": "Separate empty SQLite, no NAS/model access",
+  "cases": [
+    "actual SQLITE_BUSY and extension classification",
+    "transaction rollback and once failure",
+    "read projection allows an independent writer",
+    "compare-and-set focus under contention",
+    "unchanged focus does not write",
+    "busy scan commit preserves job and deletion safety",
+    "busy media decode does not record codec failure",
+    "busy visual/photography analysis is retryable",
+    "worker crash backoff and listener fatal exit",
+    "real supervisor worker SIGKILL retains HTTP PID",
+    "writer lock beyond 10s keeps API online, releases and resumes heartbeats"
+  ],
+  "production_observation_seconds": 354,
+  "production_restarts_observed": 0,
+  "queue_preserved": true,
+  "preview_compatibility_changes": false
+}

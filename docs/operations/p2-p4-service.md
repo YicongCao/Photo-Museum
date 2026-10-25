@@ -90,3 +90,9 @@ uv run --all-extras python -m photo_museum.backup restore /private/backup-new /p
 ## 统一 Settings
 
 `/#settings` 集中文件源、Provider、GPS、显示和缓存。已有凭据不会回填；密码/key留空保留。Provider地址改变需重填key；文件源地址/根目录改变需新建源。GPS规则保存后由分析进程增量重算本地地址，无NAS GET；媒体暂停时一同暂停。按需原图和HDR只影响查看请求，缓存保持SDR，不引发重刮。详见[Settings验证](../research/unified-settings-validation.md)。
+
+## SQLite竞争与worker退出（2026-10-26）
+
+服务继续使用本地WAL SQLite。四类worker遇BUSY/LOCKED会退避、重新读取持久队列，不把临时锁当作坏照片；候选/目录重查询不持有写锁。worker异常退出由supervisor按1–30秒单独重启，HTTP进程继续服务；API本身退出仍关闭整个supervisor。停止服务仍向supervisor发送SIGTERM，不要逐个强杀worker。
+
+排查先读本次服务日志，区分`Database busy; worker will retry`、`Worker N exited; restart in Ns`与实际数据库/模型异常。短暂BUSY恢复不等于文件失败；反复重启需查真正异常，不能只调高timeout掩盖。复验见[锁竞争与进程恢复](../research/sqlite-contention-recovery.md)，故障注入只运行于隔离测试库，不对真实NAS/正式库持锁。

@@ -20,6 +20,8 @@ class Database:
         with open(self.directory / '.migrate.lock', 'a+b') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             with self.connect() as db:
+                # WAL is persistent. Set it once at startup, not on every request.
+                db.execute('PRAGMA journal_mode=WAL')
                 version = db.execute('PRAGMA user_version').fetchone()[0]
                 if version > len(MIGRATIONS):
                     raise RuntimeError('Database is newer than this server')
@@ -29,12 +31,11 @@ class Database:
         os.chmod(self.path, 0o600)
 
     @contextlib.contextmanager
-    def connect(self):
-        db = sqlite3.connect(self.path, timeout=10)
+    def connect(self, *, timeout=10):
+        db = sqlite3.connect(self.path, timeout=timeout)
         db.row_factory = sqlite3.Row
-        db.execute('PRAGMA foreign_keys=ON')
-        db.execute('PRAGMA journal_mode=WAL')
         try:
+            db.execute('PRAGMA foreign_keys=ON')
             yield db
             db.commit()
         except BaseException:
