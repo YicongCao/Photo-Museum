@@ -5,6 +5,7 @@ import "./style.css";
 import { Icon } from "./icons";
 import { Gallery } from "./gallery";
 import { Manager } from "./manager";
+import { Curator } from './curator';
 import { watchAutoUnlock } from "./auto-unlock";
 const errors = {
   credentials_or_permission: "NAS 拒绝访问，请检查凭据与目录权限。",
@@ -97,8 +98,11 @@ function App() {
   if (state)
     return route === "#manage" ? (
       <Manager api={api} state={state} refresh={refresh} onLogout={logout} />
-    ) : (
+    ) : route.startsWith('#curator') ? <Curator api={api}/> : (
       <Gallery
+        key={new URLSearchParams(route.split('?')[1]).get('exhibit') || 'library'}
+        exhibitionId={new URLSearchParams(route.split('?')[1]).get('exhibit')}
+        roomHint={new URLSearchParams(route.split('?')[1]).get('room')}
         api={api}
         onAdmin={() => (location.hash = "manage")}
         onLogout={logout}

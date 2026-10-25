@@ -174,11 +174,15 @@ def device_type(p):
     return 'camera'
 
 
-def register(app,db,owner):
-    catalog=ExhibitionCatalog(db);app.state.exhibitions=catalog
+def register(app,db,owner,prefix='/api',catalog_factory=None):
+    if catalog_factory:
+        def get_catalog(exhibition_id:str):return catalog_factory(exhibition_id)
+    else:
+        catalog=ExhibitionCatalog(db);app.state.exhibitions=catalog
+        def get_catalog():return catalog
 
-    @app.get('/api/exhibitions/calendar',dependencies=[Depends(owner)])
-    def calendar_view(anchor:str|None=None,scale:str='month'):
+    @app.get(prefix+'/exhibitions/calendar',dependencies=[Depends(owner)])
+    def calendar_view(anchor:str|None=None,scale:str='month',catalog=Depends(get_catalog)):
         photos=catalog.photos();years=sorted({int(p['period'][:4]) for p in photos if p['period']},reverse=True)
         anchor=anchor or max((p['period'] for p in photos if p['period']),default=date.today().isoformat())
         parsed=period(anchor)
@@ -203,11 +207,11 @@ def register(app,db,owner):
         return {'anchor':parsed,'scale':scale,'cells':cells,'years':years,'period_unknown':len(unknown),
                 'unknown':sum(p['period'] is None for p in photos),'undated':sum(p['date_precision']!='day' for p in photos),'total':len(photos)}
 
-    @app.get('/api/exhibitions/photos',dependencies=[Depends(owner)])
+    @app.get(prefix+'/exhibitions/photos',dependencies=[Depends(owner)])
     def photo_collection(day:str|None=None,month:str|None=None,year:int|None=Query(default=None,ge=1,le=9998),
                          undated:str|None=None,camera:str|None=None,lens:str|None=None,place:str|None=None,
                          pinned:bool=False,missing_gps:bool=False,unresolved_gps:bool=False,activity:str|None=None,
-                         sort:str='time',offset:int=Query(default=0,ge=0),limit:int=Query(default=100,ge=1,le=200)):
+                         sort:str='time',offset:int=Query(default=0,ge=0),limit:int=Query(default=100,ge=1,le=200),catalog=Depends(get_catalog)):
         if day and (period(day)!=day or len(day)!=10):raise HTTPException(422,'日期无效')
         if month and (period(month)!=month or len(month)!=7):raise HTTPException(422,'月份无效')
         if sort not in ('time','score') or undated not in (None,'all','period','unknown'):raise HTTPException(422,'筛选无效')
@@ -216,8 +220,8 @@ def register(app,db,owner):
                    (lambda p:(p['period'] is None,p['period'] or '',str(p['captured_at'] or ''),p['name'],p['id'])))
         return {'items':found[offset:offset+limit],'total':len(found),'photos':len(found),'videos':0,'order':sort}
 
-    @app.get('/api/exhibitions/map',dependencies=[Depends(owner)])
-    def map_view(parent:str|None=None):
+    @app.get(prefix+'/exhibitions/map',dependencies=[Depends(owner)])
+    def map_view(parent:str|None=None,catalog=Depends(get_catalog)):
         photos=catalog.photos();located=[p for p in photos if p['gps'] and p['place']]
         ancestors=[];depth=0
         if parent:
@@ -267,14 +271,14 @@ def register(app,db,owner):
         result.sort(key=lambda r:(r['id'].endswith('unknown'),-r['count'],r['name']))
         return result
 
-    @app.get('/api/exhibitions/gear',dependencies=[Depends(owner)])
-    def gear_list(kind:str='camera'):
+    @app.get(prefix+'/exhibitions/gear',dependencies=[Depends(owner)])
+    def gear_list(kind:str='camera',catalog=Depends(get_catalog)):
         if kind not in ('camera','lens'):raise HTTPException(422,'器材类型无效')
         photos=catalog.photos()
         return {'devices':devices(photos,kind),'total':len(photos),'kind':kind}
 
-    @app.get('/api/exhibitions/gear/{did}',dependencies=[Depends(owner)])
-    def gear_detail(did:str,pinned:bool=False):
+    @app.get(prefix+'/exhibitions/gear/{did}',dependencies=[Depends(owner)])
+    def gear_detail(did:str,pinned:bool=False,catalog=Depends(get_catalog)):
         kind='lens' if did.startswith('lens-') else 'camera'
         photos=catalog.photos();device=next((d for d in devices(photos,kind) if d['id']==did),None)
         if not device:raise HTTPException(404,'器材不存在')

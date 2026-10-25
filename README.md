@@ -2,7 +2,7 @@
 
 一部可以不断重看的“人生照片集”。以活动主题作为展览，将照片、Live Photo 和视频组织成个人博物馆。服务目标是自托管于 Mac、内网 Linux 或 Docker，从 NAS WebDAV 只读取得成片。
 
-**当前阶段：P2–P4 本机软件链路及本轮 P5 四展厅已实现，真实队列持续运行，待用户验收。** 日历、离线地图、器材馆、独立时空隧道从Gallery菜单进入，首次仍是经典Cover Flow；物理HDR/真实移动设备和全库处理进度见 [STATUS](docs/STATUS.md)。
+**当前阶段：P2–P5 本机软件链路与 P6 策展助理首版已实现，真实队列持续运行，待用户验收。** [策展助理](http://127.0.0.1:8790/#curator)可用自然语言整理索引、查看模型/工具过程并Show至六种展厅；首次Gallery仍为经典Cover Flow。物理HDR/真实移动设备和全库处理进度见[STATUS](docs/STATUS.md)。
 
 最新视觉与交付顺序：[ADR 0005](docs/decisions/0005-p5-exhibition-rooms.md) · [纯黑/黄褐设计语言](docs/design/visual-language.md) · [P5验收与截图](docs/research/p5-exhibition-validation.md)。React/DOM、SVG与CSS透视实现沉浸观展，右侧timeline为年/月/活动三级。
 

@@ -1,11 +1,13 @@
 ---
 name: photo-museum-media-validation
-description: 复验 photo-museum 正式媒体缓存、Gallery/P5展厅、单图进度与本地策展；区分合成回归、真实 NAS、Docker 和 HDR 硬件证据。
+description: 复验 photo-museum 媒体缓存、Gallery/P5展厅、P6策展助理与本地策展；区分合成回归、真实 NAS、真实provider和硬件证据。
 ---
 
 # 正式媒体与馆务复验
 
 P5日历、离线地图、器材馆与独立时空隧道的隔离构建、fixture及回归见[四展厅复验](references/p5.md)。真实用户密码由用户输入；公开证据仅合成图库。
+
+P6自然语言策展、TokenHub流式tools、集合范围与真实接口小样见[策展助理复验](references/p6.md)。真实LLM测试只发送合成索引，私密图库检索使用禁网只读模式，不能把界面展示当作模型选片质量通过。
 
 先读 docs/STATUS.md、docs/operations/p2-p4-service.md 和 docs/decisions/0004-processing-and-local-curation.md。当前是 React/DOM + CSS 透视，不是历史整页 WebGL 原型。
 

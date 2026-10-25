@@ -1,0 +1,34 @@
+{
+  "synthetic_only": true,
+  "model": "hy4-preview",
+  "temperature": 1.1,
+  "status": "completed",
+  "elapsed": 32.86,
+  "tool_names": [
+    "catalog_schema",
+    "library_overview",
+    "search_photos",
+    "search_photos",
+    "search_photos",
+    "search_photos",
+    "photo_details",
+    "create_exhibition"
+  ],
+  "thinking_characters": 1901,
+  "preparation": [
+    {
+      "checked": 0,
+      "total": 3,
+      "ready": 0,
+      "skipped": 0
+    },
+    {
+      "checked": 3,
+      "total": 3,
+      "ready": 3,
+      "skipped": 0
+    }
+  ],
+  "created_exhibition": true,
+  "scope": "Three generated photos and synthetic text metadata only; no private library was sent."
+}

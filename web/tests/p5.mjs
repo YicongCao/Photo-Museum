@@ -1,7 +1,7 @@
 import {chromium} from '../../prototype/node_modules/@playwright/test/index.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-const base='http://localhost:8795',out='docs/design/previews/p5';await fs.mkdir(out,{recursive:true});
+const base=process.env.MUSEUM_BROWSER_BASE || 'http://localhost:8795',out=process.env.MUSEUM_BROWSER_OUTPUT || 'docs/design/previews/p5';await fs.mkdir(out,{recursive:true});
 const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
 const context=await browser.newContext({viewport:{width:1586,height:992}}),page=await context.newPage(),checks=[],errors=[],requests=[];
 page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
@@ -52,5 +52,5 @@ try{
  const assetPage=await context.newPage();assetPage.on('pageerror',e=>errors.push(e.message));assetPage.on('request',r=>requests.push(r.url()));await assetPage.route('**/assets/world-*.js',route=>route.abort());await assetPage.goto(base+'/#gallery');await assetPage.getByRole('button',{name:'Gallery',exact:true}).click();await assetPage.getByRole('menuitemradio',{name:'地图',exact:true}).click();await assetPage.getByRole('alert').filter({hasText:'底图未载入'}).waitFor();await assetPage.locator('.place-list>button').first().waitFor();await assetPage.unroute('**/assets/world-*.js');await assetPage.getByRole('button',{name:'重新载入',exact:true}).click();await assetPage.locator('.world-country').first().waitFor();checks.push('A missing map asset has an explicit recovery while the local location list remains usable');await assetPage.close();
  assert.equal(requests.filter(u=>!u.startsWith(base)&&!u.startsWith('blob:')).length,0);checks.push('No external map, font, image or GPS service requests');
  assert.deepEqual(errors,[]);checks.push('No uncaught browser errors');
- await fs.writeFile('docs/research/p5-browser-evidence.json',JSON.stringify({date:new Date().toISOString(),checks,errors,fixture:'synthetic photos and explicitly injected metadata; not real photo color or subjective selection acceptance'},null,2));console.log(JSON.stringify({checks,errors},null,2));
+ await fs.writeFile(process.env.MUSEUM_BROWSER_EVIDENCE || 'docs/research/p5-browser-evidence.json',JSON.stringify({date:new Date().toISOString(),checks,errors,fixture:'synthetic photos and explicitly injected metadata; not real photo color or subjective selection acceptance'},null,2));console.log(JSON.stringify({checks,errors},null,2));
 }catch(e){await page.screenshot({path:'data/p5-validation/failure.png'});await fs.writeFile('data/p5-validation/failure.json',JSON.stringify({error:String(e),errors,text:await page.locator('body').innerText()},null,2));throw e}finally{await browser.close()}

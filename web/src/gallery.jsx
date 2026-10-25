@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "./icons";
 import {placeLabel,subjectLabel} from "./localized-labels";
 import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
@@ -15,9 +15,12 @@ import { RoomRefreshContext } from './rooms/common';
 import './rooms/rooms.css';
 
 const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道'};
-function savedRooms(){try{return JSON.parse(sessionStorage.getItem('museum.rooms') || '{}')}catch{return {}}}
+function savedRooms(key='museum.rooms'){try{return JSON.parse(sessionStorage.getItem(key) || '{}')}catch{return {}}}
 
-export function Gallery({ api, onAdmin }) {
+export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }) {
+  const storageKey=exhibitionId?'museum.rooms.'+exhibitionId:'museum.rooms';
+  const api=useMemo(()=>exhibitionId?((path,...args)=>baseApi((path==='/gallery'||path.startsWith('/gallery/')||path.startsWith('/exhibitions/'))?'/curator/exhibitions/'+encodeURIComponent(exhibitionId)+path:path,...args)):baseApi,[baseApi,exhibitionId]);
+  const [scopeMeta,setScopeMeta]=useState(null);
   const [loaded, setLoaded] = useState(false),
     [activities, setActivities] = useState([]),
     [index, setIndex] = useState(0),
@@ -27,12 +30,12 @@ export function Gallery({ api, onAdmin }) {
     [wallId,setWallId]=useState(null),
     [counts,setCounts]=useState(null),
     [opening,setOpening]=useState(false);
-  const [room,setRoom]=useState(()=>roomNames[savedRooms().room]?savedRooms().room:'cover'),[roomMenu,setRoomMenu]=useState(false),
-    [anchor,setAnchor]=useState(()=>savedRooms().anchor || null),[roomStates,setRoomStates]=useState(()=>savedRooms().states || {}),
+  const [room,setRoom]=useState(()=>roomNames[roomHint]?roomHint:roomNames[savedRooms(storageKey).room]?savedRooms(storageKey).room:'cover'),[roomMenu,setRoomMenu]=useState(false),
+    [anchor,setAnchor]=useState(()=>savedRooms(storageKey).anchor || null),[roomStates,setRoomStates]=useState(()=>savedRooms(storageKey).states || {}),
     [collection,setCollection]=useState(null);
   const roomMenuRef=useRef(null),wallPositions=useRef({});
   const [roomRevision,setRoomRevision]=useState(0);
-  useEffect(()=>{try{sessionStorage.setItem('museum.rooms',JSON.stringify({room,anchor,states:roomStates,activityId:activities[index]?.id || savedRooms().activityId}))}catch{}},[room,anchor,roomStates,activities[index]?.id]);
+  useEffect(()=>{try{sessionStorage.setItem(storageKey,JSON.stringify({room,anchor,states:roomStates,activityId:activities[index]?.id || savedRooms(storageKey).activityId}))}catch{}},[room,anchor,roomStates,activities[index]?.id]);
   useEffect(()=>{
     if(!roomMenu)return;
     const focus=requestAnimationFrame(()=>roomMenuRef.current?.querySelector('[aria-checked="true"]')?.focus());
@@ -51,7 +54,7 @@ export function Gallery({ api, onAdmin }) {
   useEffect(()=>{
     if (!current || view!=='tunnel' || !['cover','space'].includes(room) || openingRef.current) return;
     const timer=setTimeout(()=>{
-      if(warm.current?.id===current.id)return;
+      if(openingRef.current || warm.current?.id===current.id)return;
       warm.current?.dispose();warm.current=createActivityWarmup(api,current.id);
     },280);
     return ()=>clearTimeout(timer);
@@ -72,7 +75,17 @@ export function Gallery({ api, onAdmin }) {
     }catch(e){if(e.name!=='AbortError')setError(e.message)}
     finally{openingRef.current=false;setOpening(false)}
   };
-  selectedId.current = current?.id || savedRooms().activityId;
+  useEffect(()=>{
+    if(!exhibitionId)return;const controller=new AbortController();
+    baseApi('/curator/exhibitions/'+encodeURIComponent(exhibitionId),'GET',undefined,{signal:controller.signal}).then(meta=>{
+      if(controller.signal.aborted)return;setScopeMeta(meta);
+      if(roomHint==='wall')openCollection({id:'curated-'+exhibitionId,title:meta.title,dateLabel:'策展',endpoint:'/exhibitions/photos?sort=time'});
+    }).catch(e=>{if(!controller.signal.aborted)setError(e.message)});
+    return()=>controller.abort();
+  },[exhibitionId]);
+  const returnCurator=()=>{location.hash='curator'+(scopeMeta?.run_id?'?run='+scopeMeta.run_id:'')};
+  const rootWall=exhibitionId&&collection?.id==='curated-'+exhibitionId&&roomHint==='wall';
+  selectedId.current = current?.id || savedRooms(storageKey).activityId;
   const reload = () =>
     api("/gallery")
       .then((d) => {
@@ -143,7 +156,8 @@ export function Gallery({ api, onAdmin }) {
   return (
     <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening}>
       <nav className="gallery-nav" inert={!!photo}>
-        {view === "wall" && <button className="gallery-back" onClick={backGallery} aria-label={room==='cover'?'返回 Gallery':'返回 '+roomNames[room]}>← {room==='cover'?'Gallery':roomNames[room]}</button>}
+        {view === "wall" && <button className="gallery-back" onClick={rootWall?returnCurator:backGallery} aria-label={rootWall?'返回策展助理':room==='cover'?'返回 Gallery':'返回 '+roomNames[room]}>← {rootWall?'策展助理':room==='cover'?'Gallery':roomNames[room]}</button>}
+        {exhibitionId&&view==='tunnel'&&<><button className="gallery-curated-back" onClick={returnCurator}>← 策展助理</button><span className="gallery-curated-context">{scopeMeta?.title}</span></>}
         <div>
           <button onClick={onAdmin}>Dashboard</button>
           <div ref={roomMenuRef} className="gallery-room-switch"><button
@@ -153,10 +167,11 @@ export function Gallery({ api, onAdmin }) {
             Gallery
           </button>{roomMenu&&<div className="gallery-room-menu" role="menu" aria-label="展厅" onKeyDown={e=>{
             if(!['ArrowDown','ArrowUp','Home','End'].includes(e.key))return;
-            e.preventDefault();const items=[...e.currentTarget.querySelectorAll('[role="menuitemradio"]')],i=items.indexOf(document.activeElement);
+            e.preventDefault();const items=[...e.currentTarget.querySelectorAll('[role^="menuitem"]')],i=items.indexOf(document.activeElement);
             items[e.key==='Home'?0:e.key==='End'?items.length-1:(i+(e.key==='ArrowDown'?1:-1)+items.length)%items.length]?.focus();
           }}>
             {Object.entries(roomNames).map(([id,name])=><button role="menuitemradio" key={id} aria-checked={room===id} onClick={()=>changeRoom(id)}>{name}</button>)}
+            <button role="menuitem" className="curator-menu-entry" onClick={()=>{location.hash='curator'}}>策展助理</button>
           </div>}</div>
           <FullscreenButton />
         </div>

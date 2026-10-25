@@ -69,3 +69,8 @@ Timeline活动hover/focus时使用336×236px气泡预览最高分前3–5张本�
 ## P5 四展厅（2026-10-25）
 
 首次Gallery仍为Cover Flow；新增日历、地图、器材馆、独立时空隧道通过Gallery菜单进入，会话记住选择。地图采用本地Natural Earth世界几何，不请求外部瓦片、不上传GPS；保留署名与最近城市/推断精度。年度/月度日期不得伪造月日。器材线稿是结构/类型示意，未知型号不冒充精确轮廓。新增集合复用照片墙、暗房与取消/释放流程；不为展厅统计GET原图或重刮。方案及边界见docs/decisions/0005-p5-exhibition-rooms.md，复验见docs/research/p5-exhibition-validation.md；原计划B长卷/F高级屏保不因四展厅上线自动标完成。
+
+
+## P6 策展助理（2026-10-25）
+
+用户已指定TokenHub/hy4-preview。Provider密钥只在服务端加密，不进前端/Git/日志；默认temperature1.1、thinking enabled、reasoning_effort high。页面只展示provider实际返回思考；tools限本地索引检索和展览草案，无SQL/shell/HTTP/NAS写入。外发摘要不含原图、路径、精确GPS、人脸特征/人物库姓名；真实provider验证用合成索引。空结果不偷偷放宽条件；未接受推断/过期模型不当命中。模型结束后核对筛选、隐藏、版本和双缓存，进度按实际计数；六种Show都必须限定同一集合。取消/重启/重连不自动重发付费请求。见docs/decisions/0006-curation-assistant.md与docs/research/p6-curation-assistant.md。

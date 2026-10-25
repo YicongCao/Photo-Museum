@@ -3,8 +3,9 @@ import importlib.util,io,json,os,tempfile,time
 from pathlib import Path
 from PIL import Image,ImageDraw,ImageCms
 import uvicorn
-os.environ['MUSEUM_HOSTS']='127.0.0.1:8795,localhost:8795'
-os.environ['MUSEUM_WEB_DIST']=str(Path('data/p5-validation/web-dist').resolve())
+port=int(os.environ.get('MUSEUM_FIXTURE_PORT','8795'))
+os.environ['MUSEUM_HOSTS']=f'127.0.0.1:{port},localhost:{port}'
+os.environ.setdefault('MUSEUM_WEB_DIST',str(Path('data/p5-validation/web-dist').resolve()))
 spec=importlib.util.spec_from_file_location('fixture',Path('tests/p1/fixture.py'));fixture=importlib.util.module_from_spec(spec);spec.loader.exec_module(fixture)
 from photo_museum.api import create_app
 from photo_museum.worker import Worker
@@ -52,4 +53,10 @@ with tempfile.TemporaryDirectory(prefix='museum-p5-') as directory,fixture.fixtu
    with db.connect() as c:c.execute('INSERT OR REPLACE INTO analysis VALUES(?,?,?,?,?,?)',(row['id'],row['revision'],'places','p5-places',json.dumps(place),time.time()))
   if n%9==0:
    with db.connect() as c:c.execute('INSERT OR REPLACE INTO curation VALUES(?,?,?,?)',(row['id'],1,0,time.time()))
- print('P5 synthetic ready',flush=True);uvicorn.run(app,host='127.0.0.1',port=8795,access_log=False)
+ if os.environ.get('MUSEUM_VALIDATION_CURATOR')=='1':
+  import httpx
+  from photo_museum.curator_provider import ProviderInput,save_config
+  from tests.p1.curator_fixture import FakeLLM
+  save_config(db,security,ProviderInput(api_key='fake-provider-key'))
+  app.state.curator.transport=httpx.MockTransport(FakeLLM(delay=.06))
+ print('P5/P6 synthetic ready',flush=True);uvicorn.run(app,host='127.0.0.1',port=port,access_log=False)

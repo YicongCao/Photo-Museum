@@ -1,0 +1,9 @@
+{
+  "date": "2026-10-25T03:49:33.278Z",
+  "checks": [
+    "1280 by 640: header, composer and process remain in the viewport without document scrolling",
+    "844 by 390: header, composer and process remain in the viewport without document scrolling",
+    "390 by 540: header, composer and process remain in the viewport without document scrolling"
+  ],
+  "fixture": "synthetic photos and local fake provider"
+}
