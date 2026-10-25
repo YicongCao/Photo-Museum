@@ -1,0 +1,119 @@
+{
+  "date": "2026-10-25T15:17:31.080Z",
+  "checks": [
+    "Local 23KB Cormorant medium face loads and supplies the English section titles",
+    "Chinese and numeral glyph pixels and widths remain identical in UI/display stacks at original light and regular weights; English glyphs change",
+    "Gallery titles and controls fit desktop, phone, narrow phone and short landscape",
+    "Dashboard brand, Settings headline and Curator navigation use the heading face without header overlap on desktop and 320/390px screens",
+    "Blocked font requests retain usable existing fallback typography",
+    "No external runtime font/image requests or uncaught browser errors; no LLM request is sent"
+  ],
+  "errors": [],
+  "face": [
+    {
+      "family": "Museum Editorial",
+      "status": "loaded",
+      "weight": "500",
+      "unicodeRange": "U+41-5A, U+61-7A, U+C0-D6, U+D8-F6, U+F8-FF"
+    }
+  ],
+  "glyphs": [
+    {
+      "stack": 0,
+      "weight": 300,
+      "text": "香港·故地重游",
+      "samePixels": true,
+      "widthBefore": 200.89599609375,
+      "widthAfter": 200.89599609375
+    },
+    {
+      "stack": 0,
+      "weight": 300,
+      "text": "2026 · 10 0123456789",
+      "samePixels": true,
+      "widthBefore": 320.255859375,
+      "widthAfter": 320.255859375
+    },
+    {
+      "stack": 0,
+      "weight": 300,
+      "text": "Hong Kong",
+      "samePixels": false,
+      "widthBefore": 157.69593811035156,
+      "widthAfter": 146.07994079589844
+    },
+    {
+      "stack": 0,
+      "weight": 400,
+      "text": "香港·故地重游",
+      "samePixels": true,
+      "widthBefore": 200.89599609375,
+      "widthAfter": 200.89599609375
+    },
+    {
+      "stack": 0,
+      "weight": 400,
+      "text": "2026 · 10 0123456789",
+      "samePixels": true,
+      "widthBefore": 320.255859375,
+      "widthAfter": 320.255859375
+    },
+    {
+      "stack": 0,
+      "weight": 400,
+      "text": "Hong Kong",
+      "samePixels": false,
+      "widthBefore": 162.3999481201172,
+      "widthAfter": 146.07994079589844
+    },
+    {
+      "stack": 1,
+      "weight": 300,
+      "text": "香港·故地重游",
+      "samePixels": true,
+      "widthBefore": 200.9375,
+      "widthAfter": 200.9375
+    },
+    {
+      "stack": 1,
+      "weight": 300,
+      "text": "2026 · 10 0123456789",
+      "samePixels": true,
+      "widthBefore": 314.265625,
+      "widthAfter": 314.265625
+    },
+    {
+      "stack": 1,
+      "weight": 300,
+      "text": "Hong Kong",
+      "samePixels": false,
+      "widthBefore": 160.921875,
+      "widthAfter": 144.90269470214844
+    },
+    {
+      "stack": 1,
+      "weight": 400,
+      "text": "香港·故地重游",
+      "samePixels": true,
+      "widthBefore": 200.9375,
+      "widthAfter": 200.9375
+    },
+    {
+      "stack": 1,
+      "weight": 400,
+      "text": "2026 · 10 0123456789",
+      "samePixels": true,
+      "widthBefore": 314.265625,
+      "widthAfter": 314.265625
+    },
+    {
+      "stack": 1,
+      "weight": 400,
+      "text": "Hong Kong",
+      "samePixels": false,
+      "widthBefore": 160.921875,
+      "widthAfter": 144.90269470214844
+    }
+  ],
+  "fixture": "Synthetic catalog and local font assets. Glyph comparison uses browser canvas at identical coordinates, not system font-family assumptions."
+}

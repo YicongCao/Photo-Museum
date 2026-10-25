@@ -1,0 +1,12 @@
+{
+  "family": "Cormorant Garamond",
+  "weight": 500,
+  "file": "cormorant-garamond-latin-500-v21.woff2",
+  "bytes": 23260,
+  "sha256": "98d352d9c9f45482f9ad51fb9d07791c9a71ced6beb4fdc7e2b713997c714b0e",
+  "url": "https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_s06KnTOitk9IfqxUQ.woff2",
+  "css_url": "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap",
+  "license_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/cormorantgaramond/OFL.txt",
+  "license_sha256": "60700d351cac4650c51f3f9db318d2a420f8b45052dba2715eb5fec41f0f6956",
+  "scope": "English heading letters only; digits, Chinese and body text retain existing fonts."
+}

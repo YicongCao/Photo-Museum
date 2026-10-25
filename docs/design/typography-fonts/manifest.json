@@ -1,0 +1,35 @@
+[
+  {
+    "family": "Cormorant Garamond",
+    "weight": 500,
+    "file": "cormorantgaramond-500.woff2",
+    "bytes": 23260,
+    "sha256": "98d352d9c9f45482f9ad51fb9d07791c9a71ced6beb4fdc7e2b713997c714b0e",
+    "url": "https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_s06KnTOitk9IfqxUQ.woff2",
+    "css_url": "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&display=swap",
+    "license_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/cormorantgaramond/OFL.txt",
+    "license_sha256": "60700d351cac4650c51f3f9db318d2a420f8b45052dba2715eb5fec41f0f6956"
+  },
+  {
+    "family": "DM Serif Display",
+    "weight": 400,
+    "file": "dmserifdisplay-400.woff2",
+    "bytes": 17844,
+    "sha256": "f273cf2c9ce9bc7d6b0f4fcb8aee72f8cf5a249991308b6a144217e0760c5d3f",
+    "url": "https://fonts.gstatic.com/s/dmserifdisplay/v17/-nFnOHM81r4j6k0gjAW3mujVU2B2G_Bx0vrx52g.woff2",
+    "css_url": "https://fonts.googleapis.com/css2?family=DM+Serif+Display:wght@400&display=swap",
+    "license_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/dmserifdisplay/OFL.txt",
+    "license_sha256": "a3e5cdd67d4571dd0a24fcc968de0efde7ae97ef752daf0906e4767619dd7231"
+  },
+  {
+    "family": "Bodoni Moda",
+    "weight": 500,
+    "file": "bodonimoda-500.woff2",
+    "bytes": 15104,
+    "sha256": "ecaa97e6dfce92a2b123a0fe58d5be563c71ba7535d00ddb298c0e6963850e54",
+    "url": "https://fonts.gstatic.com/s/bodonimoda/v28/aFT67PxzY382XsXX63LUYL6GYFcan6NJrKp-VPjfJMShrpsGFUt8oXza8Id4tHrJcwDioQ.woff2",
+    "css_url": "https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@500&display=swap",
+    "license_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/bodonimoda/OFL.txt",
+    "license_sha256": "931dfe2e0cd3c9443295f5c1d754b8a8403bf060df50c1d5900267ade83d0046"
+  }
+]

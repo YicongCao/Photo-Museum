@@ -1,0 +1,42 @@
+/* Local, unmodified OFL font. Letters only: existing numeral and Chinese faces
+   remain the fallback even within mixed-language headings. */
+@font-face{
+ font-family:"Museum Editorial";src:url('./assets/fonts/cormorant-garamond-latin-500-v21.woff2') format('woff2');
+ font-style:normal;font-weight:500;font-display:swap;
+ unicode-range:U+0041-005A,U+0061-007A,U+00C0-00D6,U+00D8-00F6,U+00F8-00FF;
+}
+:root{--museum-title-latin:"Museum Editorial";--museum-ui-font:Inter,"Helvetica Neue","PingFang SC",sans-serif}
+.gallery-shell:is(.gallery-view-tunnel,.gallery-view-wall) .gallery-caption h1{font-family:var(--museum-title-latin),var(--gallery-display-font)}
+:is(.keeper-shell,.settings-shell,.curator-shell) :is(h1,h2,h3),.photo-viewer h2{
+ font-family:var(--museum-title-latin),var(--museum-ui-font);
+}
+.gallery-shell .gallery-nav>div>button:first-child,
+.gallery-shell .gallery-room-switch>button,
+.gallery-shell .gallery-back[aria-label="返回 Gallery"]{
+ font-family:var(--museum-title-latin),var(--museum-ui-font);font-size:18px;letter-spacing:.025em;
+}
+.keeper-header nav>:is(a,button:not([aria-label])),.settings-header nav>a,.curator-header nav>a{
+ font-family:var(--museum-title-latin),var(--museum-ui-font);font-size:17px;letter-spacing:.015em;
+}
+.keeper-shell .keeper-header>a{font-family:var(--museum-title-latin),var(--museum-ui-font);font-size:24px;letter-spacing:.17em}
+.settings-shell .settings-header h1{font-size:30px}
+.gallery-shell .dock-timeline h3.timeline-month{font-family:var(--museum-title-latin),var(--museum-ui-font);font-size:20px;letter-spacing:.025em}
+@media(max-width:900px){
+ .keeper-shell .keeper-header>a{font-size:15px;letter-spacing:.13em}
+ .keeper-header nav>:is(a,button:not([aria-label])){font-size:14px}
+}
+@media(max-width:700px){
+ .gallery-shell .gallery-nav>div>button:first-child,.gallery-shell .gallery-room-switch>button,.gallery-shell .gallery-back[aria-label="返回 Gallery"]{font-size:16px}
+ .settings-header nav>a,.curator-header nav>a{font-size:14px}
+ .settings-shell .settings-header h1{font-size:26px}
+ .gallery-shell .dock-timeline h3.timeline-month{font-size:18px}
+}
+@media(max-width:500px){
+ .keeper-shell .keeper-header>a{font-size:11px;letter-spacing:.08em}
+ .keeper-header nav>:is(a,button:not([aria-label])){font-size:13px}
+}
+@media(max-width:360px){
+ .settings-shell .settings-header h1{font-size:24px}
+ .settings-header>div,.settings-header nav{gap:8px}
+ .settings-header .settings-back{white-space:nowrap}
+}

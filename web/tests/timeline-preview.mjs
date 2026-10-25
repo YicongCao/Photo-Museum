@@ -17,7 +17,7 @@ try{
  const scores=await bubble.locator('.timeline-preview-cell').evaluateAll(els=>els.map(el=>Number(el.dataset.score)));
  const expected=data.activities.find(a=>a.event.theme==='海边的一天').selected.slice(0,count).map(p=>p.score);assert.deepEqual(scores,expected);checks.push('Loads only leading score-ranked photos and selects 3–5 images');
  const box=await bubble.boundingBox(),rail=await page.locator('.dock-timeline').boundingBox();assert.equal(box.width,336);assert.equal(box.height,236);assert.ok(box.x+box.width<rail.x&&box.y>=78&&box.y+box.height<=720);checks.push('Uniform 336×236 speech bubble opens left outside timeline scroll clipping');
- const typography=await page.locator('.dock-timeline').evaluate(el=>['.timeline-year','.timeline-month','button'].map(s=>getComputedStyle(el.querySelector(s)).fontSize));assert.deepEqual(typography,['26px','17px','14px']);checks.push('Year, month and activity fonts enlarged for 720px screens');
+ const typography=await page.locator('.dock-timeline').evaluate(el=>['.timeline-year','.timeline-month','button'].map(s=>getComputedStyle(el.querySelector(s)).fontSize));assert.deepEqual(typography,['26px','20px','14px']);checks.push('Year and activity typography preserved; English month headings use the readable display size');
  await page.screenshot({path:output+'/desktop.png'});
  const urls=await bubble.locator('img').evaluateAll(els=>els.map(i=>i.src));await page.mouse.move(20,60);await page.locator('.timeline-preview.closing').waitFor();assert.ok(await bubble.evaluate(el=>el.getAnimations().length>0));await bubble.waitFor({state:'detached'});
  assert.ok(await page.evaluate(urls=>urls.every(u=>window.previewRevoked.includes(u)),urls));checks.push('Collapse animation releases every thumbnail Blob URL');

@@ -9,6 +9,7 @@ import { Curator } from './curator';
 import { Settings } from './settings';
 import { PreferencesProvider } from './preferences';
 import { watchAutoUnlock } from "./auto-unlock";
+import './title-typography.css';
 const errors = {
   credentials_or_permission: "NAS 拒绝访问，请检查凭据与目录权限。",
   network_unavailable: "暂时无法连接 NAS。",

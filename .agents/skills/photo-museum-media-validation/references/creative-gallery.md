@@ -24,3 +24,5 @@
 照片流4K升级复验运行`node web/tests/wall-promotion.mjs`（同8793合成fixture）。控制网络及decode延迟，用requestAnimationFrame采样确认整个淡入都有已绘制缩略图或完全不透明的4K覆盖；不能只检查最终ready类。覆盖预热Blob迟到后父组件重绘不换src、解码拒绝、解码中返回清理src、减少动态效果、右下加载提示避让展签与横滚条。fixture每活动仅14张，脚本将首批items缩到8张来验证真实分页路径，不新增虚构媒体；见docs/research/wall-promotion-validation.md。
 
 头图比例复验：`node --test web/tests/cover-mosaic.test.mjs web/tests/cover-layout.test.mjs`，再以最新构建运行8793及`node web/tests/cover-hero.mjs`。使用真实内在宽高比匹配元数据的合成SVG头图，测量实际DOM槽位比例和裁切保留比例，检查四样式/手机、十图无重叠、倒影同构、原始排名顺序和小集合。截图须等待所有封面/镜面图片complete且naturalWidth>0，不能只等快速SVG头图就保存尚未加载的小照片空框。见docs/research/cover-hero-validation.md。
+
+英文标题复验运行`node web/tests/title-typography.mjs`，再运行现有timeline-preview回归。FontFaceSet须确认本地字体已加载；用浏览器Canvas在相同坐标分别绘制原字体栈及新字体栈，确认中文和数字像素/宽度不变、英文字母确实改变。检查320/390/桌面/矮屏四类标题栏的控件边界与交叠，字体请求失败仍可操作。OFL文件须出现在最终dist/assets/licenses中，字体与许可证SHA256须匹配manifest；不请求线上字体、不为字体核验发送真实LLM请求。见docs/research/title-typography.md。
