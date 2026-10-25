@@ -1,3 +1,4 @@
+import {PhotoLoading} from '../loading-mark';
 import React,{useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {RoomStatus,useRoomData} from './common';
 import './memory-scroll.css';
@@ -90,7 +91,7 @@ export function MemoryScrollRoom({api,state={},onState,onCollection,onPhoto}){
    <div className="scroll-editor-images" aria-busy={editor.loading} inert={saving||editor.loading||Boolean(editor.error)||undefined} aria-label="选择章节主图">{(editor.data?.items||active.chapter.selected||[]).map(p=><button key={p.id} aria-label={'主图 '+p.name} aria-pressed={(active.chapter.heroId||active.hero?.id)===p.id} onClick={()=>{setHeroes(h=>({...h,[p.id]:p}));change(active.chapter.id,{hero_id:p.id})}}><img src={p.thumbnail} alt="" decoding="async"/></button>)}</div>
    {editor.error&&<p role="alert">{editor.error}<button onClick={editor.retry}>重试照片</button></p>}
    {saveError&&<p role="alert">{saveError}<button onClick={()=>{setDraft(null);setEditing(false);saved.retry()}}>重新读取</button></p>}
-   <footer><span>{editor.loading?'读取照片':editor.data?.total>60?'显示评分前 60 张':''}</span><button onClick={save} disabled={saving}>{saving?'保存中':'保存编排'}</button></footer>
+   <footer><span>{editor.loading?<PhotoLoading compact/>:editor.data?.total>60?'显示评分前 60 张':''}</span><button onClick={save} disabled={saving}>{saving?'保存中':'保存编排'}</button></footer>
   </section></div>}
  </section>;
 }

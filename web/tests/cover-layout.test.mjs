@@ -31,3 +31,14 @@ test('depth cover shares the centered phone title axis without clipping',()=>{
   assert.equal(pose.origin,50);assert.ok(width*pose.origin/100-layout.cover/2>=0);
  }
 });
+
+test('balanced circular cover windows retain real unique activities at both ends',async()=>{
+ const {coverWindow}=await import('../src/cover-layout.js');
+ for(const total of [1,2,6,23,218])for(const width of [390,1440,3440])for(const position of [0,Math.floor(total/2),total-1]){
+  const layout=coverLayout(width,822,total,position),items=coverWindow(total,position,layout.count);
+  assert.equal(new Set(items.map(p=>p.index)).size,items.length);
+  assert.equal(items.filter(p=>p.d<0).length,items.filter(p=>p.d>0).length);
+  assert.equal(items.filter(p=>p.d===0).length,1);
+  assert.ok(items.every(p=>p.index>=0&&p.index<total));
+ }
+});

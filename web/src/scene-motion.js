@@ -5,13 +5,48 @@ import { flushSync } from 'react-dom';
 export function useSceneMotion(root) {
   const running = useRef(false), cleanup = useRef(() => {});
   useEffect(() => () => cleanup.current(), []);
-  return async (selector, change, incoming, mode='scatter') => {
+  const animate = async (selector, change, incoming, mode='scatter') => {
     if (running.current) cleanup.current();
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) { flushSync(change); return true; }
     running.current = true;
+    if(['cover-wall','wall-cover','photo-close','fit'].includes(mode)){
+      let active=true;const motions=[];
+      const visible=el=>{const r=el.getBoundingClientRect();return getComputedStyle(el).visibility!=='hidden'&&r.width>0&&r.height>0&&r.right>0&&r.left<innerWidth&&r.bottom>0&&r.top<innerHeight};
+      const find=css=>[...root.current.querySelectorAll(css)].filter(visible).slice(0,40);
+      const finish=()=>{active=false;motions.forEach(a=>a.cancel());if(cleanup.current===finish){running.current=false;cleanup.current=()=>{}}};cleanup.current=finish;
+      if(mode==='fit'){
+        const old=root.current.querySelector('.viewer-image-area')?.getBoundingClientRect();flushSync(change);
+        const area=root.current.querySelector('.viewer-image-area'),next=area?.getBoundingClientRect();
+        if(old&&next){const scale=Math.min(old.width/next.width,old.height/next.height);motions.push(area.animate([
+          {translate:`${old.x+old.width/2-next.x-next.width/2}px ${old.y+old.height/2-next.y-next.height/2}px`,scale,opacity:.85},
+          {translate:'0px 0px',scale:1,opacity:1}],{duration:460,easing:'cubic-bezier(.16,1,.3,1)',fill:'both'}))}
+        find('.metadata-panel').forEach(el=>motions.push(el.animate([{opacity:0,translate:'18px 0px'},{opacity:1,translate:'0px 0px'}],{duration:400,fill:'both'})));
+      }else{
+        const before=find(selector).sort((a,b)=>a.getBoundingClientRect().x-b.getBoundingClientRect().x);
+        before.forEach((el,i)=>{
+          const r=el.getBoundingClientRect(),main=el.classList.contains('depth-0'),cover=el.classList.contains('activity-panel');
+          const dx=cover?(main?innerWidth/2-r.x-r.width/2:(Number(el.dataset.coverOffset)<0?-1:1)*innerWidth*.65):70;
+          motions.push(el.animate([{translate:'0px 0px',scale:1,opacity:1},{translate:`${dx}px 0px`,scale:main?.15:cover?.85:.94,opacity:0}],
+            {duration:mode==='cover-wall'?300:220,delay:cover?0:Math.min(i,12)*5,easing:'cubic-bezier(.55,0,.8,.4)',fill:'forwards'}));
+        });
+        await Promise.allSettled(motions.map(a=>a.finished));if(!active)return false;
+        flushSync(change);motions.forEach(a=>a.cancel());motions.length=0;
+        const next=find(incoming).sort((a,b)=>a.getBoundingClientRect().x-b.getBoundingClientRect().x||a.getBoundingClientRect().y-b.getBoundingClientRect().y);
+        const left=next[0]?.getBoundingClientRect().x || 0;
+        next.forEach((el,i)=>{
+          const r=el.getBoundingClientRect(),cover=el.classList.contains('activity-panel'),main=el.classList.contains('depth-0');
+          const delay=cover?Math.min(Math.abs(Number(el.dataset.coverOffset)),5)*24:Math.min(270,Math.max(0,r.x-left)*.14)+i%3*14;
+          const from=cover?{opacity:0,translate:`${main?innerWidth/2-r.x-r.width/2:(Number(el.dataset.coverOffset)<0?-1:1)*innerWidth*.55}px 0px`,scale:main?.15:.8}
+            :{opacity:0,transform:'perspective(1100px) translateX(-84px) rotateY(-25deg) scale(.90)',transformOrigin:'left center'};
+          const to=cover?{opacity:1,translate:'0px 0px',scale:1}:{opacity:1,transform:'perspective(1100px) translateX(0px) rotateY(0deg) scale(1)',transformOrigin:'left center'};
+          motions.push(el.animate([from,to],{duration:620,delay,easing:'cubic-bezier(.12,.72,.18,1)',fill:'both'}));
+        });
+      }
+      await Promise.allSettled(motions.map(a=>a.finished));if(!active)return false;finish();return true;
+    }
     if(mode==='room' || mode==='back'){
       let active=true;const motions=[];
-      const visible=el=>getComputedStyle(el).visibility!=='hidden'&&!el.closest('[inert]');
+      const visible=el=>getComputedStyle(el).visibility!=='hidden';
       const finish=()=>{active=false;motions.forEach(a=>a.cancel());if(cleanup.current===finish){running.current=false;cleanup.current=()=>{}}};cleanup.current=finish;
       const before=[...root.current.querySelectorAll(selector)].filter(visible);
       before.forEach(el=>motions.push(el.animate([{opacity:1,filter:'blur(0px)'},{opacity:0,filter:'blur(2px)'}],{duration:150,easing:'ease-out',fill:'forwards'})));
@@ -24,7 +59,7 @@ export function useSceneMotion(root) {
     }
     const animations = [], clones = [];
     const width = innerWidth, height = innerHeight;
-    const visible = el => { const r=el.getBoundingClientRect(); return getComputedStyle(el).visibility!=='hidden' && !el.closest('[inert]') && r.width>0 && r.height>0 && r.right>0 && r.left<width && r.bottom>0 && r.top<height; };
+    const visible = el => { const r=el.getBoundingClientRect(); return getComputedStyle(el).visibility!=='hidden' && r.width>0 && r.height>0 && r.right>0 && r.left<width && r.bottom>0 && r.top<height; };
     const sources = [...root.current.querySelectorAll(selector)].filter(visible).slice(0,40);
     sources.forEach((el,i) => {
       const r=el.getBoundingClientRect(), copy=document.createElement('img');
@@ -51,6 +86,8 @@ export function useSceneMotion(root) {
     await Promise.allSettled(animations.map(a=>a.finished));finish();
     return true;
   };
+  animate.cancel=()=>cleanup.current();
+  return animate;
 }
 
 // Keep encoded 4K previews only. Never prefetch NAS originals or retain decoded Image objects.
@@ -63,16 +100,17 @@ export function createActivityWarmup(api,id,endpoint) {
     const previews=data.previews || data.items;
     let next=0;
     const timer=setTimeout(()=>controller.abort(),8000);
-    try {
+    item.previewPromise=(async()=>{try {
       await Promise.allSettled(Array.from({length:4},async()=>{
         while(next<previews.length && !controller.signal.aborted) {
           const p=previews[next++];if(!p.preview)continue;
-          try {const response=await fetch(p.preview,{signal:controller.signal});if(!response.ok)continue;
+          try {const response=await fetch(p.preview,{signal:controller.signal,priority:'low'});if(!response.ok)continue;
             const blob=await response.blob();if(!controller.signal.aborted)urls.set(p.id,URL.createObjectURL(blob));
           }catch{/* A failed preview must not prevent opening the activity. */}
         }
       }));
-    } finally {clearTimeout(timer);}
+    } finally {clearTimeout(timer);}})();
+    item.previewPromise.catch(()=>{});
     return data;
   })();
   item.promise.catch(()=>{});

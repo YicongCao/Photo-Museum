@@ -1,5 +1,12 @@
 import React from "react";
 const paths = {
+  camera: 'M3 7h4l2-3h6l2 3h4v14H3zM12 10a4 4 0 1 0 0 8 4 4 0 0 0 0-8M18 10h.01',
+  lens: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10M7 3l3 5M3 15l5-2M16 21l-2-5M21 8l-5 3',
+  dimensions: 'M5 4h14v16H5zM2 4v16M1 4h2M1 20h2M5 23h14M5 22v2M19 22v2',
+  file: 'M5 2h9l5 5v15H5zM14 2v6h5M8 13h8M8 17h5',
+  exposure: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M12 2v20M6 9v6M3 12h6M15 12h5',
+  focus: 'M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8',
+
   sun: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4",
   moon: "M20.5 14.8A9 9 0 0 1 9.2 3.5a9 9 0 1 0 11.3 11.3Z",
   download: "M12 3v12M7 10l5 5 5-5M4 16v5h16v-5",

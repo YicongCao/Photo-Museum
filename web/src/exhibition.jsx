@@ -6,8 +6,10 @@ import React, {
   useRef,
   useState,
 } from "react";
+import {WallImage} from "./wall-image";
+import {PhotoLoading} from "./loading-mark";
 import { Icon } from "./icons";
-import {coverLayout,coverPose} from "./cover-layout";
+import {coverLayout,coverPose,coverWindow} from "./cover-layout";
 export function FullscreenButton({ target, className = "" }) {
   const [active, setActive] = useState(false);
   useEffect(() => {
@@ -77,7 +79,7 @@ export const Tunnel = forwardRef(function Tunnel(
   };
   useImperativeHandle(
     ref,
-    () => ({ goTo, move: (n) => goTo(Math.round(pos.current) + n) }),
+    () => ({ goTo, move: (n) => goTo(((Math.round(pos.current)+n)%activities.length+activities.length)%activities.length) }),
     [activities.length],
   );
   useLayoutEffect(() => {
@@ -126,6 +128,9 @@ export const Tunnel = forwardRef(function Tunnel(
     scroll.current.scrollTo({left:pos.current * stride.current,behavior:"instant"});
     resizing.current = false;
   }, [viewport]);
+  useLayoutEffect(()=>{
+    if(Math.round(pos.current)!==index){pos.current=index;scroll.current.scrollTo({left:index*stride.current,behavior:'instant'});setPosition(index)}
+  },[index]);
   const previousActivities = useRef(activities);
   useLayoutEffect(() => {
     const before = previousActivities.current,
@@ -166,8 +171,7 @@ export const Tunnel = forwardRef(function Tunnel(
   };
   const layout=coverLayout(width,height,activities.length,position,style),
     {count,cover:coverWidth,ratio,top}=layout,
-    start=clamp(Math.floor(position-count/2),0,Math.max(0,activities.length-count)),
-    visible=activities.map((a,i)=>({a,i})).slice(start,start+count);
+    visible=coverWindow(activities.length,position,count).map(({index:i,d})=>({a:activities[i],i,d}));
   return (
     <section
       ref={stage}
@@ -218,12 +222,13 @@ export const Tunnel = forwardRef(function Tunnel(
         />
       </div>
       <div className="tunnel-panels">
-        {visible.map(({ a, i }) => {
-          const d=i-position,{x,y,scale,angle,light,origin,z}=coverPose(d,layout,style);
+        {visible.map(({ a, i, d }) => {
+          const {x,y,scale,angle,light,origin,z}=coverPose(d,layout,style);
           return (
             <button
               key={a.id}
               data-activity={a.id}
+              data-cover-offset={d}
               className={
                 "activity-panel depth-" +
                 (i === index ? 0 : Math.max(1, i - index))
@@ -370,7 +375,7 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts, endp
   useEffect(() => {
     if (extent - left < (container.current?.clientWidth || 0) * 2) load();
   }, [left, extent, total]);
-  return (
+  return (<>
     <section
       className="photo-wall horizontal-wall"
       ref={container}
@@ -434,6 +439,7 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts, endp
           .map(({ p, x, y, w }) => (
             <button
               className="wall-photo"
+              data-photo={p.id}
               key={p.id}
               style={{ left: x, top: y, width: w, height: h }}
               onClick={(e) => {
@@ -442,12 +448,7 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts, endp
               }}
               aria-label={"查看 " + p.name}
             >
-              {(p.preview || p.thumbnail) ? <img
-                src={warm?.urls.get(p.id) || p.preview || p.thumbnail}
-                alt={p.name}
-                draggable="false"
-                decoding="async"
-              /> : <div className="video-index-card"><Icon name="video" />视频</div>}
+              {(p.preview || p.thumbnail) ? <WallImage photo={p} display={warm?.urls.get(p.id)}/> : <div className="video-index-card"><Icon name="video" />视频</div>}
               <span>{p.kind === "video_candidate" ? "▶" : ""}</span>
             </button>
           ))}
@@ -458,10 +459,13 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts, endp
             disabled={busy}
             onClick={load}
           >
-            {busy ? "读取照片" : "继续展开"}
+            {busy ? <PhotoLoading compact/> : "继续展开"}
           </button>
         )}
       </div>
     </section>
+    <div className="wall-scroll-control"><input type="range" aria-label="照片流横向位置" min="0" max={Math.max(0,extent-(container.current?.clientWidth || 0))} step="1" value={Math.min(left,Math.max(0,extent-(container.current?.clientWidth || 0)))}
+      onChange={e=>{container.current.scrollLeft=Number(e.target.value);setLeft(Number(e.target.value));onPosition?.(Number(e.target.value))}}/><output>{extent>(container.current?.clientWidth || 0)?Math.round(left/Math.max(1,extent-(container.current?.clientWidth || 0))*100):0}%</output></div>
+    </>
   );
 }

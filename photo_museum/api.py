@@ -236,6 +236,7 @@ def create_app(directory=None, dav_factory=WebDAV):
         media_info = json.loads(media[0]) if media else {}
         preview_row = row | {'data_json':media[0] if media else '{}'}
         return {'id': aid, 'revision': row['revision'], 'version_quality': row['version_quality'],
+                'size': row['size'],
                 'placeholder': media_info.get('placeholder'),
                 'media': media_info,
                 'original': None if media_info.get('placeholder') else f"/api/assets/{aid}/original?revision={row['revision']}",
@@ -363,6 +364,9 @@ def create_app(directory=None, dav_factory=WebDAV):
     build = Path(os.environ.get('MUSEUM_WEB_DIST', ROOT / 'web/dist')).resolve()
     if (build / 'assets').exists():
         app.mount('/assets', StaticFiles(directory=build / 'assets'), name='static')
+
+    if (build / 'brand').exists():
+        app.mount('/brand', StaticFiles(directory=build / 'brand'), name='brand')
 
     @app.get('/')
     def home():

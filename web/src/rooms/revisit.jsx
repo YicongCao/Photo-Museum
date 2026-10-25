@@ -1,3 +1,4 @@
+import {PhotoLoading} from '../loading-mark';
 import React,{useContext,useEffect,useMemo,useRef,useState} from 'react';
 import {RoomRefreshContext,RoomStatus,useRoomData,query} from './common';
 import './revisit.css';
@@ -98,7 +99,7 @@ export function RevisitRoom({api,state={},onState,onPhoto,onCollection}){
    <div className="revisit-picker-filters" inert={saving||undefined}><select aria-label="选片范围" value={kind==='all'?'all':kind+':'+source} onChange={e=>changeSource(e.target.value)}><option value="all">全部照片</option>{places.length>0&&<optgroup label="同城候选">{places.map(p=><option key={p.id} value={'place:'+p.id}>{p.label}</option>)}</optgroup>}<optgroup label="活动">{chapters.map(c=><option key={c.id} value={'chapter:'+c.id}>{c.label}</option>)}</optgroup></select><label>名称<input value={title} maxLength="120" onChange={e=>{setTitle(e.target.value);setPair({...draft(candidate),title:e.target.value,confirmed:false,id:null})}} placeholder="对照名称"/></label></div>
    <div className="revisit-picker-grid" aria-busy={photos.loading} inert={photos.loading||saving||undefined}>{photos.data?.items.map(p=><button key={p.id} aria-label={'选用 '+p.name} aria-pressed={p.id===shown?.left?.id||p.id===shown?.right?.id} onClick={()=>choose(p)}><img src={p.thumbnail} alt="" loading="lazy"/><span>{label(p)}</span></button>)}</div>
    {photos.error&&<p role="alert">{photos.error}<button onClick={photos.retry}>重试</button></p>}{error&&<p role="alert">{error}</p>}
-   <footer><div className="revisit-picker-pages"><button disabled={offset===0||photos.loading} onClick={()=>setOffset(Math.max(0,offset-40))} aria-label="上一页照片">←</button><span>{photos.loading?'读取照片':photos.data?.total?`${offset+1}–${Math.min(offset+40,photos.data.total)} / ${photos.data.total}`:'暂无照片'}</span><button disabled={photos.loading||offset+40>=(photos.data?.total||0)} onClick={()=>setOffset(offset+40)} aria-label="下一页照片">→</button></div><button onClick={save} disabled={saving||!shown?.left||!shown?.right||shown.left.id===shown.right.id}>{saving?'保存中':'确认同地点并保存'}</button></footer>
+   <footer><div className="revisit-picker-pages"><button disabled={offset===0||photos.loading} onClick={()=>setOffset(Math.max(0,offset-40))} aria-label="上一页照片">←</button><span>{photos.loading?<PhotoLoading compact/>:photos.data?.total?`${offset+1}–${Math.min(offset+40,photos.data.total)} / ${photos.data.total}`:'暂无照片'}</span><button disabled={photos.loading||offset+40>=(photos.data?.total||0)} onClick={()=>setOffset(offset+40)} aria-label="下一页照片">→</button></div><button onClick={save} disabled={saving||!shown?.left||!shown?.right||shown.left.id===shown.right.id}>{saving?'保存中':'确认同地点并保存'}</button></footer>
   </section></div>}
  </section>;
 }

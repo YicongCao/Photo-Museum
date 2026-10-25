@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-25T13:04:43.756Z",
+  "checks": [
+    "Central cover and equal wings, including the start of the library",
+    "Thumbnail paints before delayed 4K; entering tiles have staggered left-to-right fold animations",
+    "Centered bottom scrollbar controls actual wall scroll; bursts of120 scroll events coalesce history writes",
+    "Archive has per-row vectors, file bytes, resolution without MP, and decoded-original development animation",
+    "Native Back: immersive → archive → same wall position → Cover Flow",
+    "Forward and authenticated reload restore the photograph; in-page Back shares native history",
+    "Tunnel gutters are opaque ochre and slider is above every reflection",
+    "Phone one-page layout retains both scene navigation and wall scrollbar",
+    "Native Back during cover departure cancels stale scene work and clears clones",
+    "Reduced-motion mode retains the same native history and view hierarchy",
+    "The real loading state uses three folding logo panels and becomes static for reduced motion",
+    "No uncaught errors or external requests"
+  ],
+  "errors": [],
+  "fixture": "synthetic photos only; private photo quality and physical HDR are separate"
+}

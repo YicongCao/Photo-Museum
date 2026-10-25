@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#B88B4A" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
+  <title>Photo Museum</title>
+  <path d="M8 18 24 10v38L8 56Z"/>
+  <path d="m24 10 16 8v38l-16-8"/>
+  <path d="m40 18 16-8v38l-16 8"/>
+  <path d="m12 42 5-9 7 8m4-4 5-7 7 11m4-9 5-7 3 5"/>
+  <path d="M17 24v.01M33 24v.01M49 18v.01" stroke-width="2"/>
+</svg>

@@ -16,3 +16,8 @@
 .spacetime-boards{transform-style:flat;perspective:none}
 .gallery-room-space.gallery-view-tunnel .gallery-caption{left:88px;max-width:calc(50vw - 110px)}
 @media(max-width:700px){.gallery-room-space.gallery-view-tunnel .gallery-caption{left:72px;max-width:calc(100vw - 144px);bottom:34px}.gallery-room-space .gallery-caption:after{margin-top:8px}}
+/* The mosaic's own backing supplies the gold gutters; they never reveal the next panel. */
+.spacetime-board>.photo-mosaic,.space-reflection>.photo-mosaic{background:#b88b4a;gap:2px}
+.spacetime-boards{z-index:1}.spacetime-position{z-index:10000;isolation:isolate;opacity:1;pointer-events:auto;background:#000d;padding:4px 12px;border-radius:2px}
+
+.spacetime-board>.photo-mosaic{filter:none}.spacetime-board>.photo-mosaic img{filter:brightness(var(--space-light,1))}

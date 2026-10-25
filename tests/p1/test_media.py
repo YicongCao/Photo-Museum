@@ -30,6 +30,7 @@ def test_media_pipeline_pause_cache_and_auth(system):
     assert client.get(a['thumbnail']).status_code==200
     m=client.get('/api/assets/'+a['id']+'/manifest').json()
     assert m['preview'] and m['effective_metadata']['width']['layer']=='observed'
+    assert m['size']==len(remote.entries[EVENT+'/IMG_001.jpg'])
     assert client.get(a['thumbnail'].replace(a['revision'],'wrong')).status_code==409
     client.post('/api/assets/'+a['id']+'/curation',json={'pinned':True})
     assert client.get('/api/gallery/'+gallery[0]['id']).json()['items'][0]['pinned']

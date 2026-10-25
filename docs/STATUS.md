@@ -83,3 +83,7 @@ Cover Flow首页新增太阳/月亮SVG切换，支持当前浏览器记忆；白
 ## 策展检索工具修复（2026-10-25）
 
 已定位并修复Provider把filters再次JSON编码导致参数校验失败，以及空地址字段导致省份/关键词检索异常。嵌套schema展开、工具错误字段提示、连续错误停止及双语facets已补齐。真实库只读重放通过；真实hy4-preview使用三张合成照片完成检索与展览准备。最近城市/镇不等于地级市行政归属，行政层级补全仍待实现；原失败任务不会自动重发。见[修复与验证](research/curator-search-tool-fix.md)。
+
+## Gallery 导航与加载动效（2026-10-25）
+
+透明细线Logo及折叠加载循环、原生浏览器Back/Forward层级、对称封面队列、Cover Flow退开/磁贴照片流入场及反向过渡已实现。照片流先缩略图后4K、底栏横滚控制；单图档案增加图标/源文件体积并去掉MP与相机记录，原图采用显影过渡。时空隧道金色缝隙及置顶位置控件已修正。见[复验与边界](research/gallery-navigation-validation.md)及[Logo预览](design/brand/loading-preview.html)。

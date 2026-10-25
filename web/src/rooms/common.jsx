@@ -1,3 +1,4 @@
+import {PhotoLoading} from '../loading-mark';
 import React,{createContext,useContext,useEffect,useState} from 'react';
 
 export const RoomRefreshContext=createContext(0);
@@ -16,7 +17,7 @@ export function useRoomData(api,path) {
 }
 export function RoomStatus({loading,error,retry,empty}) {
  if(error)return <div className="room-status" role="alert">{error}<button onClick={retry}>重试</button></div>;
- if(loading)return <div className="room-status" role="status">读取照片</div>;
+ if(loading)return <div className="room-status"><PhotoLoading/></div>;
  return empty ? <div className="room-status">暂无可展示照片</div> : null;
 }
 export function query(values) {

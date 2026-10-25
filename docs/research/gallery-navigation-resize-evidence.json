@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "Initial viewport matching the component defaults still permits scrolling",
+    "All four styles preserve settled selection and fractional scroll across phone, short, breakpoint and ultra-wide resizes",
+    "Rapid style changes during wheel input retain the destination and settle the main cover upright",
+    "Depth main cover is fully visible and centered on phone",
+    "Main covers clear the horizontal timeline at the short-screen breakpoint",
+    "Leaving during pending scroll settling cleans up without uncaught browser errors"
+  ],
+  "errors": [],
+  "fixture": "isolated synthetic photos"
+}

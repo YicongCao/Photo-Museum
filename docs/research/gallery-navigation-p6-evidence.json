@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-25T12:39:34.793Z",
+  "checks": [
+    "Assistant is available from the Gallery menu without replacing its default room",
+    "Provider editor never receives or fills the stored API key",
+    "Thinking, tool calls, final answer and truthful cache preparation are visible",
+    "Curation and result previews do not download originals",
+    "Authenticated reload replays persistent events and completed result without another LLM run",
+    "Show survives delayed 4K warmup without default Cover Flow stealing the request, and retains the shared viewer",
+    "The same exhibition can Show as Cover Flow, wall, calendar, map, gear and spacetime while retaining its scope",
+    "Assistant stays one page at 390 by 720 with visible controls and internal scroll areas",
+    "Cancellation settles the run and does not publish an exhibition",
+    "An empty search remains empty and cannot Show an unrelated gallery",
+    "Browser makes no provider or external network requests and has no uncaught errors"
+  ],
+  "errors": [],
+  "fixture": "84 synthetic photos, injected metadata and local fake streaming LLM; not user photos or live-provider language quality"
+}

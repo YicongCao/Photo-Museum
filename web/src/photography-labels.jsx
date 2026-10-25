@@ -1,4 +1,5 @@
 import React from 'react';
+import {Icon} from './icons';
 
 export function photographyLabel(data,axis) {
   if(!data || data.error) return data?.error ? '识别失败' : null;
@@ -15,7 +16,7 @@ export function PhotographyLabels({analysis}) {
   const data=analysis?.data;
   if(!data || data.status==='not_applicable') return null;
   return <>{[['style','摄影风格'],['topic','摄影主题']].map(([axis,label])=><div key={axis} className="photography-labels">
-    <small>{label} · 候选</small>
+    <small><Icon name={axis}/>{label} · 候选</small>
     <p title={data.error ? '本地识别失败' : photographyTitle(data,axis)}>{photographyLabel(data,axis)}</p>
   </div>)}</>;
 }

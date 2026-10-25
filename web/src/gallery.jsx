@@ -4,6 +4,8 @@ import {placeLabel,subjectLabel} from "./localized-labels";
 import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
 import "./gallery.css";
 import { useSceneMotion, createActivityWarmup } from "./scene-motion";
+import {PhotoLoading} from "./loading-mark";
+import {useGalleryHistory} from "./gallery-history";
 import { PhotoArchive } from "./photo-archive";
 import { PhotographyLabels } from "./photography-labels";
 import { ActivityTimeline } from "./timeline";
@@ -20,6 +22,7 @@ import './rooms/rooms.css';
 import {usePreferences} from './preferences';
 import './cover-theme.css';
 import './gallery-refinement.css';
+import './gallery-navigation.css';
 
 const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道',revisit:'故地重游',scroll:'记忆长卷',rings:'人生年轮',constellation:'记忆星图'};
 const creativeRooms={rings:RingsRoom,constellation:ConstellationRoom,scroll:MemoryScrollRoom,revisit:RevisitRoom};
@@ -41,7 +44,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
     [error, setError] = useState(""),
     [wallId,setWallId]=useState(null),
     [counts,setCounts]=useState(null),
-    [opening,setOpening]=useState(false);
+    [opening,setOpening]=useState(false),[immersive,setImmersive]=useState(false);
   const [room,setRoom]=useState(()=>roomNames[roomHint]?roomHint:roomNames[savedRooms(storageKey).room]?savedRooms(storageKey).room:'cover'),[roomMenu,setRoomMenu]=useState(false),
     [anchor,setAnchor]=useState(()=>savedRooms(storageKey).anchor || null),[roomStates,setRoomStates]=useState(()=>savedRooms(storageKey).states || {}),
     [collection,setCollection]=useState(null);
@@ -61,6 +64,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
     selectedId = useRef(null);
   const shell=useRef(null), warm=useRef(null), openingRef=useRef(false);
   const animate=useSceneMotion(shell);
+  const transition=useRef(0),sceneRef=useRef(null),navigationRequest=useRef(null),pendingFocus=useRef(null);
   const current = activities[index];
   const CreativeRoom=creativeRooms[room];
   const wallActivity=activities.find(a=>a.id===wallId);
@@ -73,29 +77,69 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
     return ()=>clearTimeout(timer);
   },[current?.id,view,room]);
   useEffect(()=>()=>warm.current?.dispose(),[]);
+  useEffect(()=>{
+    if(opening||photo||!pendingFocus.current)return;
+    const pending=pendingFocus.current;pendingFocus.current=null;
+    const frame=requestAnimationFrame(()=>{const focus=pending.element?.isConnected?pending.element:[...shell.current.querySelectorAll('[data-photo]')].find(e=>e.dataset.photo===pending.id);focus?.focus({preventScroll:true})});
+    return()=>cancelAnimationFrame(frame);
+  },[opening,photo]);
   const displayedActivity=collection && view==='wall' ? {event:{theme:collection.title}} : view==="wall" && wallActivity ? wallActivity : current;
-  const changeRoom=async next=>{
-    setRoomMenu(false);if(next===room&&view==='tunnel')return;
-    if(openingRef.current)return;openingRef.current=true;setOpening(true);
-    warm.current?.dispose();warm.current=null;
-    try {await animate('.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room,.wall-scene:not(.scene-inactive),.gallery-caption,.activity-timeline',()=>{setPhoto(null);setView('tunnel');setRoom(next)},'.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room','room')}
-    finally{openingRef.current=false;setOpening(false);roomMenuRef.current?.querySelector('button')?.focus()}
-  };
-  const openCollection=async descriptor=>{
-    if(openingRef.current)return;
-    openingRef.current=true;setOpening(true);setError('');
+  const scene={room,view,wallId,collection,photo:photo?{id:photo.id,revision:photo.revision}:null,immersive,activityId:current?.id,anchor,
+    wallLeft:wallPositions.current[collection?.id || wallId] || 0};
+  sceneRef.current=scene;
+  const capture=patch=>({...sceneRef.current,wallLeft:wallPositions.current[sceneRef.current.collection?.id || sceneRef.current.wallId] || 0,...patch});
+  const navigation=useGalleryHistory(storageKey,loaded,scene,(target,options)=>restoreScene(target,{...options,record:false}));
+  useEffect(()=>{if(loaded&&!openingRef.current)navigation.sync(capture())},[loaded,room,view,wallId,collection,photo?.id,immersive,current?.id,anchor,opening]);
+  useEffect(()=>()=>{transition.current++;navigationRequest.current?.abort();warm.current?.dispose()},[]);
+  async function restoreScene(target,{record=true,initial=false,photoRecord=null,selector='.wall-scene .wall-photo img'}={}){
+    const origin=capture(),token=++transition.current;
+    animate.cancel();navigationRequest.current?.abort();const request=new AbortController();navigationRequest.current=request;openingRef.current=true;setOpening(true);setError('');
+    if(record){navigation.sync(origin);navigation.push(target)}
     try{
-      warm.current?.dispose();const staged=createActivityWarmup(api,descriptor.id,descriptor.endpoint+'&limit=15');warm.current=staged;
-      const data=await staged.promise;if(warm.current!==staged)return;setCounts({photos:data.photos,videos:data.videos});
-      await animate('.room img',()=>{setCollection(descriptor);setWallId(null);setView('wall')},'.wall-scene .wall-photo');
-    }catch(e){if(e.name!=='AbortError')setError(e.message)}
-    finally{openingRef.current=false;setOpening(false)}
-  };
+      let nextPhoto=photoRecord;
+      if(target.view==='tunnel'&&!['cover','space'].includes(target.room)){warm.current?.dispose();warm.current=null}
+      const nextIndex=Math.max(0,activities.findIndex(a=>a.id===target.activityId));
+      if(target.view==='wall'){
+        const id=target.collection?.id || target.wallId;
+        if(!target.collection&&!activities.some(a=>a.id===id))throw Error('活动已不可用');
+        if(warm.current?.id!==id){warm.current?.dispose();warm.current=createActivityWarmup(api,id,target.collection?target.collection.endpoint+'&limit=15':undefined)}
+        const staged=warm.current,data=await staged.promise;if(token!==transition.current)return;
+        setCounts({photos:data.photos,videos:data.videos});
+      }
+      if(target.photo){
+        if(photo?.id===target.photo.id)nextPhoto=photo;
+        else if(!nextPhoto){const resolved=await api('/exhibitions/creative/resolve?ids='+encodeURIComponent(target.photo.id),'GET',undefined,{signal:request.signal});nextPhoto=resolved.items.find(p=>p.id===target.photo.id&&p.revision===target.photo.revision);if(!nextPhoto)throw Error('照片已失效或不属于当前展览')}
+      }
+      if(token!==transition.current)return;
+      if(target.view==='wall'){const id=target.collection?.id || target.wallId;wallPositions.current[id]=wallPositions.current[id] ?? target.wallLeft ?? 0;}
+      const commit=()=>{
+        setRoom(target.room);setView(target.view);setWallId(target.wallId || null);setCollection(target.collection || null);
+        setPhoto(nextPhoto || null);setImmersive(Boolean(target.immersive));setIndex(nextIndex);if(target.anchor)setAnchor(target.anchor);
+      };
+      if(initial){commit();return}
+      let before='.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room,.wall-scene:not(.scene-inactive)',incoming='.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room',mode='room';
+      if(origin.photo&&target.photo?.id===origin.photo.id){before='.viewer-image-area';incoming=before;mode='fit'}
+      else if(target.photo){before=selector;incoming='.viewer-image-area,.photo-viewer .metadata-panel';mode='scatter'}
+      else if(origin.photo){before='.viewer-image-area,.photo-viewer .metadata-panel';incoming=target.view==='wall'?'.wall-scene .wall-photo':'.gallery-room-host,.cover-scene .activity-panel,.spacetime-board';mode='photo-close'}
+      else if(origin.view==='tunnel'&&target.view==='wall'){
+        before=origin.room==='cover'?'.cover-scene .activity-panel':'.room img,.spacetime-board';incoming='.wall-scene .wall-photo';mode=origin.room==='cover'?'cover-wall':'scatter';
+      }else if(origin.view==='wall'&&target.view==='tunnel'){
+        before='.wall-scene .wall-photo';incoming=target.room==='cover'?'.cover-scene .activity-panel':'.gallery-room-host,.spacetime-board';mode=target.room==='cover'?'wall-cover':'photo-close';
+      }
+      await animate(before,commit,incoming,mode);
+      if(token===transition.current&&origin.photo&&!target.photo){
+        pendingFocus.current={element:lastFocus.current,id:origin.photo.id};lastFocus.current=null;
+      }
+    }catch(e){if(token===transition.current&&e.name!=='AbortError'){setError(e.message);navigation.replace(origin)}}
+    finally{if(token===transition.current){openingRef.current=false;setOpening(false)}}
+  }
+  const changeRoom=next=>{setRoomMenu(false);if(next===room&&view==='tunnel')return;return restoreScene(capture({room:next,view:'tunnel',photo:null,immersive:false}))};
+  const openCollection=(descriptor,options)=>restoreScene(capture({view:'wall',wallId:null,collection:descriptor,photo:null,immersive:false,wallLeft:wallPositions.current[descriptor.id] || 0}),options);
   useEffect(()=>{
     if(!exhibitionId)return;const controller=new AbortController();
     baseApi('/curator/exhibitions/'+encodeURIComponent(exhibitionId),'GET',undefined,{signal:controller.signal}).then(meta=>{
       if(controller.signal.aborted)return;setScopeMeta(meta);
-      if(roomHint==='wall')openCollection({id:'curated-'+exhibitionId,title:meta.title,dateLabel:'策展',endpoint:'/exhibitions/photos?sort=time'});
+      if(roomHint==='wall'&&history.state?.museumGallery?.scope!==storageKey)openCollection({id:'curated-'+exhibitionId,title:meta.title,dateLabel:'策展',endpoint:'/exhibitions/photos?sort=time'},{record:false,initial:true});
     }).catch(e=>{if(!controller.signal.aborted)setError(e.message)});
     return()=>controller.abort();
   },[exhibitionId]);
@@ -124,24 +168,8 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
     else setIndex(i);
   };
   const move = (n) => tunnel.current?.move(n);
-  const backGallery=async()=>{
-    if(openingRef.current)return;openingRef.current=true;setOpening(true);
-    try {await animate('.wall-scene:not(.scene-inactive),.gallery-caption',()=>{setPhoto(null);setView('tunnel')},'.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room','back')}
-    finally{if(!['cover','space'].includes(room)){warm.current?.dispose();warm.current=null}openingRef.current=false;setOpening(false)}
-  };
-  const openActivity = async (id) => {
-    if(openingRef.current)return;
-    const i=activities.findIndex(a=>a.id===id);if(i<0)return;
-    openingRef.current=true;setOpening(true);setError("");
-    try {
-      if(warm.current?.id!==id){warm.current?.dispose();warm.current=createActivityWarmup(api,id);}
-      const staged=warm.current,data=await staged.promise;if(warm.current!==staged)return;
-      setCollection(null);setIndex(i);
-      setCounts({photos:data.photos,videos:data.videos});
-      await animate(`[data-activity="${id}"] > .photo-mosaic img`,()=>{setWallId(id);setView('wall');},'.wall-scene .wall-photo');
-    }catch(e){warm.current?.dispose();warm.current=null;if(e.name!=='AbortError')setError(e.message);}
-    finally{openingRef.current=false;setOpening(false);}
-  };
+  const backGallery=()=>navigation.back(capture({view:'tunnel',photo:null,immersive:false}));
+  const openActivity=id=>restoreScene(capture({activityId:id,view:'wall',wallId:id,collection:null,photo:null,immersive:false,wallLeft:wallPositions.current[id] || 0}));
   useEffect(() => {
     const f = (e) => {
       if (photo || openingRef.current || ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
@@ -158,18 +186,12 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
     window.addEventListener("keydown", f);
     return () => window.removeEventListener("keydown", f);
   }, [photo, view,room,roomMenu]);
-  const open = (p,selector='.wall-scene .wall-photo img') => {
-    if(p.period)setAnchor(p.period);
-    if(p.activity_id){const i=activities.findIndex(a=>a.id===p.activity_id);if(i>=0)setIndex(i)}
-    lastFocus.current = document.activeElement;
-    animate(selector,()=>setPhoto({...p,preview:warm.current?.urls.get(p.id) || p.preview}),".viewer-image-area,.photo-viewer .metadata-panel");
+  const open=(p,selector='.wall-scene .wall-photo img')=>{
+    lastFocus.current=document.activeElement;
+    return restoreScene(capture({photo:{id:p.id,revision:p.revision},immersive:false,anchor:p.period || anchor}),{photoRecord:p,selector});
   };
-  const close = async () => {
-    if(openingRef.current)return;openingRef.current=true;setOpening(true);
-    const focus=lastFocus.current;lastFocus.current=null;
-    try{await animate('.photo-viewer',()=>setPhoto(null),view==='wall'?'.wall-scene':'.gallery-room-host','back')}finally{openingRef.current=false;setOpening(false)}
-    requestAnimationFrame(() => {if(focus?.isConnected)focus.focus({preventScroll:true})});
-  };
+  const close=()=>navigation.back(capture({photo:null,immersive:false}));
+  const toggleImmersive=()=>immersive?navigation.back(capture({immersive:false})):restoreScene(capture({immersive:true}));
   const displayTheme=room==='cover'&&view==='tunnel'&&!photo?coverTheme:'dark';
   return (
     <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening} data-theme={displayTheme} data-cover-style={coverStyle}>
@@ -207,8 +229,8 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
       {view==='tunnel'&&CreativeRoom&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><CreativeRoom api={api} state={roomStates[room] || {}} onState={s=>setRoomStates(p=>({...p,[room]:s}))} onCollection={openCollection} onPhoto={p=>open(p,'.room img')}/></div>}
       {!current && ['cover','space'].includes(room) ? (
         <div className="gallery-empty">
-          <Icon name="photo" />
-          <p>{loaded ? "尚无可展示照片" : "读取照片"}</p>
+          {loaded&&<Icon name="photo" />}
+          {loaded?<p>尚无可展示照片</p>:<PhotoLoading/>}
           <button onClick={onAdmin}>查看刮削进度 →</button>
         </div>
       ) : current || collection ? (
@@ -230,7 +252,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
               activity={collection ? {id:collection.id,photos:counts?.photos,videos:0} : wallActivity}
               endpoint={collection?.endpoint}
               initialLeft={wallPositions.current[collection?.id || wallActivity?.id] || 0}
-              onPosition={x=>{wallPositions.current[collection?.id || wallActivity?.id]=x}}
+              onPosition={x=>{wallPositions.current[collection?.id || wallActivity?.id]=x;if(!openingRef.current)navigation.sync(capture())}}
               warm={warm.current?.id===(collection?.id || wallActivity.id) ? warm.current : null}
               onCounts={setCounts}
               api={api}
@@ -252,20 +274,20 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
               <h1 title={displayedActivity.event.theme}>{displayedActivity.event.theme}</h1>
               {view==='wall' && <p className="activity-counts">{counts?.photos ?? displayedActivity.photos ?? 0} 张照片{(counts?.videos ?? displayedActivity.videos)>0 && <span> · {counts?.videos ?? displayedActivity.videos} 个视频</span>}</p>}
             </div>
-            {opening && <p role="status">读取照片</p>}
+            {opening && <PhotoLoading compact/>}
           </div>}
           {view === "tunnel" && ['cover','space'].includes(room) && (
             <div className="tunnel-controls">
               <button
                 onClick={() => move(-1)}
-                disabled={!index}
+                disabled={room==='cover'?activities.length<2:!index}
                 aria-label="上一场活动"
               >
                 〈
               </button>
               <button
                 onClick={() => move(1)}
-                disabled={index === activities.length - 1}
+                disabled={room==='cover'?activities.length<2:index === activities.length - 1}
                 aria-label="下一场活动"
               >
                 〉
@@ -281,6 +303,8 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
           api={api}
           onClose={close}
           onChanged={reload}
+          immersive={immersive}
+          onImmersiveChange={toggleImmersive}
           returnLabel={view==='wall'?'返回照片墙':'返回'+roomNames[room]}
         />
       )}
@@ -288,7 +312,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
   );
 }
 
-function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }) {
+function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChange,returnLabel='返回照片墙' }) {
   const preferences=usePreferences();
   const [requested,setRequested]=useState(false),[retryOriginal,setRetryOriginal]=useState(0),[nativeFallback,setNativeFallback]=useState(false);
   const [suggestions, setSuggestions] = useState([]),
@@ -296,8 +320,8 @@ function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }
   const [manifest, setManifest] = useState(null),
     [source, setSource] = useState(photo.preview),
     [original, setOriginal] = useState(null),
+    [previewReady,setPreviewReady]=useState(false),
     [phase, setPhase] = useState("4K 读取中"),
-    [zoom, setZoom] = useState(false),
     [info, setInfo] = useState(true),
     [pinned, setPinned] = useState(photo.pinned),
     [play, setPlay] = useState(false),
@@ -306,7 +330,9 @@ function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }
   const nativeChoice=native ?? (preferences.ready && preferences.values.hdr_display==='native_if_supported' && matchMedia('(dynamic-range: high)').matches);
   const viewerRef = useRef(null), zoomRef=useRef(zoom);
   zoomRef.current=zoom;
-  const toggleImmersive=()=>{if(zoom)setInfo(true);setZoom(!zoom);};
+  const toggleImmersive=()=>{if(zoom)setInfo(true);onImmersiveChange();};
+  useEffect(()=>{if(!zoom)setInfo(true)},[zoom]);
+  const callbacks=useRef({onClose,onImmersiveChange});callbacks.current={onClose,onImmersiveChange};
   const closeRef = useRef(null),
     previewRef = useRef(null);
   useEffect(() => {
@@ -317,8 +343,8 @@ function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }
         e.stopPropagation();
         if (document.fullscreenElement === viewerRef.current)
           document.exitFullscreen();
-        else if(zoomRef.current){setZoom(false);setInfo(true);}
-        else onClose();
+        else if(zoomRef.current){callbacks.current.onImmersiveChange();setInfo(true);}
+        else callbacks.current.onClose();
       }
       if (e.key === "Tab") {
         const buttons = [
@@ -429,22 +455,23 @@ function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }
           />
         ) : (
           <div className="image-stack">
+            {!previewReady&&<PhotoLoading className="viewer-photo-loading"/>}
             <img
               ref={previewRef}
               className="preview-layer"
               src={source}
               alt={photo.name}
-              onLoad={() =>
-                setPhase((p) => (p === "4K 读取中" ? "4K · 原图读取中" : p))
-              }
+              onLoad={() => {setPreviewReady(true);setPhase((p) => (p === "4K 读取中" ? "4K · 原图读取中" : p))}}
               onError={() => {
                 setSource(photo.thumbnail);
                 setPhase("保留缩略图 · 4K 暂不可用");
               }}
             />
-            {original && (
+            {original && previewReady && (
               <img
+                key={original}
                 className="original-layer darkroom-reveal"
+                onAnimationEnd={e=>{e.currentTarget.style.willChange="auto"}}
                 src={original}
                 alt=""
               />
@@ -453,7 +480,7 @@ function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }
         )}
       </div>
       <div className="viewer-bottom">
-        <span aria-live="polite">{phase}</span>
+        <span aria-live="polite">{phase.includes("读取中")?<PhotoLoading compact label={phase}/>:phase}</span>
         <span>
           <button
             onClick={toggleImmersive}
@@ -475,16 +502,16 @@ function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }
           <h2>照片档案</h2>
           {mutationError && <p role="alert">{mutationError}</p>}
           <p>{photo.name}</p>
-          <PhotoArchive metadata={manifest?.effective_metadata || {}} media={manifest?.media || photo.info || {}} />
+          <PhotoArchive metadata={manifest?.effective_metadata || {}} media={manifest?.media || photo.info || {}} size={manifest?.size} />
           {analysis?.visual?.data?.score != null && (
             <div>
-              <small>技术评分</small>
+              <small><Icon name="score"/>技术评分</small>
               <p>{analysis.visual.data.score} / 100{analysis.visual.data.score_penalty_reason === "assumed_srgb" ? " · 色域假定 −15" : ""}</p>
             </div>
           )}
           {analysis?.visual?.data?.tags?.length > 0 && (
             <div>
-              <small>本地主体识别</small>
+              <small><Icon name="subject"/>本地主体识别</small>
               <p>
                 {analysis.visual.data.tags
                   .slice(0, 3)
@@ -496,7 +523,7 @@ function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }
           <PhotographyLabels analysis={analysis?.photography} />
           {analysis?.places && (
             <div>
-              <small>近似城市 · GeoNames</small>
+              <small><Icon name="pin"/>近似城市 · GeoNames</small>
               <p>
                 {placeLabel(analysis.places.data)}
               </p>
@@ -506,7 +533,7 @@ function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }
             .filter((s) => !s.info.accepted)
             .map((s) => (
               <div key={s.record_id}>
-                <small>{s.field} · 近邻建议</small>
+                <small><Icon name="metadata"/>{s.field} · 近邻建议</small>
                 <p>{JSON.stringify(s.value)}</p>
                 <button
                   onClick={() =>
