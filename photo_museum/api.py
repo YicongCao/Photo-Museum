@@ -233,6 +233,7 @@ def create_app(directory=None, dav_factory=WebDAV):
         media_info = json.loads(media[0]) if media else {}
         return {'id': aid, 'revision': row['revision'], 'version_quality': row['version_quality'],
                 'placeholder': media_info.get('placeholder'),
+                'media': media_info,
                 'original': None if media_info.get('placeholder') else f"/api/assets/{aid}/original?revision={row['revision']}",
                 'original_compatible': None if media_info.get('placeholder') else f"/api/assets/{aid}/original-compatible?revision={row['revision']}" if media_info.get('hdr_source') or Cache(db).lookup(aid,row['revision'],'compatible') or Path(row['path']).suffix.lower() in ('.heic','.heif','.hif','.avif') else None,
                 'live': live_pair(db,row),

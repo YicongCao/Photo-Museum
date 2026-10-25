@@ -29,16 +29,6 @@ def activity_time(event, rows):
         dates.append(date.isoformat())
     return max(dates, default='')
 
-def diverse_score(row,selected):
-    penalty=0
-    for other in selected:
-        if row.get('signature') and other.get('signature'):
-            difference=(int(row['signature'],16)^int(other['signature'],16)).bit_count()
-            penalty=max(penalty,max(0,1-difference/18)*45)
-        if row.get('concept') and row.get('concept')==other.get('concept'):
-            penalty=max(penalty,10)
-    return (row.get('score') or 0)-penalty
-
 def event_id(source,path):
     return hashlib.sha256((source+'\0'+path).encode()).hexdigest()[:24]
 
@@ -169,17 +159,25 @@ def register(app,database,owner):
         result['metadata_only']=bool(result['info'].get('metadata_only'))
         if result['metadata_only'] and not result['info'].get('cached_preview'):
             result['thumbnail']=None;result['preview']=None
-        result['score']=row.get('score',0)
+        result['score']=row.get('score')
+        result['captured_at']=capture_value(row)
         if row.get('completed_at'):result['completed_at']=row['completed_at']
         return result
+
+    def capture_value(row):
+        value=json.loads(row['capture_json']) if row.get('capture_json') else json.loads(row.get('data_json') or '{}').get('captured_at')
+        if not isinstance(value,str):return None
+        try:return datetime.fromisoformat(value[:10].replace(':','-')+value[10:19].replace(' ','T')).isoformat()
+        except ValueError:return None
 
     def rows():
         with database.connect() as c:
             result=[dict(r) for r in c.execute("""SELECT e.*,m.data_json,coalesce(u.pinned,0) pinned,coalesce(u.excluded,0) excluded,
-                json_extract(a.data_json,'$.score') score,json_extract(a.data_json,'$.signature') signature,json_extract(a.data_json,'$.tags[0].label') concept,s.root source_root FROM entries e JOIN sources s ON s.id=e.source_id
+                CASE WHEN json_extract(a.data_json,'$.error') IS NULL AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') THEN json_extract(a.data_json,'$.score') END score,
+                (SELECT md.value_json FROM metadata md WHERE md.asset_id=e.id AND md.field='captured_at' AND md.stale=0 AND (md.layer!='inferred' OR json_extract(md.info_json,'$.accepted')=1) ORDER BY CASE md.layer WHEN 'manual' THEN 0 WHEN 'observed' THEN 1 ELSE 2 END LIMIT 1) capture_json,json_extract(a.data_json,'$.signature') signature,json_extract(a.data_json,'$.tags[0].label') concept,s.root source_root FROM entries e JOIN sources s ON s.id=e.source_id
                 JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision
                 LEFT JOIN curation u ON u.asset_id=e.id LEFT JOIN analysis a ON a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual'
-                WHERE e.missing=0 AND e.scope_excluded=0 AND EXISTS(SELECT 1 FROM derivatives d WHERE d.asset_id=e.id AND d.revision=e.revision AND d.profile='thumb' AND d.status='ready') ORDER BY e.path""")]
+                WHERE e.missing=0 AND e.scope_excluded=0 AND (EXISTS(SELECT 1 FROM derivatives d WHERE d.asset_id=e.id AND d.revision=e.revision AND d.profile='thumb' AND d.status='ready') OR json_extract(m.data_json,'$.metadata_only')=1) ORDER BY e.path""")]
             pairs={}
             for r in c.execute("""SELECT e.id,e.source_id,e.parent,e.kind,m.value_json FROM entries e JOIN metadata m ON m.asset_id=e.id AND m.source_revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND m.field='content_identifier' AND m.layer='observed' AND m.stale=0"""):
                 group=pairs.setdefault((r['source_id'],r['parent'],r['value_json']),{'images':[],'videos':[]})
@@ -196,22 +194,18 @@ def register(app,database,owner):
         groups={}
         for r in rows():
             key=group_key(r)
-            r['score']=r['score'] or 0
             group=groups.setdefault(key,{'id':key,'event':json.loads(r['event_json']),'rows':[]})
             group['rows'].append(r)
         result=[]
         for g in groups.values():
-            # Pins first; stratified selection across sorted activity avoids one burst dominating.
-            candidates=[r for r in g.pop('rows') if not r['excluded'] and not json.loads(r['data_json']).get('placeholder')]
-            pins=[r for r in candidates if r['pinned']][:10]
-            rest=[r for r in candidates if not r['pinned']]
-            slots=min(10-len(pins),len(rest))
-            selected=list(pins)
-            for i in range(min(slots,len(rest))):
-                chunk=rest[i*len(rest)//slots:(i+1)*len(rest)//slots]
-                if chunk:
-                    selected.append(max(chunk,key=lambda r:diverse_score(r,selected)))
-            g.update(latest_capture=activity_time(g['event'],candidates),count=len(candidates),selected=[pack(r) for r in selected])
+            all_rows=g.pop('rows')
+            candidates=[r for r in all_rows if not r['excluded'] and r['kind']=='image_candidate' and not json.loads(r['data_json']).get('placeholder')]
+            # Strict score Top10. Pins remain user annotations, never override this ranking.
+            ranked=sorted((r for r in candidates if isinstance(r['score'],(int,float))),key=lambda r:(-r['score'],r['path'],r['id']))
+            selected=ranked[:10]
+            g.update(latest_capture=activity_time(g['event'],[{'data_json':json.dumps({'captured_at':capture_value(r)})} for r in all_rows]),count=len(all_rows),
+                     photos=sum(r['kind']=='image_candidate' for r in all_rows),videos=sum(r['kind']=='video_candidate' for r in all_rows),
+                     selection_policy='score-top10',unscored=sum(r['score'] is None for r in candidates),selected=[pack(r) for r in selected])
             result.append(g)
         result.sort(key=lambda g:(g['event'].get('year') or 0,g['event'].get('month') or 0,g['latest_capture'],g['event'].get('theme') or '',g['id']),reverse=True)
         return {'activities':result}
@@ -221,7 +215,11 @@ def register(app,database,owner):
         if offset<0 or not 1<=limit<=200:
             raise HTTPException(400)
         selected=[r for r in rows() if group_key(r)==gid]
-        return {'items':[pack(r) for r in selected[offset:offset+limit]],'total':len(selected)}
+        selected.sort(key=lambda r:(capture_value(r) is None,capture_value(r) or '',r['path'],r['id']))
+        previews=[pack(r) for r in selected if r['kind']=='image_candidate' and not json.loads(r['data_json']).get('metadata_only')][:15] if offset==0 else []
+        return {'items':[pack(r) for r in selected[offset:offset+limit]],'total':len(selected),
+                'previews':[{'id':p['id'],'preview':p['preview']} for p in previews],
+                'photos':sum(r['kind']=='image_candidate' for r in selected),'videos':sum(r['kind']=='video_candidate' for r in selected),'order':'capture-ascending'}
 
     @app.get('/api/assets/{aid}/media/{profile}',dependencies=[Depends(owner)])
     def cached(aid:str,profile:str,revision:str):

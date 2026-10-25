@@ -33,5 +33,11 @@ with tempfile.TemporaryDirectory(prefix='museum-gallery-fixture-') as directory,
  while w.tick():pass
  m=MediaWorker(db)
  while m.tick():pass
+ from photo_museum.analysis_worker import AnalysisWorker
+ class SyntheticScore:
+  id='visual';version='synthetic-v1'
+  def analyze(self,path):return {'score':70,'faces':[],'tags':[],'offline':True}
+ analysis=AnalysisWorker(db,SyntheticScore())
+ while analysis.tick():pass
  print('Synthetic exhibition ready',flush=True)
  uvicorn.run(app,host='127.0.0.1',port=8793,access_log=False)

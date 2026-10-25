@@ -1,0 +1,57 @@
+import {chromium,expect} from '../../prototype/node_modules/@playwright/test/index.mjs';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+const output='docs/design/previews/classic-coverflow';await fs.mkdir(output,{recursive:true});
+const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
+const context=await browser.newContext({viewport:{width:1440,height:900}}),page=await context.newPage();
+const errors=[],checks=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
+const check=n=>checks.push(n);
+try {
+ await page.goto('http://127.0.0.1:8794/#gallery');await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'解锁'}).click();
+ await page.locator('.depth-0 > .photo-mosaic img').first().waitFor();
+ await page.getByRole('button',{name:'合成活动-07',exact:true}).click();
+ await page.waitForFunction(()=>Math.abs(Number(document.querySelector('.tunnel-stage').dataset.position)-6)<.01);
+ await expect.poll(()=>requests.filter(u=>u.includes('/media/display?')).length,{timeout:10000}).toBeGreaterThanOrEqual(15);
+ assert.ok(requests.some(u=>u.includes('limit=15')));assert.ok(requests.filter(u=>u.includes('/media/display?')).length>=15);
+ assert.equal(requests.filter(u=>u.includes('/original?')).length,0);check('Activity stop preloads fifteen 4K previews without NAS originals');
+ const expectedOrder=['Dashboard','Gallery'];assert.deepEqual((await page.locator('.gallery-nav>div>button').allTextContents()).filter(Boolean),expectedOrder);check('Dashboard before Gallery');
+ const sizes=[];for(const [w,h] of [[390,844],[1440,900],[2800,1500]]){
+  await page.setViewportSize({width:w,height:h});await page.waitForTimeout(100);
+  const n=Number(await page.locator('.tunnel-stage').getAttribute('data-cover-count'));assert.ok(n>=5&&n<=20);sizes.push([w,n]);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight));
+  if(w===390)await page.screenshot({path:output+'/mobile.png'});
+ }assert.deepEqual(sizes,[[390,5],[1440,10],[2800,20]]);check('Responsive 5 / 10 / 20 covers and no document overflow');
+ await page.setViewportSize({width:1440,height:900});await page.waitForTimeout(200);
+ const reflection=await page.locator('.depth-0 .panel-reflection').evaluate(el=>({opacity:getComputedStyle(el).opacity,filter:getComputedStyle(el).filter,bottom:el.getBoundingClientRect().bottom}));assert.ok(Number(reflection.opacity)>=.65);assert.ok(reflection.filter.includes('blur'));assert.ok(reflection.bottom>=890);check('Brighter blurred reflection extends to viewport bottom');
+ await page.screenshot({path:output+'/coverflow.png'});
+ await page.mouse.move(550,300);await page.mouse.wheel(53,0);await page.waitForTimeout(100);
+ const position=Number(await page.locator('.tunnel-stage').getAttribute('data-position'));assert.ok(Math.abs(position-Math.round(position))>.01);check('Trackpad has continuous fractional cover movement');
+ const current=await page.locator('.depth-0').getAttribute('data-activity');
+ const expectedTheme=(await page.locator('.depth-0').getAttribute('aria-label')).replace('展开活动 ','');
+ await page.locator(`[data-activity="${current}"]`).click();await page.locator('.wall-photo').first().waitFor();
+ const flying=await page.evaluate(()=>({clones:document.querySelectorAll('body>img').length,arrivals:document.querySelector('.wall-photo').getAnimations().map(a=>a.effect.getKeyframes())}));assert.equal(flying.clones,10);assert.ok(flying.arrivals.flat().some(f=>f.transform.includes('scale(0.08)')));check('Cover ten photos scatter; wall photos arrive from center');
+ await page.screenshot({path:output+'/transition.png'});await page.waitForTimeout(1200);assert.equal(await page.locator('body>img').count(),0);check('Transition clones released');assert.equal(await page.locator('.gallery-caption h1').innerText(),expectedTheme);
+ assert.equal(await page.locator('.activity-counts').innerText(),'18 张照片');check('Wall count omits zero videos');await page.screenshot({path:output+'/wall.png'});
+ await page.mouse.move(600,300);await page.mouse.wheel(450,0);await page.waitForTimeout(150);
+ const wallLeft=await page.locator('.photo-wall').evaluate(el=>el.scrollLeft);assert.ok(wallLeft>100);
+ const visible=page.locator('.wall-photo').filter({has:page.locator('img')});
+ const target=await visible.evaluateAll(els=>els.find(el=>{const r=el.getBoundingClientRect();return r.left>0&&r.right<innerWidth&&el.querySelector('img').naturalWidth/el.querySelector('img').naturalHeight===1.5})?.getAttribute('aria-label'));
+ // Controlled archive fixture exercises grouping independently of camera EXIF availability.
+ await page.route('**/manifest',async route=>{const response=await route.fetch();const d=await response.json();
+  d.effective_metadata={...d.effective_metadata,...Object.fromEntries(Object.entries({make:'Fixture',camera:'Fixture Camera',lens:'50mm Fixture Lens',aperture:2.8,exposure:.004,iso:100,width:1200,height:800}).map(([k,value])=>[k,{value,layer:'observed'}]))};
+  d.media={...d.media,source_color:'Display P3',source_bit_depth:10,hdr_source:true};await route.fulfill({json:d});
+ });
+ assert.ok(target);await page.getByRole('button',{name:target,exact:true}).click();await page.locator('.photo-viewer').waitFor();
+ assert.ok(await page.locator('.metadata-panel').evaluate(el=>el.getAnimations().some(a=>a.effect.getKeyframes()[0].opacity==='0')));check('Photo archive fades on shared arrival timeline');
+ await page.waitForTimeout(1200);const area=await page.locator('.viewer-image-area').boundingBox();assert.ok(Math.abs(area.width/area.height-1.5)<.01);check('3:2 image fits image area without top/bottom bars');
+ const labels=await page.locator('.photo-archive dt').allTextContents();assert.deepEqual(labels.map(s=>s.split(' ·')[0]),['相机','镜头','尺寸','色彩','曝光']);
+ const details=await page.locator('.photo-archive').innerText();assert.ok(details.includes('1200 × 800'));assert.ok(details.includes('Display P3 · 10 bit · HDR 源图'));assert.ok(details.includes('ƒ/2.8 · 1/250 s · ISO 100'));check('Dimensions, color and exposure grouped; camera and lens adjacent');
+ await page.screenshot({path:output+'/archive.png'});
+ await page.locator('.viewer-image-area').click();assert.equal(await page.evaluate(()=>document.fullscreenElement),null);assert.deepEqual(await page.locator('.viewer-image-area').boundingBox(),{x:0,y:0,width:1440,height:900});
+ await page.locator('.viewer-image-area').click();assert.ok(await page.locator('.metadata-panel').isVisible());check('Image click fills browser, second click restores archive without fullscreen API');
+ await page.getByRole('button',{name:'返回照片墙',exact:true}).click();assert.equal(await page.locator('.photo-wall').evaluate(el=>el.scrollLeft),wallLeft);check('Back restores wall scroll and focus');
+ await page.getByRole('button',{name:'返回 Gallery',exact:true}).click();assert.ok(Math.abs(Number(await page.locator('.tunnel-stage').getAttribute('data-position'))-position)<.01);check('Back preserves fractional Gallery position');
+ await page.emulateMedia({reducedMotion:'reduce'});await page.locator('.depth-0').click();await page.locator('.wall-scene:not(.scene-inactive)').waitFor();assert.equal(await page.locator('body>img').count(),0);check('Reduced motion bypasses scatter');
+ assert.deepEqual(errors,[]);check('No uncaught browser errors');
+ await fs.writeFile('docs/research/classic-coverflow-evidence.json',JSON.stringify({date:new Date().toISOString(),browser:browser.version(),checks,sizes,errors,fixtures:'synthetic geometry only'},null,2));console.log(JSON.stringify({checks,sizes,errors},null,2));
+}finally{await browser.close()}

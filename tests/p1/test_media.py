@@ -25,14 +25,14 @@ def test_media_pipeline_pause_cache_and_auth(system):
     state=client.get('/api/media/state').json()
     assert state['counts']=={'ready':1},state
     gallery=client.get('/api/gallery').json()['activities']
-    assert len(gallery)==1 and len(gallery[0]['selected'])==1
-    a=gallery[0]['selected'][0]
+    assert len(gallery)==1 and gallery[0]['selected']==[]
+    a=client.get('/api/gallery/'+gallery[0]['id']).json()['items'][0]
     assert client.get(a['thumbnail']).status_code==200
     m=client.get('/api/assets/'+a['id']+'/manifest').json()
     assert m['preview'] and m['effective_metadata']['width']['layer']=='observed'
     assert client.get(a['thumbnail'].replace(a['revision'],'wrong')).status_code==409
     client.post('/api/assets/'+a['id']+'/curation',json={'pinned':True})
-    assert client.get('/api/gallery').json()['activities'][0]['selected'][0]['pinned']
+    assert client.get('/api/gallery/'+gallery[0]['id']).json()['items'][0]['pinned']
     client.post('/api/logout',json={})
     assert client.get(a['thumbnail']).status_code==401
     assert client.get('/api/gallery').status_code==401

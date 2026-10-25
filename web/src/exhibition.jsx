@@ -45,24 +45,6 @@ export function FullscreenButton({ target, className = "" }) {
   );
 }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-function pose(depth) {
-  const keys = [
-    [-2, -210, 1.25, 8, 0],
-    [-1, -108, 1.16, 12, 1],
-    [0, 0, 1, 24, 1],
-    [1, 72, 0.66, 57, 0.76],
-    [2, 95, 0.46, 61, 0.54],
-    [3, 110, 0.31, 63, 0.38],
-    [4, 120, 0.2, 65, 0.23],
-    [5, 127, 0.12, 66, 0],
-  ];
-  const d = clamp(depth, -2, 5),
-    i = Math.min(keys.length - 2, Math.floor(d + 2)),
-    a = keys[i],
-    b = keys[i + 1],
-    t = d - a[0];
-  return a.slice(1).map((v, j) => v + (b[j + 1] - v) * t);
-}
 export const Tunnel = forwardRef(function Tunnel(
   { activities, index, onIndex, onOpen },
   ref,
@@ -74,7 +56,8 @@ export const Tunnel = forwardRef(function Tunnel(
     gesture = useRef(null),
     frame = useRef(0);
   const [position, setPosition] = useState(index),
-    [width, setWidth] = useState(1000);
+    [width, setWidth] = useState(1000),
+    [height,setHeight] = useState(700);
   const goTo = (i) =>
     scroll.current?.scrollTo({
       left: clamp(i, 0, activities.length - 1) * stride.current,
@@ -90,7 +73,8 @@ export const Tunnel = forwardRef(function Tunnel(
   useLayoutEffect(() => {
     const observer = new ResizeObserver(([entry]) => {
       const w = entry.contentRect.width;
-      stride.current = Math.max(220, w * 0.65);
+      stride.current = Math.max(140, w * 0.24);
+      setHeight(entry.contentRect.height);
       setWidth(w);
     });
     observer.observe(stage.current);
@@ -148,14 +132,18 @@ export const Tunnel = forwardRef(function Tunnel(
     if (e.type !== "pointercancel" && !g.moved && g.activity != null)
       onOpen(g.activity);
   };
-  const base = Math.floor(position),
-    visible = activities
-      .map((a, i) => ({ a, i }))
-      .slice(Math.max(0, base - 2), base + 7);
+  const count=Math.min(activities.length,clamp(Math.round((width+280)/140),5,20)),
+    start=clamp(Math.floor(position-count/2),0,Math.max(0,activities.length-count)),
+    visible=activities.map((a,i)=>({a,i})).slice(start,start+count),
+    coverWidth=Math.min(width*.60,height*.88),
+    reach=Math.max(count/2,count-1-position,position-(activities.length-count)),
+    spacing=Math.max(12,(width*.47-coverWidth*.50)/Math.max(1,reach-1));
   return (
     <section
       ref={stage}
-      className="tunnel-stage continuous-tunnel"
+      className="tunnel-stage continuous-tunnel classic-coverflow"
+      data-cover-count={count}
+      style={{"--floor-y":`${Math.max(24,height*.08)+coverWidth/1.5+7}px`}}
       aria-label="时光隧道"
       data-position={position.toFixed(3)}
       onPointerDown={(e) => {
@@ -198,8 +186,10 @@ export const Tunnel = forwardRef(function Tunnel(
       </div>
       <div className="tunnel-panels">
         {visible.map(({ a, i }) => {
-          const d = i - position,
-            [x, scale, angle, opacity] = pose(d);
+          const d = i - position, distance=Math.abs(d), lean=Math.min(1,distance),
+            x=Math.sign(d)*(Math.min(distance,1)*coverWidth*.57+Math.max(0,distance-1)*spacing),
+            scale=1-.19*lean, angle=-Math.sign(d)*64*lean,
+            opacity=Math.max(.42,1-distance*.045);
           return (
             <button
               key={a.id}
@@ -214,13 +204,16 @@ export const Tunnel = forwardRef(function Tunnel(
                 if (e.detail === 0) onOpen(a.id);
               }}
               style={{
-                transform: `translateX(${x}%) scale(${scale}) perspective(1800px) rotateY(${angle}deg)`,
+                width:coverWidth,height:coverWidth/1.5,top:Math.max(24,height*.08),
+                transform: `translateX(-50%) translateX(${x}px) perspective(${Math.max(900,coverWidth*4)}px) rotateY(${angle}deg) scale(${scale})`,
                 opacity,
-                zIndex: 100 - Math.round(d * 10),
+                zIndex: 1000 - Math.round(Math.abs(d) * 10),
+                "--reflection-height":`${Math.max(180,(height-coverWidth/1.5-Math.max(24,height*.08))/scale)}px`,
                 pointerEvents: opacity > 0.05 ? "auto" : "none",
               }}
             >
               <div className={"photo-mosaic count-" + a.selected.length}>
+                {!a.selected.length && <span className="cover-pending">{a.unscored ? "评分中" : "暂无精选照片"}</span>}
                 {a.selected.map((p, j) => (
                   <div className={"mosaic-cell cell-" + j} key={p.id}>
                     <img
@@ -255,18 +248,18 @@ export const Tunnel = forwardRef(function Tunnel(
   );
 });
 
-export function PhotoWall({ activity, api, onOpen, onError }) {
+export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts }) {
   const container = useRef(null),
     drag = useRef(null),
     suppress = useRef(false),
-    [items, setItems] = useState([]),
-    [total, setTotal] = useState(null),
+    [items, setItems] = useState(warm?.data?.items || []),
+    [total, setTotal] = useState(warm?.data?.total ?? null),
     [height, setHeight] = useState(500),
     [left, setLeft] = useState(0),
     [busy, setBusy] = useState(false);
   const state = useRef({
-    offset: 0,
-    total: Infinity,
+    offset: warm?.data?.items.length || 0,
+    total: warm?.data?.total ?? Infinity,
     loading: false,
     stopped: false,
   });
@@ -283,6 +276,7 @@ export function PhotoWall({ activity, api, onOpen, onError }) {
       s.offset += d.items.length;
       s.total = d.total;
       setTotal(d.total);
+      onCounts?.({photos:d.photos,videos:d.videos});
       setItems((p) => [...p, ...d.items]);
     } catch (e) {
       if (!s.stopped) onError(e.message);
@@ -292,12 +286,15 @@ export function PhotoWall({ activity, api, onOpen, onError }) {
     }
   };
   useEffect(() => {
+    state.current.stopped=false;
+    onCounts?.({photos:warm?.data?.photos ?? activity.photos,videos:warm?.data?.videos ?? activity.videos});
     load();
     return () => {
       state.current.stopped = true;
     };
   }, []);
   useLayoutEffect(() => {
+    setHeight(container.current.getBoundingClientRect().height);
     const ro = new ResizeObserver(([e]) => setHeight(e.contentRect.height));
     ro.observe(container.current);
     return () => ro.disconnect();
@@ -403,12 +400,12 @@ export function PhotoWall({ activity, api, onOpen, onError }) {
               }}
               aria-label={"查看 " + p.name}
             >
-              <img
-                src={p.preview || p.thumbnail}
+              {(p.preview || p.thumbnail) ? <img
+                src={warm?.urls.get(p.id) || p.preview || p.thumbnail}
                 alt={p.name}
                 draggable="false"
                 decoding="async"
-              />
+              /> : <div className="video-index-card"><Icon name="video" />视频</div>}
               <span>{p.kind === "video_candidate" ? "▶" : ""}</span>
             </button>
           ))}

@@ -52,6 +52,8 @@ def still(path, folder, meta, progress=lambda *args: None, *, compatible=False):
         auxiliaries = list(h.info.get('aux',{}))
         if h.size[0] * h.size[1] > Image.MAX_IMAGE_PIXELS:
             raise Image.DecompressionBombError("Image exceeds preview pixel budget")
+    source_bits = h.info.get('bit_depth') if h else meta.get('BitsPerSample') or meta.get('BitDepth')
+    source_color = meta.get('ProfileDescription') or {1:'sRGB / BT.709',9:'BT.2020',12:'Display P3'}.get(nclx.get('color_primaries'))
     reason = hdr_reason(meta,nclx,auxiliaries)
     apple_sdr_base = (meta.get('FileType') in ('HEIC','HEIF','HIF') and meta.get('Make')=='Apple' and meta.get('ProfileDescription') in ('Display P3','sRGB IEC61966-2.1') and nclx.get('transfer_characteristics') not in (16,18))
     jpeg_sdr_base = meta.get('FileType')=='JPEG' and meta.get('ProfileDescription') in ('Display P3','sRGB IEC61966-2.1','sRGB') and meta.get('TransferCharacteristics') not in (16,18)
@@ -92,7 +94,7 @@ def still(path, folder, meta, progress=lambda *args: None, *, compatible=False):
                 assumed = True
         original_size = image.size
     try:
-        result = {'width':original_size[0],'height':original_size[1],'color':color,'hdr':False,'hdr_source':bool(reason),'sdr_base':apple_sdr_base or jpeg_sdr_base or icc_sdr_base,'assumed_color':assumed,'score_penalty':15 if assumed else 0,'cache_policy':'preview-only-v1'}
+        result = {'width':original_size[0],'height':original_size[1],'color':color,'hdr':False,'hdr_source':bool(reason),'sdr_base':apple_sdr_base or jpeg_sdr_base or icc_sdr_base,'assumed_color':assumed,'score_penalty':15 if assumed else 0,'cache_policy':'preview-only-v1','source_bit_depth':source_bits,'source_color':source_color}
         for profile,edge,quality in [('display',3840,80),('thumb',640,74)]:
             progress(profile, 'running')
             out = image.copy()
