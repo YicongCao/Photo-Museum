@@ -10,6 +10,7 @@ from pathlib import PurePosixPath
 from fastapi import Depends,HTTPException,Query
 from .gallery import media_url,event_id
 from .localization import localize_place
+from .preferences import read_preferences,allowed_place
 
 
 def key(prefix,*values):
@@ -47,6 +48,7 @@ class ExhibitionCatalog:
             if time.monotonic()-self.loaded<5:return self.data
             with self.db.connect() as c:
                 c.execute('BEGIN')
+                preferences=read_preferences(c)
                 rows=[dict(r) for r in c.execute("""SELECT e.*,
                     json_object('version',json_extract(m.data_json,'$.version'),
                         'width',json_extract(m.data_json,'$.width'),'height',json_extract(m.data_json,'$.height'),
@@ -97,6 +99,7 @@ class ExhibitionCatalog:
                 gps=value('gps');gps=gps if valid_gps(gps) else None
                 place=json.loads(r['place_json'] or '{}')
                 if not gps or place.get('input_record')!=fields.get('gps',{}).get('record_id') or not place.get('country'):place=None
+                place=allowed_place(place,fields.get('gps',{}).get('layer'),preferences)
                 if place:place=localize_place(place)
                 p={'id':r['id'],'revision':r['revision'],'kind':r['kind'],'name':PurePosixPath(r['path']).name,
                    'thumbnail':media_url(r,'thumb'),'preview':media_url(r,'display'),'info':info,

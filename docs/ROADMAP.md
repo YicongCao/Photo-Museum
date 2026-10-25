@@ -74,3 +74,7 @@ A时光隧道的早期版本已经随P2交付，本轮是将用户最终选择�
 2026-10-25用户指定TokenHub/hy4-preview，受限工具策展首版已实现；不要求OpenAI。自然语言经本地结构化检索生成可审阅集合，SSE显示provider返回思考/工具/答案，再按实际数量校验双缓存与版本并Show至六种展厅。配置、来源、限制和实测见[P6验收](research/p6-curation-assistant.md)及[ADR0006](decisions/0006-curation-assistant.md)。
 
 识别、刮削、邻图推断、媒体加载和显影不依赖agent。没有任意SQL/shell/HTTP/NAS写入；原图、精确GPS和人脸特征不出本机，远程只收用户请求与必要索引摘要。失败不自动重试付费调用。自然语言理解和实际选片质量仍需馆主审阅。
+
+## 跨阶段：统一 Settings（2026-10-25）
+
+文件源/LLM/GPS/原图与HDR/缓存偏好已实现统一入口与持久配置，见[ADR0007](decisions/0007-unified-settings.md)和[验收](research/unified-settings-validation.md)。新增偏好需接入实际消费者与验证；不提供无效开关。在线地址provider及物理HDR验证仍属后续范围。

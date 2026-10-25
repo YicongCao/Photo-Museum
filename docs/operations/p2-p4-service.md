@@ -51,7 +51,7 @@ YuNet 检测、SFace 特征聚类、MobileNetV3 主体标签在本机运行。�
 
 P5四展厅从Gallery菜单进入；离线世界几何随前端打包，不需要地图API key或联网瓦片。数据只从本地索引/双缓存聚合，无需重新扫描。详细来源、验证与首版范围见[P5报告](../research/p5-exhibition-validation.md)。隔离验证可用可信本地环境变量`MUSEUM_WEB_DIST`指定另一个Vite构建目录，默认仍为`web/dist`；正式运行不设置此覆盖值。
 
-GeoNames 只提供最近城市（距离上限 100 km），国家/省/城市；没有街道和区域证据就保留空值。地址保留 GPS 输入记录、原始/推断层与精度；GPS 改动后旧地址不作为当前有效结果。数据署名：GeoNames，CC BY 4.0，https://www.geonames.org/export/ 。
+GeoNames 只提供最近城市（默认距离上限 100 km，可在 Settings 调整），国家/省/城市；没有街道和区域证据就保留空值。地址保留 GPS 输入记录、原始/推断层与精度；GPS 改动后旧地址不作为当前有效结果。数据署名：GeoNames，CC BY 4.0，https://www.geonames.org/export/ 。
 
 ## Docker
 
@@ -86,3 +86,7 @@ uv run --all-extras python -m photo_museum.backup restore /private/backup-new /p
 只扫描照片根目录和一级主题目录的直属文件。主题内 `跑山视频`、`Photomator` 等所有二级目录都不列举、不处理其中任何文件。迁移006将已有越界条目标记 `scope_excluded`，移出任务/API/图库；没有标记为NAS删除，也不删除已保留的本地历史或NAS内容。本次范围变为227个一级主题＋根目录，20,137个直属候选；旧快照中的11个二级目录及1,462个文件退出范围。
 
 同目录没有同名成片的视频只保留WebDAV得到的文件名、大小、修改时间、版本和主题，状态为 `indexed`。不会GET原视频、ffprobe、抽帧、转码、主体/人脸分析；没有缓存就只在文件索引出现。已有同名成片的视频保留完整处理，仍需内容标识验证才能把配对称为已确认Live Photo。以后新增同名成片时，原先仅索引的视频会重新进入候选处理队列。
+
+## 统一 Settings
+
+`/#settings` 集中文件源、Provider、GPS、显示和缓存。已有凭据不会回填；密码/key留空保留。Provider地址改变需重填key；文件源地址/根目录改变需新建源。GPS规则保存后由分析进程增量重算本地地址，无NAS GET；媒体暂停时一同暂停。按需原图和HDR只影响查看请求，缓存保持SDR，不引发重刮。详见[Settings验证](../research/unified-settings-validation.md)。

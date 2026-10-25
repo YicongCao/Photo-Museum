@@ -27,9 +27,9 @@ class GeoNames:
     self.cities.append({'latitude':float(p[4]),'longitude':float(p[5]),'city':p[1],'country_code':p[8],'province_code':p[8]+'.'+p[10],'province':self.admin.get(p[8]+'.'+p[10]),'id':p[0]})
   coords=np.radians([[c['latitude'],c['longitude']] for c in self.cities])
   self.xyz=np.column_stack((np.cos(coords[:,0])*np.cos(coords[:,1]),np.cos(coords[:,0])*np.sin(coords[:,1]),np.sin(coords[:,0])))
- def reverse(self,gps):
+ def reverse(self,gps,max_distance_m=100000):
   np=self.np;lat,lon=np.radians([gps['latitude'],gps['longitude']]);q=np.array([np.cos(lat)*np.cos(lon),np.cos(lat)*np.sin(lon),np.sin(lat)])
   city=self.cities[int(np.argmax(self.xyz@q))]
   d=distance(gps,city)
-  if d>100000:return {'status':'unknown','precision':'unknown','attribution':'GeoNames CC BY'}
+  if d>max_distance_m:return {'status':'unknown','precision':'unknown','distance_m':round(d),'attribution':'GeoNames CC BY'}
   return {'country':self.countries.get(city['country_code'],city['country_code']),'country_code':city['country_code'],'province':city['province'],'province_code':city['province_code'],'province_geonames_id':self.admin_ids.get(city['province_code']),'city':city['city'],'district':None,'street':None,'precision':'nearest_city','distance_m':round(d),'attribution':'GeoNames CC BY','geonames_id':city['id']}

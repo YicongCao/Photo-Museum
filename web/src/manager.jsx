@@ -47,12 +47,9 @@ export function Manager({ api, state, refresh, onLogout }) {
     [updatedAt, setUpdatedAt] = useState(null),
     [directoryError, setDirectoryError] = useState(""),
     [directoryLoaded, setDirectoryLoaded] = useState(false),
-    [settings, setSettings] = useState(false),
-    [browse, setBrowse] = useState({}),
     [assets, setAssets] = useState([]),
     [offset, setOffset] = useState(0),
-    [busy, setBusy] = useState(false),
-    [sourceForm, setSourceForm] = useState(false);
+    [busy, setBusy] = useState(false);
   const [inspecting, setInspecting] = useState(null),
     [inspectOpen, setInspectOpen] = useState(false);
   const [wide, setWide] = useState(
@@ -149,7 +146,7 @@ export function Manager({ api, state, refresh, onLogout }) {
       <header className="keeper-header">
         <a href="#gallery">PHOTO MUSEUM</a>
         <nav>
-          <button onClick={() => setSettings(true)}>Settings</button>
+          <button onClick={() => {location.hash='settings?from=manage'}}>Settings</button>
           <a href="#manage" aria-current="page">Dashboard</a>
           <a href="#gallery">Gallery</a>
           <button onClick={onLogout} aria-label="锁定">
@@ -645,165 +642,6 @@ export function Manager({ api, state, refresh, onLogout }) {
         )}
       </div>
       <RecentStrip items={recent || []} />
-      {settings && (
-        <div
-          className="keeper-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Settings"
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setSettings(false);
-          }}
-        >
-          <div className="settings-card">
-            <div className="side-title">
-              <h2>Settings</h2>
-              <button
-                autoFocus
-                onClick={() => setSettings(false)}
-                aria-label="关闭设置"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="settings-scroll">
-              <h3>照片源</h3>
-              {error && <p role="alert">{error}</p>}
-              {state.sources.map((s) => (
-                <section className="source-setting" key={s.id}>
-                  <h3>{s.name}</h3>
-                  <p>
-                    {s.url} · {s.root}
-                  </p>
-                  <button
-                    disabled={busy}
-                    onClick={() =>
-                      act(async () => {
-                        const b = await api("/sources/" + s.id + "/browse");
-                        setBrowse((v) => ({ ...v, [s.id]: b.directories }));
-                      })
-                    }
-                  >
-                    测试连接 / 选择活动
-                  </button>
-                  {browse[s.id] && (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const root = new FormData(e.currentTarget).get("root");
-                        act(async () => {
-                          await api("/jobs", "POST", { source_id: s.id, root });
-                          setSettings(false);
-                        });
-                      }}
-                    >
-                      <label>
-                        扫描范围
-                        <select name="root">
-                          <option value={s.root}>整个照片库（增量核对）</option>
-                          {browse[s.id].map((d) => (
-                            <option key={d.path} value={d.path}>
-                              {d.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <button disabled={busy}>开始刮削</button>
-                    </form>
-                  )}
-                  <details>
-                    <summary>更新 NAS 密码或受信 CA</summary>
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const f = e.currentTarget;
-                        const data = new FormData(f);
-                        act(async () => {
-                          await api(
-                            "/sources/" + s.id + "/credentials",
-                            "PUT",
-                            {
-                              password: data.get("password"),
-                              ca_pem: data.get("ca_pem") || null,
-                            },
-                          );
-                          f.reset();
-                        });
-                      }}
-                    >
-                      <label>
-                        NAS 密码
-                        <input
-                          name="password"
-                          type="password"
-                          required
-                          autoComplete="new-password"
-                        />
-                      </label>
-                      <label>
-                        受信 CA（PEM，可选）
-                        <textarea name="ca_pem" />
-                      </label>
-                      <button>更新凭据</button>
-                    </form>
-                  </details>
-                </section>
-              ))}
-              <button
-                className="quiet"
-                onClick={() => setSourceForm(!sourceForm)}
-              >
-                ＋ 连接照片源
-              </button>
-              {(sourceForm || !state.sources.length) && (
-                <form
-                  className="source-create"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const f = e.currentTarget;
-                    const values = new FormData(f);
-                    const body = Object.fromEntries(values);
-                    body.allow_http = values.get("allow_http") === "on";
-                    body.ca_pem = body.ca_pem || null;
-                    act(async () => {
-                      await api("/sources", "POST", body);
-                      f.reset();
-                      setSourceForm(false);
-                    });
-                  }}
-                >
-                  {[
-                    ["name", "名称", "Farmer"],
-                    ["url", "WebDAV 地址", "https://Farmer.local:5006"],
-                    ["root", "照片根目录", "/工程/拍照片"],
-                    ["username", "NAS 用户名", "pulsar"],
-                    ["password", "NAS 密码", ""],
-                  ].map(([name, title, value]) => (
-                    <label key={name}>
-                      {title}
-                      <input
-                        name={name}
-                        defaultValue={value}
-                        type={name === "password" ? "password" : "text"}
-                        required
-                      />
-                    </label>
-                  ))}
-                  <label>
-                    受信 CA（PEM，可选）
-                    <textarea name="ca_pem" />
-                  </label>
-                  <label className="check">
-                    <input name="allow_http" type="checkbox" />
-                    允许本次内网 HTTP 明文连接
-                  </label>
-                  <button disabled={busy}>保存连接</button>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

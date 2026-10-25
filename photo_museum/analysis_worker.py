@@ -8,12 +8,14 @@ from .db import Database
 from .processing import Progress, complete_file
 from .cache import Cache
 from .work_queue import directory_focus
+from .preferences import load_preferences,read_preferences,geography_version,geography_stamp,geocode_query
 
 class AnalysisWorker:
  def __init__(self,database,provider):
   self.db,self.provider=database,provider
   self.cache=Cache(database)
   self.geo=None
+  self.geo_ticks=0
   if hasattr(provider,'models') and (provider.models/'geonames/cities15000.zip').is_file():
    from .geography import GeoNames
    self.geo=GeoNames(provider.models/'geonames')
@@ -21,23 +23,34 @@ class AnalysisWorker:
  def geocode_one(self):
   if not self.geo:return False
   with self.db.connect() as c:
-   row=c.execute("""WITH ranked AS (SELECT m.*,e.revision,row_number() OVER(PARTITION BY m.asset_id ORDER BY CASE layer WHEN 'manual' THEN 0 WHEN 'observed' THEN 1 ELSE 2 END) priority FROM metadata m JOIN entries e ON e.id=m.asset_id WHERE m.field='gps' AND m.stale=0 AND e.missing=0 AND e.scope_excluded=0 AND (m.layer!='inferred' OR json_extract(m.info_json,'$.accepted')=1))
-    SELECT r.* FROM ranked r LEFT JOIN analysis a ON a.asset_id=r.asset_id AND a.provider='places' WHERE r.priority=1 AND (a.asset_id IS NULL OR a.revision!=r.revision OR a.version!=? OR json_extract(a.data_json,'$.input_record')!=r.record_id) LIMIT 1""",(self.geo.version,)).fetchone()
+   p=read_preferences(c);generation=c.execute("SELECT value FROM settings WHERE key='geography_generation'").fetchone()
+   generation=int(generation[0]) if generation else 0;version=geography_version(self.geo.version,p,generation)
+   if p['gps_mode']=='disabled':return False
+   row=c.execute(geocode_query()+' LIMIT 1',(p['gps_use_inferred'],version)).fetchone()
   if not row:return False
   value=json.loads(row['value_json'])
-  result=self.geo.reverse(value) if isinstance(value,dict) else {'status':'unknown'}
+  result=self.geo.reverse(value,max_distance_m=p['gps_max_distance_km']*1000) if isinstance(value,dict) and all(isinstance(value.get(k),(int,float)) for k in ('latitude','longitude')) else {'status':'unknown'}
   result.update(input_record=row['record_id'],input_layer=row['layer'],input_precision=json.loads(row['info_json']).get('precision'))
   if self.db.effective(row['asset_id']).get('gps',{}).get('record_id')!=row['record_id']:return True
-  with self.db.connect() as c:c.execute('INSERT OR REPLACE INTO analysis VALUES(?,?,?,?,?,?)',(row['asset_id'],row['revision'],'places',self.geo.version,json.dumps(result),time.time()))
+  with self.db.connect() as c:
+   current=read_preferences(c);g=c.execute("SELECT value FROM settings WHERE key='geography_generation'").fetchone()
+   if current['gps_mode']=='disabled' or geography_version(self.geo.version,current,int(g[0]) if g else 0)!=version:return True
+   c.execute('INSERT OR REPLACE INTO analysis VALUES(?,?,?,?,?,?)',(row['asset_id'],row['revision'],'places',version,json.dumps(result),time.time()))
   return True
 
  def tick(self):
   with self.db.connect() as c:
    if c.execute("SELECT value FROM settings WHERE key='media_paused'").fetchone()[0]=='true':return False
    c.execute("INSERT OR REPLACE INTO settings VALUES('analysis_version',?)",(self.provider.version,))
+   if self.geo:
+    p=read_preferences(c);g=c.execute("SELECT value FROM settings WHERE key='geography_generation'").fetchone();g=int(g[0]) if g else 0
+    c.execute("INSERT OR REPLACE INTO settings VALUES('geography_version',?)",(geography_version(self.geo.version,p,g),))
+    c.execute("INSERT OR REPLACE INTO settings VALUES('geography_policy_stamp',?)",(geography_stamp(p,g),))
    focus=directory_focus(c)
    r=c.execute("""SELECT e.id,e.revision,m.updated media_updated FROM entries e JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE q.status='ready' AND e.missing=0 AND e.scope_excluded=0 AND coalesce(json_extract(m.data_json,'$.metadata_only'),0)=0 AND (? IS NULL OR (e.source_id=? AND e.parent=?)) AND NOT EXISTS(SELECT 1 FROM analysis a WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider=? AND a.version=? AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version')) ORDER BY e.parent DESC,e.path DESC LIMIT 1""",(focus['source_id'] if focus else None,focus['source_id'] if focus else None,focus['parent'] if focus else None,self.provider.id,self.provider.version)).fetchone()
-  if not r:return self.geocode_one()
+  self.geo_ticks+=1
+  if (not r or self.geo_ticks%5==0) and self.geocode_one():return True
+  if not r:return False
   path=self.cache.lookup(r['id'],r['revision'],'thumb')
   if not path:
    with self.db.connect() as c:c.execute("UPDATE media_jobs SET status='pending',available=0 WHERE asset_id=? AND revision=? AND status='ready'",(r['id'],r['revision']))
@@ -54,7 +67,10 @@ class AnalysisWorker:
    result={'error':type(exc).__name__,'offline':True}
   progress.report('address')
   gps=self.db.effective(r['id']).get('gps')
-  place=self.geo.reverse(gps['value']) if self.geo and gps and isinstance(gps['value'],dict) else None
+  p=load_preferences(self.db)
+  with self.db.connect() as c:g=c.execute("SELECT value FROM settings WHERE key='geography_generation'").fetchone()
+  place_version=geography_version(self.geo.version,p,int(g[0]) if g else 0) if self.geo else None
+  place=self.geo.reverse(gps['value'],max_distance_m=p['gps_max_distance_km']*1000) if self.geo and p['gps_mode']=='offline' and gps and (gps['layer']!='inferred' or p['gps_use_inferred']) and isinstance(gps['value'],dict) else None
   progress.report('address','done' if place and place.get('status')!='unknown' else 'skipped')
   with self.db.connect() as c:
    c.execute('BEGIN IMMEDIATE')
@@ -91,7 +107,9 @@ class AnalysisWorker:
    c.execute('INSERT OR REPLACE INTO analysis VALUES(?,?,?,?,?,?)',(r['id'],r['revision'],self.provider.id,self.provider.version,json.dumps(result),time.time()))
    if place:
     place.update(input_record=gps['record_id'],input_layer=gps['layer'],input_precision=gps['precision'])
-    c.execute('INSERT OR REPLACE INTO analysis VALUES(?,?,?,?,?,?)',(r['id'],r['revision'],self.geo.id,self.geo.version,json.dumps(place),time.time()))
+    now_p=read_preferences(c);now_g=c.execute("SELECT value FROM settings WHERE key='geography_generation'").fetchone()
+    if now_p['gps_mode']=='offline' and geography_version(self.geo.version,now_p,int(now_g[0]) if now_g else 0)==place_version:
+     c.execute('INSERT OR REPLACE INTO analysis VALUES(?,?,?,?,?,?)',(r['id'],r['revision'],self.geo.id,place_version,json.dumps(place),time.time()))
   progress.finish('failed' if result.get('error') else 'ready')
   if not result.get('error'):complete_file(self.db,r['id'],r['revision'])
   return True

@@ -13,6 +13,7 @@ import { GearRoom } from './rooms/gear';
 import { SpacetimeRoom } from './rooms/spacetime';
 import { RoomRefreshContext } from './rooms/common';
 import './rooms/rooms.css';
+import {usePreferences} from './preferences';
 
 const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道'};
 function savedRooms(key='museum.rooms'){try{return JSON.parse(sessionStorage.getItem(key) || '{}')}catch{return {}}}
@@ -172,6 +173,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
           }}>
             {Object.entries(roomNames).map(([id,name])=><button role="menuitemradio" key={id} aria-checked={room===id} onClick={()=>changeRoom(id)}>{name}</button>)}
             <button role="menuitem" className="curator-menu-entry" onClick={()=>{location.hash='curator'}}>策展助理</button>
+            <button role="menuitem" onClick={()=>{location.hash='settings?from='+encodeURIComponent(location.hash.slice(1))}}>Settings</button>
           </div>}</div>
           <FullscreenButton />
         </div>
@@ -267,6 +269,8 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
 }
 
 function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }) {
+  const preferences=usePreferences();
+  const [requested,setRequested]=useState(false),[retryOriginal,setRetryOriginal]=useState(0),[nativeFallback,setNativeFallback]=useState(false);
   const [suggestions, setSuggestions] = useState([]),
     [mutationError, setMutationError] = useState("");
   const [manifest, setManifest] = useState(null),
@@ -278,7 +282,8 @@ function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }
     [pinned, setPinned] = useState(photo.pinned),
     [play, setPlay] = useState(false),
     [analysis, setAnalysis] = useState(null),
-    [native, setNative] = useState(false);
+    [native, setNative] = useState(null);
+  const nativeChoice=native ?? (preferences.ready && preferences.values.hdr_display==='native_if_supported' && matchMedia('(dynamic-range: high)').matches);
   const viewerRef = useRef(null), zoomRef=useRef(zoom);
   zoomRef.current=zoom;
   const toggleImmersive=()=>{if(zoom)setInfo(true);setZoom(!zoom);};
@@ -314,63 +319,40 @@ function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }
     document.addEventListener("keydown", f);
     return () => document.removeEventListener("keydown", f);
   }, []);
-  useEffect(() => {
-    const controller = new AbortController();
-    let url, decoded;
-    setOriginal(null);
-    setPhase("4K · 原图读取中");
-    (async () => {
-      try {
-        api("/assets/" + photo.id + "/suggestions")
-          .then((d) => {
-            if (!controller.signal.aborted) setSuggestions(d.items);
-          })
-          .catch(() => {});
-        api("/assets/" + photo.id + "/analysis")
-          .then((a) => {
-            if (!controller.signal.aborted) setAnalysis(a);
-          })
-          .catch(() => {});
-        const m = await api("/assets/" + photo.id + "/manifest");
-        if (controller.signal.aborted) return;
-        setManifest(m);
-        if (m.placeholder) {
-          setPhase(m.placeholder === "video" ? "此视频超大" : "此图片超大");
-          return;
-        }
-        if (photo.kind === "video_candidate") {
-          setPhase("视频封面");
-          return;
-        }
-        // Load preview immediately, original independently; original only replaces after decode.
-        const response = await fetch(
-          native ? m.original : m.original_compatible || m.original,
-          { signal: controller.signal, cache: "no-store" },
-        );
-        if (!response.ok) throw Error("原图暂不可用");
-        const blob = await response.blob();
-        if (controller.signal.aborted) return;
-        url = URL.createObjectURL(blob);
-        decoded = new Image();
-        decoded.src = url;
-        await decoded.decode();
-        if (controller.signal.aborted) return;
-        setOriginal(url);
-        setPhase(
-          m.original_compatible && !native ? "原图 · SDR 兼容显示" : "原图",
-        );
-        decoded.removeAttribute("src");
-        decoded = null;
-      } catch (e) {
-        if (!controller.signal.aborted) setPhase("保留 4K · 原图暂不可用");
-      }
-    })();
-    return () => {
-      controller.abort();
-      decoded?.removeAttribute("src");
-      if (url) URL.revokeObjectURL(url);
+  useEffect(()=>{
+    const c=new AbortController();
+    for(const [path,set] of [['manifest',setManifest],['suggestions',d=>setSuggestions(d.items)],['analysis',setAnalysis]])
+      api('/assets/'+photo.id+'/'+path,'GET',undefined,{signal:c.signal}).then(d=>{if(!c.signal.aborted)set(d)}).catch(()=>{if(path==='manifest'&&!c.signal.aborted)setPhase('保留 4K · 元数据暂不可用')});
+    return()=>c.abort();
+  },[photo.id,api]);
+  useEffect(()=>{
+    const c=new AbortController();let url,decoded;
+    setOriginal(null);setNativeFallback(false);
+    const m=manifest;if(!m)return()=>c.abort();
+    if(m.placeholder){setPhase(m.placeholder==='video'?'此视频超大':'此图片超大');return()=>c.abort()}
+    if(photo.kind==='video_candidate'){setPhase('视频封面');return()=>c.abort()}
+    if(!requested&&(!preferences.ready||preferences.values.original_loading==='on_demand')){
+      setPhase(preferences.error?'偏好暂不可用 · 保留 4K':'4K · 原图按需读取');return()=>c.abort();
+    }
+    setPhase('4K · 原图读取中');
+    const acquire=async target=>{
+      const response=await fetch(target,{signal:c.signal,cache:'no-store'});
+      if(!response.ok)throw Error('原图暂不可用');
+      const blob=await response.blob();if(c.signal.aborted)return;
+      url=URL.createObjectURL(blob);decoded=new Image();decoded.src=url;
+      try{await decoded.decode()}catch(error){decoded.removeAttribute('src');decoded=null;URL.revokeObjectURL(url);url=null;throw Object.assign(Error('原图无法解码'),{decodeFailed:true})}
+      decoded.removeAttribute('src');decoded=null;
     };
-  }, [photo.id, native]);
+    (async()=>{try{
+      try{await acquire(nativeChoice?m.original:m.original_compatible||m.original)}catch(e){
+        if(!c.signal.aborted&&nativeChoice&&e.decodeFailed&&m.original_compatible){await acquire(m.original_compatible);if(!c.signal.aborted){setNativeFallback(true);setPhase('原生不可用 · SDR 原图')}}else throw e;
+      }
+      if(c.signal.aborted)return;setOriginal(url);
+      if(!nativeChoice)setPhase(m.original_compatible?'原图 · SDR 兼容显示':'原图');
+      else setPhase(p=>p==='原生不可用 · SDR 原图'?p:'原图 · 原生色彩');
+    }catch(e){if(!c.signal.aborted)setPhase('保留 4K · 原图暂不可用')}})();
+    return()=>{c.abort();decoded?.removeAttribute('src');if(url)URL.revokeObjectURL(url)};
+  },[photo.id,manifest,nativeChoice,requested,retryOriginal,preferences.ready,preferences.values.original_loading,preferences.ready?'':preferences.error]);
   return (
     <div
       ref={viewerRef}
@@ -398,8 +380,10 @@ function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }
           >
             {pinned ? "★ 已标记" : "☆ 标记照片"}
           </button>
-          <button onClick={() => setNative(!native)}>
-            {native ? "原生色彩" : "SDR"}
+          {manifest?.original&&photo.kind!=='video_candidate'&&!manifest?.placeholder&&!requested&&(!preferences.ready||preferences.values.original_loading==='on_demand')&&<button onClick={()=>setRequested(true)}>加载原图</button>}
+          {manifest?.original&&phase.includes('原图暂不可用')&&<button onClick={()=>{setRequested(true);setRetryOriginal(n=>n+1)}}>重新读取原图</button>}
+          <button onClick={() => {setRequested(true);setNative(!nativeChoice)}}>
+            {nativeFallback?'SDR 回退':nativeChoice?'原生色彩':'SDR'}
           </button>
           <button onClick={() => setInfo(!info)} aria-expanded={info}>
             照片档案

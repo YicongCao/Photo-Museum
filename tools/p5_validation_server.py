@@ -59,4 +59,10 @@ with tempfile.TemporaryDirectory(prefix='museum-p5-') as directory,fixture.fixtu
   from tests.p1.curator_fixture import FakeLLM
   save_config(db,security,ProviderInput(api_key='fake-provider-key'))
   app.state.curator.transport=httpx.MockTransport(FakeLLM(delay=.06))
- print('P5/P6 synthetic ready',flush=True);uvicorn.run(app,host='127.0.0.1',port=port,access_log=False)
+ cleanup=lambda:None
+ if os.environ.get('MUSEUM_VALIDATION_SETTINGS')=='1':
+  from tools.settings_fixture import start
+  cleanup=start(db,directory)
+ print('P5/P6 synthetic ready',flush=True)
+ try:uvicorn.run(app,host='127.0.0.1',port=port,access_log=False)
+ finally:cleanup()

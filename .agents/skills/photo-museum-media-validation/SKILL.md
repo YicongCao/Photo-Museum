@@ -5,6 +5,8 @@ description: 复验 photo-museum 媒体缓存、Gallery/P5展厅、P6策展助�
 
 # 正式媒体与馆务复验
 
+统一文件源、LLM、GPS、原图/HDR和缓存偏好的隔离验证见[Settings复验](references/settings.md)。
+
 P5日历、离线地图、器材馆与独立时空隧道的隔离构建、fixture及回归见[四展厅复验](references/p5.md)。真实用户密码由用户输入；公开证据仅合成图库。
 
 P6自然语言策展、TokenHub流式tools、集合范围与真实接口小样见[策展助理复验](references/p6.md)。真实LLM测试只发送合成索引，私密图库检索使用禁网只读模式，不能把界面展示当作模型选片质量通过。

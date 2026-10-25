@@ -63,3 +63,7 @@ HDR/gain-map SDR 高光修复已上线：Mac使用Apple原生SDR解码，便携P
 ## P6 策展助理首版
 
 TokenHub/hy4-preview、高强度深度思考与temperature1.1已通过真实合成小样；六个受限tools、本机加密配置、SSE过程/重连/取消、缓存核对进度和六种集合Show已实现。107项全量后端测试及最后8项策展专项通过；P6交互11项、P5回归26项、拼贴10项、矮窗口3项通过。真实库仅作禁网只读验证，未上传私密照片。见[P6报告](research/p6-curation-assistant.md)。
+
+## 统一 Settings
+
+文件源、LLM Provider、GPS地址、原图/HDR显示与缓存预算已集中至独立Settings页；Dashboard、Gallery菜单和策展页Provider入口共用。默认行为及已保存凭据保留，按需原图零自动下载、离线地址可增量重算，设置冲突不会静默覆盖。111项后端测试、11项Settings浏览器检查及11项P6及7项Dashboard回归通过。正式服务已更新并打开Settings入口；正常解锁后可用，后台处理继续。见[验证记录](research/unified-settings-validation.md)。

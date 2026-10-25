@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from starlette.background import BackgroundTask
 from .cache import Cache
 from .localization import localize_place, localize_tags
+from .preferences import load_preferences,allowed_place
 
 
 def register(app, database, owner):
@@ -33,6 +34,7 @@ def register(app, database, owner):
         place = analysis.get('places', {}).get('data')
         if place and (not gps or place.get('input_record') != gps['record_id']):
             place = None
+        place=allowed_place(place,gps.get('layer') if gps else None,load_preferences(database))
         visual_row = analysis.get('visual', {})
         visual = visual_row.get('data', {})
         media = json.loads(info[0]) if info else {}

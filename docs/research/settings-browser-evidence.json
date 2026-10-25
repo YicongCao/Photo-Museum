@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-25T04:29:27.608Z",
+  "checks": [
+    "Dashboard opens the unified page; initial load makes no source browse, scrape, original or provider call",
+    "Saved source password stays empty; blank save retains credentials and explicit connection test succeeds",
+    "Provider has one editor, no saved key reaches the input, and blank save preserves encrypted configuration",
+    "Offline address pause, distance policy and explicit local refresh persist; worker completes the new generation",
+    "Concurrent preference changes show a conflict and explicit reload instead of overwriting another editor",
+    "Cache reports ledger usage and enforces pause before a budget change; resume remains explicit",
+    "All five sections fit 1280×640 and 390×720 with internal scrolling and visible navigation",
+    "On-demand mode keeps 4K and makes exactly zero NAS-original requests until the load button is pressed",
+    "Gallery menu reaches the same Settings page",
+    "Unsupported native decoding falls back once to SDR; failed and displayed original Blob URLs are revoked on close (simulated HDR capability)",
+    "No uncaught browser errors or external provider/map requests"
+  ],
+  "errors": [],
+  "fixture": "84 generated photos; synthetic offline GeoNames and fake LLM; simulated HDR device is not hardware validation"
+}

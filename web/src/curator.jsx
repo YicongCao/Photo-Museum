@@ -6,26 +6,8 @@ export const exhibitionRooms={cover:'Cover Flow',wall:'照片墙',calendar:'日�
 const statuses={queued:'等待中',running:'策展中',preparing:'准备展厅',completed:'已结束',failed:'失败',cancelled:'已取消',interrupted:'已中断'};
 const terminal=s=>['completed','failed','cancelled','interrupted'].includes(s);
 const tools={catalog_schema:['metadata','读取字段'],library_overview:['server','图库概况'],list_facets:['topic','分类检索'],search_photos:['subject','筛选照片'],photo_details:['photo','候选详情'],create_exhibition:['frame','展览草案']};
-function ProviderSettings({api,initial,onClose,onSaved}){
- const [form,setForm]=useState({...initial,api_key:''}),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const input=useRef(null);useEffect(()=>input.current?.focus(),[]);
- const set=(k,v)=>setForm(p=>({...p,[k]:v}));
- async function save(e){e.preventDefault();setBusy(true);setError('');try{const value=await api('/curator/provider','PUT',{base_url:form.base_url,model:form.model,temperature:Number(form.temperature),enabled:form.enabled,api_key:form.api_key});setForm(p=>({...p,api_key:''}));onSaved(value);onClose()}catch(e){setError(e.message)}finally{setBusy(false)}}
- return <div className="curator-modal-shade"><section className="curator-provider" role="dialog" aria-modal="true" aria-label="LLM Provider" onKeyDown={e=>{if(e.key==='Escape')onClose()}}>
-  <header><h2>LLM Provider</h2><button aria-label="关闭Provider设置" onClick={onClose}><Icon name="close"/></button></header>
-  <form onSubmit={save}>
-   <label>API 地址<input ref={input} value={form.base_url} onChange={e=>set('base_url',e.target.value)} required type="url" maxLength={2048}/></label>
-   <label>模型<input value={form.model} onChange={e=>set('model',e.target.value)} required maxLength={100}/></label>
-   <label>API key{initial.configured&&<small>已加密保存 · 留空保留</small>}<input type="password" autoComplete="off" value={form.api_key} onChange={e=>set('api_key',e.target.value)} maxLength={2048}/></label>
-   <label>Temperature <output>{form.temperature}</output><input aria-label="Temperature" type="range" min="0" max="2" step="0.1" value={form.temperature} onChange={e=>set('temperature',e.target.value)}/></label>
-   <label className="curator-toggle"><input type="checkbox" checked={form.enabled} onChange={e=>set('enabled',e.target.checked)}/>启用</label>
-   <div className="provider-facts">深度思考 · high</div><p className="provider-privacy">发送策展要求与精简索引摘要；原图、精确 GPS 和人脸特征留在本机。</p>
-   {error&&<p role="alert">{error}</p>}<button className="curator-primary" disabled={busy}>保存配置</button>
-  </form>
- </section></div>
-}
 export function Curator({api}){
- const [provider,setProvider]=useState(null),[settings,setSettings]=useState(false),[history,setHistory]=useState([]),
+ const [provider,setProvider]=useState(null),[history,setHistory]=useState([]),
  [run,setRun]=useState(null),[events,setEvents]=useState([]),[prompt,setPrompt]=useState(''),[room,setRoom]=useState('auto'),
  [showRoom,setShowRoom]=useState('wall'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[connection,setConnection]=useState(''),
  [exhibition,setExhibition]=useState(null),[follow,setFollow]=useState(false),[imageStates,setImageStates]=useState({});
@@ -66,7 +48,7 @@ export function Curator({api}){
  async function cancel(){setError('');try{setRun(await api('/curator/runs/'+runId+'/cancel','POST',{}))}catch(e){setError(e.message)}}
  function show(){if(!exhibition)return;location.hash='gallery?exhibit='+exhibition.id+'&room='+showRoom}
  return <div className="curator-shell">
-  <header className="curator-header"><div><h1>策展助理</h1><button className="curator-provider-button" aria-label={'Provider '+(provider?.model || '')} onClick={()=>setSettings(true)} disabled={!provider||active}><Icon name="server"/><span className="curator-provider-model">{provider?.model || 'Provider'}</span><span>{provider?.configured&&provider?.enabled?'已配置':'待配置'}</span></button></div>
+  <header className="curator-header"><div><h1>策展助理</h1><button className="curator-provider-button" aria-label={'Provider '+(provider?.model || '')} onClick={()=>{location.hash='settings?tab=llm&from='+encodeURIComponent(location.hash.slice(1))}} disabled={!provider}><Icon name="server"/><span className="curator-provider-model">{provider?.model || 'Provider'}</span><span>{provider?.configured&&provider?.enabled?'已配置':'待配置'}</span></button></div>
    <nav><a href="#manage">Dashboard</a><a href="#gallery">Gallery</a><FullscreenButton/></nav>
   </header>
   <div className="curator-layout"><section className="curator-conversation" aria-label="策展对话">
@@ -88,6 +70,5 @@ export function Curator({api}){
    <details className="curator-thinking" open><summary><Icon name="style"/>模型思考 <small>provider 返回</small></summary><pre ref={thoughtScroll} onScroll={e=>{const n=e.currentTarget;thoughtStick.current=n.scrollHeight-n.scrollTop-n.clientHeight<40}}>{thinking || (active?'等待返回':run?'未返回思考内容':'—')}</pre></details>
    <div className="curator-tool-list">{calls.map(call=>{const [icon,label]=tools[call.name] || ['metadata',call.name];return <details key={call.call_id} className={'curator-tool '+(call.ended?'ended':'working')}><summary><Icon name={icon}/><span>{label}<small>{call.name}</small></span><span>{call.ended?(call.result?.error?'失败':`${call.duration_ms} ms`):'执行中'}</span></summary><pre>{JSON.stringify({arguments:call.arguments,...(call.ended?{result:call.result}:{})},null,2).slice(0,10000)}</pre></details>})}</div>
   </div><footer><span>{calls.length} 次工具调用</span><span>{usage.toLocaleString()} tokens</span>{provider&&<span>T {provider.temperature} · 深度思考 high</span>}</footer></aside></div>
-  {settings&&provider&&<ProviderSettings api={api} initial={provider} onClose={()=>setSettings(false)} onSaved={setProvider}/>}
  </div>
 }

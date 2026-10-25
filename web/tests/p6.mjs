@@ -1,7 +1,7 @@
 import {chromium} from '../../prototype/node_modules/@playwright/test/index.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-const base='http://localhost:8796',out='docs/design/previews/p6';await fs.mkdir(out,{recursive:true});
+const base=process.env.MUSEUM_TEST_URL||'http://localhost:8796',out=process.env.MUSEUM_BROWSER_OUTPUT||'docs/design/previews/p6';await fs.mkdir(out,{recursive:true});
 const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
 const context=await browser.newContext({viewport:{width:1500,height:940}}),page=await context.newPage(),checks=[],errors=[],requests=[];
 page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
@@ -11,7 +11,7 @@ async function show(room,selector){await page.getByLabel('展示展厅',{exact:t
 try{
  await page.goto(base+'/#gallery');await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'解锁'}).click();await page.locator('.depth-0').waitFor();
  await page.getByRole('button',{name:'Gallery',exact:true}).click();await page.getByRole('menuitem',{name:'策展助理',exact:true}).click();await page.locator('.curator-shell').waitFor();checks.push('Assistant is available from the Gallery menu without replacing its default room');
- await page.getByRole('button',{name:/hy4-preview/}).click();await page.getByRole('dialog',{name:'LLM Provider'}).waitFor();assert.equal(await page.locator('.curator-provider input[type=password]').inputValue(),'');assert.ok((await page.locator('.curator-provider').innerText()).includes('已加密保存'));await page.getByRole('button',{name:'关闭Provider设置'}).click();checks.push('Provider editor never receives or fills the stored API key');
+ await page.getByRole('button',{name:/hy4-preview/}).click();await page.locator('.settings-shell').waitFor();assert.equal(await page.getByLabel('API key',{exact:true}).inputValue(),'');assert.ok((await page.locator('.settings-content').innerText()).includes('已加密保存'));await page.getByRole('button',{name:'← 返回',exact:true}).click();await page.locator('.curator-shell').waitFor();checks.push('Provider editor never receives or fills the stored API key');
  await page.getByLabel('策展要求',{exact:true}).fill('整理2024年的照片，保留不同活动，做成照片墙');await page.getByLabel('目标展厅',{exact:true}).selectOption('wall');await page.getByRole('button',{name:'开始策展 ↗',exact:true}).click();
  await page.locator('.curator-thinking pre').getByText(/根据本地索引/).waitFor();await shot('thinking');
  await page.locator('.curator-result').waitFor();await page.getByRole('button',{name:'Show ↗',exact:true}).waitFor();assert.ok(await page.locator('.curator-tool').count()>=4);assert.ok((await page.locator('.curator-preparation').innerText()).includes('本地缓存检查'));assert.ok((await page.locator('.curator-preparation progress').getAttribute('value'))===(await page.locator('.curator-preparation progress').getAttribute('max')));checks.push('Thinking, tool calls, final answer and truthful cache preparation are visible');
@@ -25,5 +25,5 @@ try{
  await page.getByLabel('策展要求',{exact:true}).fill('slow');await page.getByRole('button',{name:'开始策展 ↗',exact:true}).click();await page.getByRole('button',{name:'取消',exact:true}).click();await page.getByText('已取消',{exact:true}).waitFor();checks.push('Cancellation settles the run and does not publish an exhibition');
  await page.getByLabel('策展要求',{exact:true}).fill('空结果');await page.getByRole('button',{name:'开始策展 ↗',exact:true}).click();await page.getByText('没有符合条件的照片，保留原条件。',{exact:true}).waitFor();assert.equal(await page.locator('.curator-result').count(),0);checks.push('An empty search remains empty and cannot Show an unrelated gallery');
  assert.equal(requests.filter(u=>!u.startsWith(base)&&!u.startsWith('blob:')).length,0);assert.deepEqual(errors,[]);checks.push('Browser makes no provider or external network requests and has no uncaught errors');
- await fs.writeFile('docs/research/p6-browser-evidence.json',JSON.stringify({date:new Date().toISOString(),checks,errors,fixture:'84 synthetic photos, injected metadata and local fake streaming LLM; not user photos or live-provider language quality'},null,2));console.log(JSON.stringify({checks,errors},null,2));
+ await fs.writeFile(process.env.MUSEUM_BROWSER_EVIDENCE||'docs/research/p6-browser-evidence.json',JSON.stringify({date:new Date().toISOString(),checks,errors,fixture:'84 synthetic photos, injected metadata and local fake streaming LLM; not user photos or live-provider language quality'},null,2));console.log(JSON.stringify({checks,errors},null,2));
 }catch(e){await page.screenshot({path:'data/p6-validation/failure.png'});await fs.writeFile('data/p6-validation/failure.json',JSON.stringify({error:String(e),errors,body:await page.locator('body').innerText()},null,2));throw e}finally{await browser.close()}
