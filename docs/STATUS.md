@@ -121,3 +121,5 @@ Cover Flow时间线按imagegen新概念改为悬浮烟色玻璃：取消左侧�
 本轮发布校验再次发现旧扫描worker因SQLite锁退出并连带关闭正式supervisor；已沿用原数据与模型恢复8790。静态UI变更本身不要求重启；当前未修复锁冲突的根因，运行日志留data/timeline-smoke-glass/。
 
 统一界面状态系统（2026-10-26）：登录、Gallery/展厅、照片墙/暗房、Dashboard、Settings与策展助理共享烟色玻璃、细线图标、折叠Logo及安全中文文案。区分首次读取与后台失败，保留数据/位置/输入，恢复清除旧错误，读取重试不重发写操作或付费任务；修正初始化自动解锁竞争与双预览失败的无限加载。66组/项本轮检查及设计skill校验通过，正式前端已更新，现有会话核对Gallery正常、位置保留，API及worker未重启；见[规范](design/system-status-language.md)、[图册](design/status-atlas.html)和[复验](research/system-status-validation.md)。
+
+少量预览失败定位（2026-10-26）：五个真实失败样本分为HEIC容器引用阈值1张、JPEG缺少结束标记3张、未支持的NCLX SDR颜色组合1张。Mac原生路径五张均生成并重开thumb/display通过，JPEG临时补EOI亦通过严格解码；只完成诊断与可行性验证，没有修改正式规则或重试队列。私密明细留data，原样本临时文件已清理；见[原因与兼容建议](research/failed-media-compatibility-diagnosis.md)。
