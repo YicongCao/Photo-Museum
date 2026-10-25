@@ -25,7 +25,9 @@ try {
  const reflection=await page.locator('.depth-0 .panel-reflection').evaluate(el=>({opacity:getComputedStyle(el).opacity,filter:getComputedStyle(el).filter,bottom:el.getBoundingClientRect().bottom}));assert.ok(Number(reflection.opacity)>=.65);assert.ok(reflection.filter.includes('blur'));assert.ok(reflection.bottom>=890);check('Brighter blurred reflection extends to viewport bottom');
  await page.screenshot({path:output+'/coverflow.png'});
  await page.mouse.move(550,300);await page.mouse.wheel(53,0);await page.waitForTimeout(100);
- const position=Number(await page.locator('.tunnel-stage').getAttribute('data-position'));assert.ok(Math.abs(position-Math.round(position))>.01);check('Trackpad has continuous fractional cover movement');
+ let position=Number(await page.locator('.tunnel-stage').getAttribute('data-position'));assert.ok(Math.abs(position-Math.round(position))>.01);check('Trackpad has continuous fractional cover movement');
+ await page.waitForFunction(()=>{const p=Number(document.querySelector('.tunnel-stage').dataset.position);return p===Math.round(p)});
+ position=Number(await page.locator('.tunnel-stage').getAttribute('data-position'));check('Idle trackpad settles to a straight cover');
  const current=await page.locator('.depth-0').getAttribute('data-activity');
  const expectedTheme=(await page.locator('.depth-0').getAttribute('aria-label')).replace('展开活动 ','');
  await page.locator(`[data-activity="${current}"]`).click();await page.locator('.wall-photo').first().waitFor();
@@ -50,7 +52,7 @@ try {
  await page.locator('.viewer-image-area').click();assert.equal(await page.evaluate(()=>document.fullscreenElement),null);assert.deepEqual(await page.locator('.viewer-image-area').boundingBox(),{x:0,y:0,width:1440,height:900});
  await page.locator('.viewer-image-area').click();assert.ok(await page.locator('.metadata-panel').isVisible());check('Image click fills browser, second click restores archive without fullscreen API');
  await page.getByRole('button',{name:'返回照片墙',exact:true}).click();assert.equal(await page.locator('.photo-wall').evaluate(el=>el.scrollLeft),wallLeft);check('Back restores wall scroll and focus');
- await page.getByRole('button',{name:'返回 Gallery',exact:true}).click();assert.ok(Math.abs(Number(await page.locator('.tunnel-stage').getAttribute('data-position'))-position)<.01);check('Back preserves fractional Gallery position');
+ await page.getByRole('button',{name:'返回 Gallery',exact:true}).click();assert.ok(Math.abs(Number(await page.locator('.tunnel-stage').getAttribute('data-position'))-position)<.01);check('Back preserves settled Gallery position');
  await page.emulateMedia({reducedMotion:'reduce'});await page.locator('.depth-0').click();await page.locator('.wall-scene:not(.scene-inactive)').waitFor();assert.equal(await page.locator('body>img').count(),0);check('Reduced motion bypasses scatter');
  assert.deepEqual(errors,[]);check('No uncaught browser errors');
  await fs.writeFile('docs/research/classic-coverflow-evidence.json',JSON.stringify({date:new Date().toISOString(),browser:browser.version(),checks,sizes,errors,fixtures:'synthetic geometry only'},null,2));console.log(JSON.stringify({checks,sizes,errors},null,2));

@@ -54,17 +54,24 @@ export const Tunnel = forwardRef(function Tunnel(
     pos = useRef(index),
     stride = useRef(720),
     gesture = useRef(null),
-    frame = useRef(0);
+    frame = useRef(0),
+    settleTimer = useRef(null);
   const [position, setPosition] = useState(index),
     [width, setWidth] = useState(1000),
     [height,setHeight] = useState(700);
-  const goTo = (i) =>
+  const goTo = (i) => {
+    clearTimeout(settleTimer.current);
     scroll.current?.scrollTo({
       left: clamp(i, 0, activities.length - 1) * stride.current,
       behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "instant"
         : "smooth",
     });
+  };
+  const settle = () => {
+    if (!gesture.current && scroll.current)
+      goTo(Math.round(scroll.current.scrollLeft / stride.current));
+  };
   useImperativeHandle(
     ref,
     () => ({ goTo, move: (n) => goTo(Math.round(pos.current) + n) }),
@@ -73,7 +80,7 @@ export const Tunnel = forwardRef(function Tunnel(
   useLayoutEffect(() => {
     const observer = new ResizeObserver(([entry]) => {
       const w = entry.contentRect.width;
-      stride.current = Math.max(140, w * 0.24);
+      stride.current = Math.round(Math.max(140, w * 0.24));
       setHeight(entry.contentRect.height);
       setWidth(w);
     });
@@ -88,14 +95,19 @@ export const Tunnel = forwardRef(function Tunnel(
       const delta =
         (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) *
         (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? node.clientWidth : 1);
-      scroll.current.scrollLeft += delta;
+      // Each input interrupts settling; wait for the end of trackpad momentum.
+      clearTimeout(settleTimer.current);
+      scroll.current.scrollTo({left:scroll.current.scrollLeft + delta,behavior:"instant"});
+      settleTimer.current=setTimeout(settle,180);
     };
     node.addEventListener("wheel", wheel, { passive: false });
     return () => {
       node.removeEventListener("wheel", wheel);
       cancelAnimationFrame(frame.current);
+      frame.current=0;
+      clearTimeout(settleTimer.current);
     };
-  }, []);
+  }, [activities.length]);
   useLayoutEffect(() => {
     scroll.current.scrollLeft = pos.current * stride.current;
   }, [width]);
@@ -129,6 +141,7 @@ export const Tunnel = forwardRef(function Tunnel(
     gesture.current = null;
     if (stage.current.hasPointerCapture(e.pointerId))
       stage.current.releasePointerCapture(e.pointerId);
+    settle();
     if (e.type !== "pointercancel" && !g.moved && g.activity != null)
       onOpen(g.activity);
   };
@@ -148,6 +161,7 @@ export const Tunnel = forwardRef(function Tunnel(
       data-position={position.toFixed(3)}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
+        clearTimeout(settleTimer.current);
         scroll.current.scrollTo({
           left: scroll.current.scrollLeft,
           behavior: "instant",
