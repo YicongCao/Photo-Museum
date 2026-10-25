@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "Real local fake-provider SSE: 5 thought blocks interleave with 4 tools in persisted ID order, with completed result and stopped animation",
+    "Authenticated reload replays the same chronology without starting another model request",
+    "Distinct thought/output blocks remain on each side of their tool; duplicate SSE IDs cannot duplicate text; elapsed update age stays visible during a quiet connected model",
+    "Orbit changes frame during work, freezes on reconnect and reduced motion, resumes after connection recovery",
+    "Preparation phase reports actual checked count; process and navigation fit desktop, short, 320px, 390px and short phone without document scrolling",
+    "Cancellation and page unmount clear the timer and close the stream; no abandoned busy animation"
+  ],
+  "errors": [],
+  "fixture": "Generated P5 photos + local fake-provider SSE; supplemental browser-controlled events cover quiet/reconnect/abort states. No private index or paid provider calls."
+}

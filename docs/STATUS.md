@@ -109,3 +109,5 @@ Cover Flow十图头图改为按原始比例规划横幅/竖幅/方幅/宽幅，�
 Gallery首次读取图库时，折叠Logo与“读取照片”文字整体居中，加载期间隐藏“查看刮削进度”；真正加载完成且图库为空时保留管理入口。照片流加载提示继续在右下角。构建、桌面/手机/矮屏居中与无整页滚动、减少动态效果检查通过，正式8790页面截图已核对；公开[验证记录](research/gallery-centered-loading-evidence.json)仅使用模拟延迟响应，真实截图存于忽略的data/gallery-centered-loading/。
 
 Dashboard、Settings、Gallery及策展助理统一共享导航，固定Dashboard → Settings → Gallery，黄褐选中态与同规格SVG功能区；各页提供锁定及最右全屏，Cover Flow额外显示适配日夜的主题开关。手机品牌/返回与导航分行。8组导航专项、12组原生导航及12组日夜回归通过；见[设计及验证](research/navigation-unification.md)。
+
+2026-10-26：策展运行面板改为按持久事件顺序穿插思考、正文和工具，工具结果原位更新；增加环绕工作动画、真实阶段和多久未更新提示，断线/结束停转并支持减少动态效果。刷新保序，新任务不混入旧记录。4项顺序单测与6组浏览器专项通过；P6全流程回归及Show历史初始化竞争修复见[本轮记录](research/curator-timeline.md)。

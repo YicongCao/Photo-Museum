@@ -35,6 +35,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   const {values:preferences}=usePreferences();
   const coverStyle=preferences.cover_style || 'classic';
   const storageKey=exhibitionId?'museum.rooms.'+exhibitionId:'museum.rooms';
+  const initialGalleryHistory=useRef(history.state?.museumGallery);
   const api=useMemo(()=>exhibitionId?((path,...args)=>baseApi((path==='/gallery'||path.startsWith('/gallery/')||path.startsWith('/exhibitions/'))?'/curator/exhibitions/'+encodeURIComponent(exhibitionId)+path:path,...args)):baseApi,[baseApi,exhibitionId]);
   const [scopeMeta,setScopeMeta]=useState(null);
   const [coverTheme,setCoverTheme]=useState(()=>{try{return localStorage.getItem('museum.cover-theme')==='light'?'light':'dark'}catch{return 'dark'}});
@@ -142,7 +143,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
     if(!exhibitionId)return;const controller=new AbortController();
     baseApi('/curator/exhibitions/'+encodeURIComponent(exhibitionId),'GET',undefined,{signal:controller.signal}).then(meta=>{
       if(controller.signal.aborted)return;setScopeMeta(meta);
-      if(roomHint==='wall'&&history.state?.museumGallery?.scope!==storageKey)openCollection({id:'curated-'+exhibitionId,title:meta.title,dateLabel:'策展',endpoint:'/exhibitions/photos?sort=time'},{record:false,initial:true});
+      if(roomHint==='wall'&&initialGalleryHistory.current?.scope!==storageKey)openCollection({id:'curated-'+exhibitionId,title:meta.title,dateLabel:'策展',endpoint:'/exhibitions/photos?sort=time'},{record:false,initial:true});
     }).catch(e=>{if(!controller.signal.aborted)setError(e.message)});
     return()=>controller.abort();
   },[exhibitionId]);
