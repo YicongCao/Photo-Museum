@@ -1,0 +1,4 @@
+# Preserve upstream license snapshots byte-for-byte, including CRLF/trailing spaces.
+docs/design/typography-fonts/*-OFL.txt -whitespace
+web/src/assets/fonts/OFL-*.txt -whitespace
+web/public/assets/licenses/OFL-*.txt -whitespace
