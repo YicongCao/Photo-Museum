@@ -38,10 +38,13 @@ def register(app, database, owner):
         media = json.loads(info[0]) if info else {}
         if (version and visual_row.get('version') != version[0]) or visual.get('input_media_version') != media.get('version'):
             visual = {}
+        from .photography import current
+        with database.connect() as c:photography=current(c,aid,revision)
         return dict(row), {'steps': steps, 'metadata': metadata, 'media': json.loads(info[0]) if info else {},
                           'derivatives': derivatives, 'tags': localize_tags(visual.get('tags', [])), 'score': visual.get('score'),
                           'faces': faces if visual and not visual.get('error') else None,
-                          'place': localize_place(place), 'analysis_error': visual.get('error'), 'status':job['status'] if job else 'pending', 'error':job['error'] if job else None}
+                          'place': localize_place(place), 'photography':photography,
+                          'analysis_error': visual.get('error'), 'status':job['status'] if job else 'pending', 'error':job['error'] if job else None}
 
     def candidate(row, details):
         aid, rev = row['id'], row['revision']

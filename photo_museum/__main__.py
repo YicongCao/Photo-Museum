@@ -37,6 +37,10 @@ def main():
     if (models / 'manifest.json').exists() and importlib.util.find_spec('timm'):
         env['MUSEUM_ANALYSIS_ENABLED']='1'
         commands.append([sys.executable, '-m', 'photo_museum.analysis_worker', '--data', env['MUSEUM_DATA'], '--models', str(models)])
+    env['MUSEUM_PHOTOGRAPHY_ENABLED']='0'
+    if (models/'photography/manifest.json').exists() and importlib.util.find_spec('open_clip'):
+        env['MUSEUM_PHOTOGRAPHY_ENABLED']='1'
+        commands.append([sys.executable,'-m','photo_museum.photography_worker','--data',env['MUSEUM_DATA'],'--models',str(models)])
     children = []
     stopping = False
     def stop(*_):

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
+import {photographyLabel,photographyTitle} from "./photography-labels";
 import {placeLabel,subjectLabel} from "./localized-labels";
 const size = (n) =>
   n == null
@@ -112,13 +113,13 @@ export function CurrentInspection({ file, media, onClose }) {
     .join(" · ");
   const derivative = (profile) =>
     data?.derivatives?.find((d) => d.profile === profile);
-  const row = (id, label, icon, content) => (
-    <div className={"inspection-row " + (content ? "has-data" : "")} key={id}>
+  const row = (id, label, icon, content, title) => (
+    <div className={"inspection-row " + (content ? "has-data" : "")} key={id} data-task={id}>
       <dt>
         <Icon name={icon} />
         {label}
       </dt>
-      <dd>{content || status[steps[id]] || "等待"}</dd>
+      <dd title={title}>{content || status[steps[id]] || "等待"}</dd>
     </div>
   );
   const place = data?.place;
@@ -241,6 +242,10 @@ export function CurrentInspection({ file, media, onClose }) {
               .map((t) => `${subjectLabel(t)} ${Math.round(t.confidence * 100)}%`)
               .join("\n"),
           )}
+          {(file?.photography_enabled || data?.photography) && <>
+            {row('style','风格 · 候选','style',photographyLabel(data?.photography?.data,'style'),photographyTitle(data?.photography?.data,'style'))}
+            {row('topic','主题 · 候选','topic',photographyLabel(data?.photography?.data,'topic'),photographyTitle(data?.photography?.data,'topic'))}
+          </>}
           {row(
             "faces",
             "人脸",

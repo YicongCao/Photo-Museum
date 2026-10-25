@@ -10,6 +10,7 @@ from fastapi import Depends, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from .cache import Cache
+from .photography import enabled as photography_enabled
 
 def activity_time(event, rows):
     """Latest observed capture within the declared period; never invent a day."""
@@ -55,8 +56,9 @@ class BudgetInput(BaseModel):
 def register(app,database,owner):
     cache=Cache(database)
     def pipeline(c):
+        from .photography import pipeline_suffix
         version=c.execute("SELECT value FROM settings WHERE key='analysis_version'").fetchone()
-        return '|'+(version['value'] if version and os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1' else 'disabled')
+        return '|'+(version['value'] if version and os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1' else 'disabled')+pipeline_suffix(c)
     @app.get('/api/media/state',dependencies=[Depends(owner)])
     def media_state(after: int | None = None):
         with database.connect() as c:
@@ -66,10 +68,13 @@ def register(app,database,owner):
             errors=[dict(r) for r in c.execute("SELECT q.asset_id,q.status,q.stage,q.error,e.path FROM media_jobs q JOIN entries e ON e.id=q.asset_id AND e.revision=q.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status IN ('failed','unsupported')")]
             if os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1':
                 errors.extend(dict(r) for r in c.execute("""SELECT e.id asset_id,'failed' status,'analysis' stage,json_extract(a.data_json,'$.error') error,e.path FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND a.provider='visual' AND a.version=(SELECT value FROM settings WHERE key='analysis_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL"""))
+            if photography_enabled():
+                errors.extend(dict(r) for r in c.execute("""SELECT e.id asset_id,'failed' status,'photography' stage,json_extract(a.data_json,'$.error') error,e.path FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND a.provider='photography' AND a.version=(SELECT value FROM settings WHERE key='photography_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL"""))
             active=[dict(r) for r in c.execute("""SELECT q.asset_id,q.stage,e.path,e.kind,e.revision,e.size,'media' lane FROM media_jobs q JOIN entries e ON e.id=q.asset_id AND e.revision=q.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='running' AND q.lease_until>? ORDER BY q.updated DESC LIMIT 4""",(time.time(),))]
-            analyzing=[dict(r) for r in c.execute("""SELECT p.asset_id,p.stage,e.path,e.kind,e.revision,e.size,'analysis' lane FROM processing_progress p JOIN entries e ON e.id=p.asset_id AND e.revision=p.revision WHERE e.missing=0 AND e.scope_excluded=0 AND p.lane='analysis' AND p.status='running' AND p.updated>? ORDER BY p.updated DESC LIMIT 2""",(time.time()-60,))]
+            analyzing=[dict(r) for r in c.execute("""SELECT p.asset_id,p.stage,e.path,e.kind,e.revision,e.size,p.lane FROM processing_progress p JOIN entries e ON e.id=p.asset_id AND e.revision=p.revision WHERE e.missing=0 AND e.scope_excluded=0 AND p.lane IN ('analysis','photography') AND p.status='running' AND p.updated>? ORDER BY p.updated DESC LIMIT 2""",(time.time()-60,))]
             active.extend(r for r in analyzing if not any(a['asset_id']==r['asset_id'] for a in active))
             for item in active:
+                item['photography_enabled']=photography_enabled()
                 item['steps']={}
                 item['bytes_done']=0
                 item['bytes_total']=item['size']
@@ -109,7 +114,7 @@ def register(app,database,owner):
             ), totals AS (
               SELECT e.source_id,e.parent,count(*) total,
                 sum(q.status='ready') cached,
-                sum(q.status IN ('failed','unsupported') OR (?=1 AND q.status='ready' AND EXISTS(SELECT 1 FROM analysis a JOIN media_info m ON m.asset_id=a.asset_id AND m.revision=a.revision WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual' AND a.version=(SELECT value FROM settings WHERE key='analysis_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL))) errors,
+                sum(q.status IN ('failed','unsupported') OR (?=1 AND q.status='ready' AND EXISTS(SELECT 1 FROM analysis a JOIN media_info m ON m.asset_id=a.asset_id AND m.revision=a.revision WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual' AND a.version=(SELECT value FROM settings WHERE key='analysis_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL)) OR (?=1 AND q.status='ready' AND EXISTS(SELECT 1 FROM analysis a WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider='photography' AND a.version=(SELECT value FROM settings WHERE key='photography_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL))) errors,
                 sum(q.status='running' AND q.lease_until>unixepoch('now')) active,
                 sum(EXISTS(SELECT 1 FROM file_completions f WHERE f.asset_id=e.id AND f.revision=e.revision AND q.status IN ('ready','indexed') AND f.pipeline IN (json_extract(m.data_json,'$.version')||?,json_extract(m.data_json,'$.version')||?))) done,
                 min(CASE WHEN q.status='running' AND q.lease_until>unixepoch('now') THEN e.path END) current_file
@@ -117,8 +122,8 @@ def register(app,database,owner):
               WHERE e.missing=0 AND e.scope_excluded=0 AND e.is_dir=0 GROUP BY e.source_id,e.parent
             ) SELECT l.source_id,l.path,l.source_root,l.state,l.lease_until,l.job_status,l.error,coalesce(t.total,0) total,
                 coalesce(t.cached,0) cached,coalesce(t.errors,0) errors,coalesce(t.active,0) active,coalesce(t.done,0) done,t.current_file
-              FROM latest l LEFT JOIN totals t ON t.source_id=l.source_id AND t.parent=l.path WHERE l.position=1 AND l.state!='excluded' AND NOT EXISTS(SELECT 1 FROM entries gone WHERE gone.source_id=l.source_id AND gone.path=l.path AND gone.missing=1) ORDER BY l.path DESC""",(int(os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1'),pipeline(c),'|metadata-only'))]
-            analysis_dirs={tuple(r) for r in c.execute("SELECT e.source_id,e.parent FROM processing_progress p JOIN entries e ON e.id=p.asset_id AND e.revision=p.revision WHERE p.status='running' AND p.lane='analysis' AND p.updated>? AND e.missing=0 AND e.scope_excluded=0",(time.time()-60,))}
+              FROM latest l LEFT JOIN totals t ON t.source_id=l.source_id AND t.parent=l.path WHERE l.position=1 AND l.state!='excluded' AND NOT EXISTS(SELECT 1 FROM entries gone WHERE gone.source_id=l.source_id AND gone.path=l.path AND gone.missing=1) ORDER BY l.path DESC""",(int(os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1'),int(photography_enabled()),pipeline(c),'|metadata-only'))]
+            analysis_dirs={tuple(r) for r in c.execute("SELECT e.source_id,e.parent FROM processing_progress p JOIN entries e ON e.id=p.asset_id AND e.revision=p.revision WHERE p.status='running' AND p.lane IN ('analysis','photography') AND p.updated>? AND e.missing=0 AND e.scope_excluded=0",(time.time()-60,))}
             focus_row=c.execute("SELECT value FROM settings WHERE key='media_directory'").fetchone()
             focus=json.loads(focus_row['value']) if focus_row else None
             paused=c.execute("SELECT value FROM settings WHERE key='media_paused'").fetchone()[0]=='true'
@@ -156,6 +161,7 @@ def register(app,database,owner):
 
     def pack(row):
         result={k:row[k] for k in ('id','revision','kind')}
+        result['photography_enabled']=photography_enabled()
         result.update(name=PurePosixPath(row['path']).name,thumbnail=media_url(row,'thumb'),preview=media_url(row,'display'),pinned=bool(row.get('pinned')),excluded=bool(row.get('excluded')))
         result['info']=json.loads(row['data_json']) if row.get('data_json') else {}
         result['metadata_only']=bool(result['info'].get('metadata_only'))

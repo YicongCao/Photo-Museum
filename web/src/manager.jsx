@@ -23,6 +23,7 @@ const stageNames = {
   cache: "生成预览",
   publish: "发布藏品",
   analysis: "本地分析",
+  photography: "摄影风格 / 主题",
 };
 const errorNames = {
   media_DecompressionBombError: "图像尺寸超过安全上限",

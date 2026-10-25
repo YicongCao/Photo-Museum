@@ -10,6 +10,8 @@ export const processingSteps = [
   ["publish", "写入索引", "server"],
   ["address", "地址", "pin"],
   ["subject", "主体识别", "subject"],
+  ["style", "摄影风格", "style"],
+  ["topic", "摄影主题", "topic"],
   ["faces", "人脸", "face"],
   ["score", "构图评分", "score"],
 ];
@@ -35,7 +37,9 @@ function itemSteps(file) {
   return [
     ["download", "原图", "download"],
     ...processingSteps.filter(([id]) =>
-      id === "frame" || id === "playback"
+      (id === "style" || id === "topic") && !file?.photography_enabled && !steps[id]
+        ? false
+        : id === "frame" || id === "playback"
         ? video
         : id === "compatible"
           ? Boolean(steps.compatible) ||

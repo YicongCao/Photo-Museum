@@ -49,3 +49,5 @@ Timeline已增加统一尺寸的评分Top3–5照片气泡、向左弹出/收起
 地址/主体已加入离线中文显示：China→中国，按GeoNames ID转换中国省市，ImageNet类别表转换主体；保留原始字段/置信度，未知与歧义回退原文，仍为近似城市。79项后端测试与6项浏览器检查通过，见[中文显示验收](research/chinese-labels-validation.md)。
 
 HDR/gain-map SDR 高光修复已上线：Mac使用Apple原生SDR解码，便携PQ/HLG修正参考白；87项后端测试通过。1,219张旧HDR预览定向重建，09:32快照已有52张新缓存、分析及完成事件（含27张检出gain map），该批暂无失败，剩余继续后台处理。普通SDR不重刮，缓存仅thumb/display。详见[验证、Apple来源和跨平台边界](research/gainmap-sdr-validation.md)。
+
+摄影style/topic已接入独立本地CLIP进程：14种风格、19种主题、多标签候选、允许未确定，Dashboard及单图档案显示并纳入单图完成进度。已有缓存自动逐目录补分析，不额外取NAS原图、不重跑主体/人脸/评分。93项后端测试、7项浏览器检查通过；禁网实测24张缓存成功。正式上线复查快照已有421条结果及对应完成事件，后台继续；原视觉版本、人工分组和标记保持不变。见[方法、许可、样本边界与复验](research/photography-style-topic.md)。

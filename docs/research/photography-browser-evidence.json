@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-25T01:52:59.307Z",
+  "checks": [
+    "All synthetic files complete only with photography results",
+    "Dashboard displays separate Chinese style and topic candidates",
+    "Both subtasks have icons and participate in the single-file progress",
+    "Dashboard classification display requests no original",
+    "Photo archive shows candidates with similarity rather than a correctness percentage",
+    "Desktop and short mobile viewport retain no page scrolling",
+    "No uncaught browser errors"
+  ],
+  "errors": [],
+  "fixture": "synthetic geometric photos, controlled local classification labels and active progress"
+}

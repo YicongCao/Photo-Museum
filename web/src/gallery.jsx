@@ -5,6 +5,7 @@ import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
 import "./gallery.css";
 import { useSceneMotion, createActivityWarmup } from "./scene-motion";
 import { PhotoArchive } from "./photo-archive";
+import { PhotographyLabels } from "./photography-labels";
 import { ActivityTimeline } from "./timeline";
 
 export function Gallery({ api, onAdmin }) {
@@ -406,7 +407,7 @@ function Viewer({ photo, api, onClose, onChanged }) {
               <p>{analysis.visual.data.score} / 100{analysis.visual.data.score_penalty_reason === "assumed_srgb" ? " · 色域假定 −15" : ""}</p>
             </div>
           )}
-          {analysis?.visual?.data?.tags && (
+          {analysis?.visual?.data?.tags?.length > 0 && (
             <div>
               <small>本地主体识别</small>
               <p>
@@ -417,6 +418,7 @@ function Viewer({ photo, api, onClose, onChanged }) {
               </p>
             </div>
           )}
+          <PhotographyLabels analysis={analysis?.photography} />
           {analysis?.places && (
             <div>
               <small>近似城市 · GeoNames</small>

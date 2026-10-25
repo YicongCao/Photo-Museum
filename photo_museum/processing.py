@@ -38,7 +38,8 @@ class Progress:
 
 
 def complete_file(db, aid, revision):
-    """Publish a completion only after both cache and analysis lanes have settled."""
+    """Publish only when cache and every enabled analysis lane have settled."""
+    from .photography import enabled,pipeline_suffix
     with db.connect() as c:
         c.execute('BEGIN IMMEDIATE')
         entry=c.execute('SELECT revision,missing,scope_excluded FROM entries WHERE id=?',(aid,)).fetchone()
@@ -52,12 +53,21 @@ def complete_file(db, aid, revision):
         required=('download','exif','display','thumb','publish','address','subject','faces','score')
         if any(steps.get(stage) not in ('done','skipped') for stage in required):
             return
-        media=c.execute('SELECT data_json FROM media_info WHERE asset_id=? AND revision=?',(aid,revision)).fetchone()
+        media=c.execute('SELECT data_json,updated FROM media_info WHERE asset_id=? AND revision=?',(aid,revision)).fetchone()
         analysis=c.execute("SELECT version,data_json FROM analysis WHERE asset_id=? AND revision=? AND provider='visual'",(aid,revision)).fetchone()
         media_version=json.loads(media['data_json']).get('version','unknown')
-        enabled=steps.get('subject')!='skipped'
-        if enabled and (not analysis or json.loads(analysis['data_json']).get('error') or json.loads(analysis['data_json']).get('input_media_version')!=media_version):
+        visual_enabled=steps.get('subject')!='skipped'
+        if visual_enabled and (not analysis or json.loads(analysis['data_json']).get('error') or json.loads(analysis['data_json']).get('input_media_version')!=media_version):
             return
-        pipeline=media_version+'|'+('metadata-only' if json.loads(media['data_json']).get('metadata_only') else analysis['version'] if enabled else 'disabled')
+        metadata_only=json.loads(media['data_json']).get('metadata_only')
+        if enabled() and not metadata_only:
+            photo=c.execute("SELECT version,data_json FROM analysis WHERE asset_id=? AND revision=? AND provider='photography'",(aid,revision)).fetchone()
+            if (lanes.get('photography',{}).get('status')!='ready' or not photo
+                or '|'+photo['version']!=pipeline_suffix(c) or json.loads(photo['data_json']).get('error')
+                or json.loads(photo['data_json']).get('input_media_version')!=media_version
+                or json.loads(photo['data_json']).get('input_preview_updated')!=media['updated']
+                or any(steps.get(s) not in ('done','skipped') for s in ('style','topic'))):return
+        pipeline=media_version+'|'+('metadata-only' if metadata_only else analysis['version'] if visual_enabled else 'disabled')
+        if not metadata_only:pipeline+=pipeline_suffix(c)
         c.execute('INSERT OR IGNORE INTO file_completions(asset_id,revision,pipeline,steps_json,completed) VALUES(?,?,?,?,?)',
                   (aid,revision,pipeline,json.dumps(steps),time.time()))

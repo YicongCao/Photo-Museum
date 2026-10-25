@@ -11,6 +11,12 @@ def directory_focus(c):
     if enabled:
         unfinished+=" OR (q.status='ready' AND NOT EXISTS(SELECT 1 FROM analysis a WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual' AND (?='' OR a.version=?) AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version')))"
         params=[version,version]
+    from .photography import enabled as photography_enabled
+    if photography_enabled():
+        row=c.execute("SELECT value FROM settings WHERE key='photography_version'").fetchone()
+        photo_version=row[0] if row else ''
+        unfinished+=" OR (q.status='ready' AND coalesce(json_extract(m.data_json,'$.metadata_only'),0)=0 AND NOT EXISTS(SELECT 1 FROM analysis a WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider='photography' AND a.version=? AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.input_preview_updated') IS m.updated))"
+        params.append(photo_version)
     unfinished+=')'
     query="""SELECT e.source_id,e.parent FROM entries e JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision
       JOIN jobs j ON j.id=e.seen_job LEFT JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision

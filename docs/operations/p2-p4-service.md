@@ -10,12 +10,15 @@ npm ci --prefix web
 npm run build --prefix web
 uv run --all-extras python tools/prepare_models.py
 uv run --all-extras python tools/prepare_geography.py
+uv run --all-extras python tools/prepare_photography.py
 uv run --all-extras python -m photo_museum
 ```
 
 系统需要 ExifTool、ffprobe、包含 zscale/libx264 的 FFmpeg。Mac 本次采用 Homebrew `ffmpeg-full`，程序优先使用 `/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg`，没有修改全局 ffmpeg 链接。可通过 `MUSEUM_FFMPEG` 指定其他构建。Linux 可安装发行版 ffmpeg、libimage-exiftool-perl。Python、前端依赖由 `uv.lock` / `web/package-lock.json` 锁定。
 
 模型下载是明确的独立步骤，校验 `docs/research/model-manifest.json` 的 SHA-256；模型推理阶段不联网。GeoNames 下载公共城市数据，不上传照片或 GPS。未安装智能依赖/权重时媒体服务仍能运行，相关子项显示已检查/未启用；不会生成假的识别结果。
+
+摄影风格/主题使用可选的独立CLIP模型及worker，来源锁在photography-model-manifest.json。已有照片只用本地预览补分析，不重跑主体/人脸/评分、不重新下载NAS原图；缺失缓存记录需处理。候选和相似度不是确定事实或正确率。见[实现与复验](../research/photography-style-topic.md)。
 
 API、目录 worker、媒体 worker、智能 worker 分进程。停止 supervisor 会停止其子进程；媒体 codec 子进程也会终止。恢复使用相同数据目录。文件下载只有强 ETag 才接续字节；否则安全重下。一次未完成文件不发布半成品缓存。
 

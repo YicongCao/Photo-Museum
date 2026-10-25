@@ -15,6 +15,7 @@ dependencies = [
 [project.optional-dependencies]
 media = ["Pillow==12.2.0", "pillow-heif==1.3.0"]
 intelligence = [
+    "open-clip-torch>=3.2.0",
     "opencv-python-headless>=5.0.0.93",
     "safetensors>=0.8.0",
     "timm>=1.0.30",

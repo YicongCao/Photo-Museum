@@ -1,0 +1,11 @@
+{
+  "clip.pt": {
+    "url": "https://openaipublic.azureedge.net/clip/models/40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af/ViT-B-32.pt",
+    "sha256": "40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af",
+    "license": "MIT",
+    "license_url": "https://github.com/openai/CLIP/blob/main/LICENSE",
+    "source": "https://github.com/openai/CLIP/blob/main/clip/clip.py",
+    "model": "ViT-B-32",
+    "usage": "Local experimental photography style and topic candidates; not calibrated probabilities"
+  }
+}

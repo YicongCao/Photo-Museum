@@ -39,6 +39,19 @@ with tempfile.TemporaryDirectory(prefix='museum-gallery-fixture-') as directory,
   def analyze(self,path):return {'score':70,'faces':[],'tags':[],'offline':True}
  analysis=AnalysisWorker(db,SyntheticScore())
  while analysis.tick():pass
+ if os.environ.get('MUSEUM_VALIDATION_PHOTOGRAPHY')=='1':
+  os.environ['MUSEUM_ANALYSIS_ENABLED']='1'
+  os.environ['MUSEUM_PHOTOGRAPHY_ENABLED']='1'
+  from photo_museum.photography_worker import PhotographyWorker
+  class SyntheticPhotography:
+   version='synthetic-photography-v1'
+   def analyze(self,path,progress):
+    for step in ('style','topic'):progress(step,'done')
+    return {'offline':True,'calibrated':False,'score_kind':'cosine_similarity',
+     'style':{'status':'candidates','labels':[{'id':'minimal','label':'极简留白','similarity':.31,'margin':.04,'candidate':True}]},
+     'topic':{'status':'candidates','labels':[{'id':'landscape','label':'自然风光','similarity':.32,'margin':.06,'candidate':True}]}}
+  enrichment=PhotographyWorker(db,SyntheticPhotography())
+  while enrichment.tick():pass
  if os.environ.get('MUSEUM_VALIDATION_CHINESE')=='1':
   import json
   with db.connect() as c:rows=[dict(r) for r in c.execute('SELECT id,revision FROM entries WHERE is_dir=0')]

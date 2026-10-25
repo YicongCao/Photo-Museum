@@ -1,0 +1,56 @@
+{
+  "version": "photography-zh-v1",
+  "style": {
+    "minimum_similarity": 0.225, "minimum_margin": 0.01, "maximum_labels": 3,
+    "neutral": ["style_ordinary", "style_illustration"],
+    "neutral_labels": [
+      {"id":"style_ordinary","prompts":["An ordinary snapshot with no distinctive photographic style.","A standard color photograph with natural ordinary colors and composition."]},
+      {"id":"style_illustration","prompts":["A drawing, illustration, diagram or screenshot.","An abstract computer generated image, not a photograph."]}
+    ],
+    "labels": [
+      {"id":"monochrome","label":"黑白摄影","group":"color","prompts":["A black and white monochrome photograph.","A grayscale photograph without color."]},
+      {"id":"muted","label":"柔和低饱和","group":"color","prompts":["A photograph with muted desaturated pastel colors.","Soft low saturation color photography."]},
+      {"id":"vibrant","label":"鲜明高饱和","group":"color","prompts":["A photograph with vivid vibrant saturated colors.","Vibrant colorful photography with strong color contrast."]},
+      {"id":"film_look","label":"胶片质感","group":"treatment","prompts":["A photograph with a vintage analog film look and visible grain.","An analog film photograph with faded colors and soft grain."]},
+      {"id":"low_key","label":"低调暗色","group":"lighting","prompts":["A low key photograph with deep shadows and a mostly dark frame.","Dark moody photography with a dimly lit subject."]},
+      {"id":"high_key","label":"高调明亮","group":"lighting","prompts":["A high key photograph with a bright white background and soft light.","Airy bright high key photography with very light tones."]},
+      {"id":"silhouette","label":"逆光剪影","group":"lighting","prompts":["A backlit silhouette photograph of a dark subject against a bright background.","Silhouette photography with strong backlighting."]},
+      {"id":"neon","label":"霓虹光影","group":"lighting","prompts":["A night photograph lit by colorful neon lights.","Moody neon photography with glowing colored lights at night."]},
+      {"id":"minimal","label":"极简留白","group":"composition","prompts":["Minimalist photography with a small isolated subject and large negative space.","A minimal composition photograph with extensive empty space."]},
+      {"id":"symmetry","label":"几何对称","group":"composition","prompts":["A photograph with a strongly symmetrical geometric composition.","Symmetrical photography with repeating geometric shapes and centered perspective."]},
+      {"id":"bokeh","label":"浅景深虚化","group":"optical","prompts":["A shallow depth of field photograph with a sharply focused subject and blurred bokeh background.","Photography with a soft out of focus background and selective focus."]},
+      {"id":"long_exposure","label":"长曝光拖影","group":"motion","prompts":["A long exposure photograph with light trails or silky flowing water.","Long exposure photography showing motion blur trails."]},
+      {"id":"action","label":"动态抓拍","group":"motion","prompts":["A candid action photograph capturing a decisive moment of fast movement.","Dynamic photography freezing motion in an action scene."]},
+      {"id":"documentary","label":"纪实抓拍","group":"approach","prompts":["Candid documentary photography of everyday people and real life.","Unposed street documentary photography capturing a real moment."]}
+    ]
+  },
+  "topic": {
+    "minimum_similarity": 0.22, "minimum_margin": 0.012, "maximum_labels": 3,
+    "neutral": ["topic_unknown", "topic_nonphoto"],
+    "neutral_labels": [
+      {"id":"topic_unknown","prompts":["A photograph of an unclear unrecognizable subject.","An indistinct ordinary snapshot."]},
+      {"id":"topic_nonphoto","prompts":["A screenshot, document, diagram or illustration.","A scan of printed text or a computer screen."]}
+    ],
+    "labels": [
+      {"id":"portrait","label":"人物肖像","prompts":["A portrait photograph of a person.","A photograph focusing on a person's face and expression."]},
+      {"id":"group_portrait","label":"多人合影","prompts":["A group portrait photograph of several people posing together.","A photograph of a group of people posing for the camera."]},
+      {"id":"landscape","label":"自然风光","prompts":["A scenic natural landscape photograph.","Landscape photography of beautiful natural scenery."]},
+      {"id":"waterscape","label":"海岸水景","prompts":["A scenic photograph of the sea, coast, beach, lake or river.","Waterscape photography with a large body of water."]},
+      {"id":"mountains","label":"山野户外","prompts":["A landscape photograph of mountains and wild outdoor scenery.","A scenic photograph of mountains, hills and wilderness."]},
+      {"id":"street","label":"城市街景","prompts":["A street photograph showing an urban scene.","Urban street photography with buildings, roads and people."]},
+      {"id":"architecture","label":"建筑空间","prompts":["An architectural photograph focusing on a building and its structure.","Architecture photography of buildings and spatial design."]},
+      {"id":"interior","label":"室内空间","prompts":["An interior photograph of a room or indoor space.","Interior design photography inside a building."]},
+      {"id":"food","label":"美食饮品","prompts":["A food photograph of a meal, dish or drink.","Food and beverage photography."]},
+      {"id":"animals","label":"动物","prompts":["An animal photograph focusing on wildlife or a pet.","Animal photography of birds, cats, dogs or other animals."]},
+      {"id":"plants","label":"植物花卉","prompts":["A photograph focusing on flowers or plants.","Botanical photography of flowers, leaves and plants."]},
+      {"id":"transport","label":"交通汽车","prompts":["A photograph focusing on a car, train, aircraft, boat or other vehicle.","Automotive and transportation photography."]},
+      {"id":"sports","label":"体育运动","prompts":["A sports photograph of athletes performing a sport.","Action sports photography of a sporting event."]},
+      {"id":"performance","label":"舞台演出","prompts":["A photograph of a live music concert or stage performance.","Performing arts photography of artists on stage."]},
+      {"id":"celebration","label":"节庆活动","prompts":["A photograph of a festival, ceremony or celebration.","Event photography of a festive public celebration."]},
+      {"id":"still_life","label":"静物器物","prompts":["A still life photograph focusing on objects arranged on a surface.","Still life and product photography of everyday objects."]},
+      {"id":"night_sky","label":"星空天文","prompts":["An astrophotograph of stars, the moon or the night sky.","Astrophotography with a star filled sky."]},
+      {"id":"macro","label":"微距细节","prompts":["A macro photograph showing tiny details close up.","Extreme close up macro photography of a small subject."]},
+      {"id":"abstract","label":"抽象纹理","prompts":["An abstract photograph focusing on textures, patterns, shapes and colors.","Abstract photography of interesting textures and visual patterns."]}
+    ]
+  }
+}

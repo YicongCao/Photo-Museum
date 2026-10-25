@@ -64,4 +64,8 @@ def register(app,database,owner):
   if 'visual' in result and 'tags' in result['visual']['data']:
    result['visual']['data']['tags']=localize_tags(result['visual']['data']['tags'])
   if 'places' in result:result['places']['data']=localize_place(result['places']['data'])
+  from .photography import current
+  with database.connect() as c:photography=current(c,aid,rows[0]['revision']) if rows else None
+  if photography:result['photography']=photography
+  else:result.pop('photography',None)
   return result
