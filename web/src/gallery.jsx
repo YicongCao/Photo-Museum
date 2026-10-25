@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
+import {placeLabel,subjectLabel} from "./localized-labels";
 import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
 import "./gallery.css";
 import { useSceneMotion, createActivityWarmup } from "./scene-motion";
@@ -411,7 +412,7 @@ function Viewer({ photo, api, onClose, onChanged }) {
               <p>
                 {analysis.visual.data.tags
                   .slice(0, 3)
-                  .map((t) => t.label)
+                  .map(subjectLabel)
                   .join(" · ")}
               </p>
             </div>
@@ -420,10 +421,7 @@ function Viewer({ photo, api, onClose, onChanged }) {
             <div>
               <small>近似城市 · GeoNames</small>
               <p>
-                {["country", "province", "city"]
-                  .map((k) => analysis.places.data[k])
-                  .filter(Boolean)
-                  .join(" · ")}
+                {placeLabel(analysis.places.data)}
               </p>
             </div>
           )}

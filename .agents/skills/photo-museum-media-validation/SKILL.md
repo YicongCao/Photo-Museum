@@ -29,3 +29,5 @@ description: 复验 photo-museum 正式媒体缓存、Gallery、单图进度与�
 手动IAB验证fixture时使用 `http://localhost:8793` / `http://localhost:8794`；正式页使用 `127.0.0.1:8790`。Cookie不区分端口，同主机名的fixture登录会覆盖正式会话；自动Playwright须始终使用独立browser context。倒影/展签专项运行 `node web/tests/coverflow-polish.mjs`，以像素遮挡与桌面/390px横排位置检查确认，不只检查CSS值。
 
 Timeline气泡复验：`node --test web/tests/timeline-collage.test.mjs` 与 `node web/tests/timeline-preview.mjs`（8793合成fixture），再跑既有 `web/tests/timeline.mjs` 检查Dock。重点确认评分顺序、3/4/5拼贴统一尺寸、列表裁切之外的锚定、快切/收起Blob释放、零NAS原图请求、720px可读性、键盘与减少动态效果。
+
+中文显示复验见docs/research/chinese-labels-validation.md：后端tests/p1/test_localization.py验证原数据/置信度不变、歧义回退与GPS过期隔离。以MUSEUM_VALIDATION_CHINESE=1启动8793 fixture后运行web/tests/chinese-labels.mjs，核对Dashboard及单图档案。词表再生工具只读公共数据，须核验来源SHA-256并保留GeoNames/Chinese-CLIP/timm许可；不为显示翻译升级模型版本或触发全量重刮。

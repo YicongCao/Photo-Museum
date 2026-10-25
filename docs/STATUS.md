@@ -45,3 +45,5 @@ Cover Flow倒影已改为真实前后遮挡并压暗，展签去底色；照片�
 Cover Flow主封面与活动标题已按视口中轴居中，左右切换移至左下/右下；1280px及390px人工验证通过。见[布局记录](research/coverflow-center-validation.md)。
 
 Timeline已增加统一尺寸的评分Top3–5照片气泡、向左弹出/收起与键盘预览，并放大年/月/主题字号。3项拼贴测试、13项气泡浏览器检查、6项Dock回归通过，见[验收记录](research/timeline-preview-validation.md)。
+
+地址/主体已加入离线中文显示：China→中国，按GeoNames ID转换中国省市，ImageNet类别表转换主体；保留原始字段/置信度，未知与歧义回退原文，仍为近似城市。79项后端测试与6项浏览器检查通过，见[中文显示验收](research/chinese-labels-validation.md)。

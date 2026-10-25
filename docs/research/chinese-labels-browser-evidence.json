@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-25T01:03:56.414Z",
+  "checks": [
+    "Dashboard address shows China / Xinjiang / Xinyuan in Chinese while retaining city approximation",
+    "Dashboard subjects show Chinese with unchanged confidences",
+    "Dashboard display localization never requests a NAS original",
+    "API preserves original English names, confidence, precision and source IDs",
+    "Single photo archive also displays Chinese address and subject labels",
+    "No uncaught browser errors"
+  ],
+  "errors": [],
+  "fixtures": "synthetic geometric photos and public town identity; active file is a controlled UI fixture"
+}

@@ -4,6 +4,7 @@ import uuid
 from fastapi import Depends,HTTPException
 from pydantic import BaseModel,Field
 from .gallery import media_url
+from .localization import localize_place, localize_tags
 
 class PersonInput(BaseModel):
  label:str=Field(max_length=80)
@@ -60,4 +61,7 @@ def register(app,database,owner):
   gps=database.effective(aid).get('gps')
   if 'places' in result and (not gps or result['places']['data'].get('input_record')!=gps['record_id']):
    del result['places']
+  if 'visual' in result and 'tags' in result['visual']['data']:
+   result['visual']['data']['tags']=localize_tags(result['visual']['data']['tags'])
+  if 'places' in result:result['places']['data']=localize_place(result['places']['data'])
   return result

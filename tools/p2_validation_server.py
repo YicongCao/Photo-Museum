@@ -39,5 +39,17 @@ with tempfile.TemporaryDirectory(prefix='museum-gallery-fixture-') as directory,
   def analyze(self,path):return {'score':70,'faces':[],'tags':[],'offline':True}
  analysis=AnalysisWorker(db,SyntheticScore())
  while analysis.tick():pass
+ if os.environ.get('MUSEUM_VALIDATION_CHINESE')=='1':
+  import json
+  with db.connect() as c:rows=[dict(r) for r in c.execute('SELECT id,revision FROM entries WHERE is_dir=0')]
+  for row in rows:
+   db.set_metadata(row['id'],'gps',{'latitude':43.4,'longitude':83.2},'observed',row['revision'])
+   gps=db.effective(row['id'])['gps']
+   with db.connect() as c:
+    raw=c.execute("SELECT data_json FROM analysis WHERE asset_id=? AND provider='visual'",(row['id'],)).fetchone()
+    data=json.loads(raw[0]);data['tags']=[{'label':label,'confidence':confidence} for label,confidence in [('golf ball',.9),('lakeside, lakeshore',.8),('rapeseed',.7)]]
+    c.execute("UPDATE analysis SET data_json=? WHERE asset_id=? AND provider='visual'",(json.dumps(data),row['id']))
+    place={'country':'China','country_code':'CN','province':'Xinjiang','city':'Xinyuan','geonames_id':'1529046','precision':'nearest_city','distance_m':321,'input_record':gps['record_id']}
+    c.execute('INSERT OR REPLACE INTO analysis VALUES(?,?,?,?,?,?)',(row['id'],row['revision'],'places','synthetic-places',json.dumps(place),time.time()))
  print('Synthetic exhibition ready',flush=True)
  uvicorn.run(app,host='127.0.0.1',port=8793,access_log=False)

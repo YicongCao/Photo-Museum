@@ -44,7 +44,7 @@ class LocalVision:
             embedding=self.net.forward_head(features,pre_logits=True)[0]
             output=self.net.forward_head(features)[0].softmax(0)
             values,indices=output.topk(5)
-        tags=[{'label':self.labels.index_to_description(int(i)),'confidence':round(float(v),4)} for v,i in zip(values,indices)]
+        tags=[{'label':self.labels.index_to_description(int(i)),'class_index':int(i),'synset':self.labels.index_to_label_name(int(i)),'taxonomy':'imagenet1k','confidence':round(float(v),4)} for v,i in zip(values,indices)]
         embedding=embedding/(embedding.norm()+1e-9)
         progress('subject','done')
         progress('faces','running')

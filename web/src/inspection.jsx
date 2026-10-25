@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
+import {placeLabel,subjectLabel} from "./localized-labels";
 const size = (n) =>
   n == null
     ? "—"
@@ -122,8 +123,7 @@ export function CurrentInspection({ file, media, onClose }) {
   );
   const place = data?.place;
   const address =
-    place &&
-    [place.country, place.province, place.city].filter(Boolean).join(" · ");
+    placeLabel(place);
   const knownGps = value("gps");
   return (
     <>
@@ -238,7 +238,7 @@ export function CurrentInspection({ file, media, onClose }) {
             "subject",
             data?.tags
               ?.slice(0, 3)
-              .map((t) => `${t.label} ${Math.round(t.confidence * 100)}%`)
+              .map((t) => `${subjectLabel(t)} ${Math.round(t.confidence * 100)}%`)
               .join("\n"),
           )}
           {row(

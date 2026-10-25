@@ -1,0 +1,45 @@
+{
+  "cn-alternate-names.zip": {
+    "url": "https://download.geonames.org/export/dump/alternatenames/CN.zip",
+    "sha256": "055999654e5164bf1753e5573d0edd31b9169f96070f058a47afdcfdc06b551b",
+    "bytes": 20997196
+  },
+  "imagenet-cn.txt": {
+    "url": "https://raw.githubusercontent.com/OFA-Sys/Chinese-CLIP/31863c707501bf1605d36842f43deb78793dbc5d/datasets/ImageNet-1K/label_cn.txt",
+    "sha256": "f7b6f4bb0ddec755dbea41577c7c5155a4fa2852706f2263c0d3015dc67a8181",
+    "bytes": 10443
+  },
+  "imagenet-en.txt": {
+    "url": "https://raw.githubusercontent.com/OFA-Sys/Chinese-CLIP/31863c707501bf1605d36842f43deb78793dbc5d/datasets/ImageNet-1K/label.txt",
+    "sha256": "8800e39242cbed4c6889376e20a49cfdaf4f84a773a6686d15c3b39972ef94c4",
+    "bytes": 11814
+  },
+  "Chinese-CLIP-LICENSE.txt": {
+    "url": "https://raw.githubusercontent.com/OFA-Sys/Chinese-CLIP/31863c707501bf1605d36842f43deb78793dbc5d/MIT-LICENSE.txt",
+    "sha256": "aaaac89467b2ed90ff9dedb180c43a9007b96cab2396ae5991568fc1940a49b6",
+    "bytes": 1264
+  },
+  "timm": {
+    "version": "1.0.30",
+    "source": "https://github.com/huggingface/pytorch-image-models",
+    "license": "Apache-2.0"
+  },
+  "cities15000.zip": {
+    "sha256": "eae619fcbf5e519f47a6d52340247485811ed3333b8b02b442c752d6b4058b60",
+    "bytes": 3363204,
+    "source": "GeoNames offline gazetteer"
+  },
+  "admin1.txt": {
+    "sha256": "2e4867f5397acb056ea26377601b57af37cb4c81399770225018e9e439e91ad3",
+    "bytes": 151571,
+    "source": "GeoNames offline gazetteer"
+  },
+  "geonames-zh.json": {
+    "sha256": "65f7831468cfde1ba0969619ee5623272cb8147692766e1cda17e37ae301c386",
+    "bytes": 227625
+  },
+  "imagenet-zh.json": {
+    "sha256": "d7dd634afd248cad68a2f93adfb25d5a7e5910ef6ae85979f4c268e49c5a0f4a",
+    "bytes": 106824
+  }
+}
