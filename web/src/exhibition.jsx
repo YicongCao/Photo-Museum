@@ -145,10 +145,11 @@ export const Tunnel = forwardRef(function Tunnel(
     if (e.type !== "pointercancel" && !g.moved && g.activity != null)
       onOpen(g.activity);
   };
-  const count=Math.min(activities.length,clamp(Math.round((width+280)/140),5,20)),
+  const contentWidth=width>700 ? width-282 : width,
+    count=Math.min(activities.length,clamp(Math.round((contentWidth+280)/140),5,20)),
     start=clamp(Math.floor(position-count/2),0,Math.max(0,activities.length-count)),
     visible=activities.map((a,i)=>({a,i})).slice(start,start+count),
-    coverWidth=Math.min(width*.60,height*.88),
+    coverWidth=Math.min(contentWidth*.60,height*.88,width>700 ? Math.max(120,width-584) : Infinity),
     reach=Math.max(count/2,count-1-position,position-(activities.length-count)),
     spacing=Math.max(12,(width*.47-coverWidth*.50)/Math.max(1,reach-1));
   return (

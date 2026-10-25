@@ -41,3 +41,5 @@ Gallery已采用用户选择的经典Cover Flow：5–20封面、增强长倒影
 Cover Flow滑动结束后自动以动画归位到最近活动、中央封面转正；新输入立即打断，减少动态效果时直接定位。构建及6项专项浏览器检查通过，见[归位记录](research/classic-coverflow-validation.md#2026-10-25滑动结束自动转正)。
 
 Cover Flow倒影已改为真实前后遮挡并压暗，展签去底色；照片墙主题与数量横排、黄褐线分隔，缩减底部占位。6项视觉检查＋6项归位回归通过，见[本轮复审](research/coverflow-polish-validation.md)。
+
+Cover Flow主封面与活动标题已按视口中轴居中，左右切换移至左下/右下；1280px及390px人工验证通过。见[布局记录](research/coverflow-center-validation.md)。

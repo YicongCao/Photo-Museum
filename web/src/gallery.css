@@ -802,7 +802,7 @@
 /* Classic Cover Flow: one front-facing activity, symmetric recessed wings. */
 .scene-layer {position:absolute;inset:0;}
 .scene-inactive {visibility:hidden;pointer-events:none;}
-.classic-coverflow {inset:78px 282px 0 0;overflow:hidden;}
+.classic-coverflow {inset:78px 0 0;overflow:hidden;clip-path:inset(0 282px 0 0);}
 .classic-coverflow .activity-panel {left:50%;transform-origin:center bottom;filter:none;}
 .classic-coverflow .photo-mosaic {gap:3px;background:#000;box-shadow:0 0 0 1px #c5aa7c24;}
 .classic-coverflow .activity-panel>.photo-mosaic {filter:brightness(var(--cover-light,1));}
@@ -866,3 +866,17 @@
  .photo-viewer.image-only .viewer-bottom {grid-row:3;}
 }
 @media(prefers-reduced-motion:reduce){.classic-coverflow .activity-panel {will-change:auto;}}
+
+/* Align the active cover and its caption to the viewport, with controls at both edges. */
+.gallery-view-tunnel .gallery-caption {left:50%;bottom:24px;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 160px);text-align:center;}
+.gallery-view-tunnel .caption-main {justify-content:center;}
+.gallery-view-tunnel .caption-main h1 {overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.tunnel-controls {inset:auto 24px 24px;display:flex;justify-content:space-between;gap:0;z-index:12;pointer-events:none;}
+.tunnel-controls button {width:44px;height:44px;padding:8px;display:grid;place-items:center;pointer-events:auto;line-height:1;border:1px solid transparent;border-radius:2px;color:#c8b697;transition:color 160ms,border-color 160ms;}
+.tunnel-controls button:hover:not(:disabled),.tunnel-controls button:focus-visible {color:#efcca0;border-color:#8c6b3f;}
+.tunnel-controls button:disabled {opacity:.25;cursor:default;}
+@media(max-width:700px){
+ .classic-coverflow {clip-path:none;}
+ .gallery-view-tunnel .gallery-caption {bottom:22px;max-width:calc(100vw - 140px);}
+ .tunnel-controls {inset:auto 14px 22px;}
+}
