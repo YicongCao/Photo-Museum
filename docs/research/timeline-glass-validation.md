@@ -14,6 +14,8 @@
 
 正式8790已更新静态资源，现有馆主会话核对20px背景模糊、烟灰透明底色、不透明文字和向右内投光；Gallery保持打开，API/后台刮削未重启，独立fixture已停止。
 
+后续细化：按馆主要求弱化分割线。夜间边线不透明度由77%降至20%，日间由72%降至22%；对应光晕约15%/12%，底色染色进一步减弱。20px毛玻璃保持，修正月份规则对旧日间样式的覆盖优先级，确保使用统一的可读配色。最新构建通过，正式页面复查并留私密截图于data/timeline-soft-spine/；以下公开图片为此前较强边线版本的历史证据。
+
 ![夜间](../design/previews/timeline-glass/light/night.png)
 
 ![日间](../design/previews/timeline-glass/light/day.png)

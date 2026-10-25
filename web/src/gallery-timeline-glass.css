@@ -1,13 +1,13 @@
 /* Frosted rail: a quiet surface for text, with light falling inward from its spine. */
 .gallery-shell.gallery-room-cover{
  --timeline-glass:#161715d1;--timeline-ink:#ded6c9;--timeline-year-ink:#eee4d3;
- --timeline-month-ink:#cdbb9d;--timeline-active:#e5b773;--timeline-spine:#b88b4ac4;
- --timeline-glow:#d4a66099;--timeline-sheen:#ffffff0a;--timeline-tint:#b88b4a12;
+ --timeline-month-ink:#cdbb9d;--timeline-active:#e5b773;--timeline-spine:#b88b4a33;
+ --timeline-glow:#d4a66026;--timeline-sheen:#ffffff0a;--timeline-tint:#b88b4a08;
 }
 .gallery-shell.gallery-room-cover[data-theme=light]{
  --timeline-glass:#ffffffdc;--timeline-ink:#51493e;--timeline-year-ink:#2a251e;
- --timeline-month-ink:#76562c;--timeline-active:#78501e;--timeline-spine:#a97b3eb8;
- --timeline-glow:#b88b4a66;--timeline-sheen:#ffffffc7;--timeline-tint:#b88b4a0f;
+ --timeline-month-ink:#76562c;--timeline-active:#78501e;--timeline-spine:#a97b3e38;
+ --timeline-glow:#b88b4a1f;--timeline-sheen:#ffffffc7;--timeline-tint:#b88b4a06;
 }
 .gallery-shell.gallery-room-cover .dock-timeline{
  background:linear-gradient(100deg,var(--timeline-tint),transparent 24%),var(--timeline-glass);
@@ -17,7 +17,7 @@
 }
 .gallery-shell.gallery-room-cover .dock-timeline :is(button,.timeline-year){color:var(--timeline-ink)}
 .gallery-shell.gallery-room-cover .dock-timeline .timeline-year{color:var(--timeline-year-ink)}
-.gallery-shell.gallery-room-cover .dock-timeline .timeline-month{color:var(--timeline-month-ink)}
+.gallery-shell.gallery-room-cover .dock-timeline h3.timeline-month{color:var(--timeline-month-ink)}
 .gallery-shell.gallery-room-cover .dock-timeline :is(button.selected,button:hover,button:focus-visible,.timeline-year.selected){color:var(--timeline-active)}
 @media(max-width:1100px){
  .gallery-shell.gallery-room-cover .dock-timeline{
