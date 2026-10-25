@@ -4,7 +4,7 @@
     "Missing cached thumbnail retains the mineral fallback surface and readable text, without original fallback"
   ],
   "night": 5.495753678595831,
-  "day": 5.794926848108008,
+  "day": 5.791354999618761,
   "fallback": 6.8162463245164595,
   "method": "Measured foreground computed RGB against underlying rendered pixels in each label area after hiding only label contents; synthetic all-white source stresses maximum photo brightness."
 }
