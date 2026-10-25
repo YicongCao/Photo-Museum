@@ -5,6 +5,7 @@ import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
 import "./gallery.css";
 import { useSceneMotion, createActivityWarmup } from "./scene-motion";
 import {PhotoLoading} from "./loading-mark";
+import {StatusNotice,StatusPanel,MediaStatus} from "./system-status";
 import {useGalleryHistory} from "./gallery-history";
 import { PhotoArchive } from "./photo-archive";
 import {PhotoAnalysisArchive} from "./photo-analysis";
@@ -45,6 +46,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
     [view, setView] = useState("tunnel"),
     [photo, setPhoto] = useState(null),
     [error, setError] = useState(""),
+    [loadError,setLoadError]=useState(null),
     [wallId,setWallId]=useState(null),
     [counts,setCounts]=useState(null),
     [opening,setOpening]=useState(false),[immersive,setImmersive]=useState(false);
@@ -149,23 +151,20 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   const returnCurator=()=>{location.hash='curator'+(scopeMeta?.run_id?'?run='+scopeMeta.run_id:'')};
   const rootWall=exhibitionId&&collection?.id==='curated-'+exhibitionId&&roomHint==='wall';
   selectedId.current = current?.id || savedRooms(storageKey).activityId;
-  const reload = () =>
-    api("/gallery")
-      .then((d) => {
-        setRoomRevision(n=>n+1);
-        setLoaded(true);
-        const next = d.activities.findIndex((a) => a.id === selectedId.current);
-        setActivities(d.activities);
-        setIndex((i) =>
-          next < 0 ? Math.min(i, Math.max(0, d.activities.length - 1)) : next,
-        );
-      })
-      .catch((e) => setError(e.message));
-  useEffect(() => {
-    reload();
-    const timer = setInterval(reload, 15000);
-    return () => clearInterval(timer);
-  }, []);
+  const catalogueRequest=useRef(null);
+  const reload = async () => {
+    if(catalogueRequest.current)return;
+    const c=new AbortController();catalogueRequest.current=c;
+    try{
+      const d=await api('/gallery','GET',undefined,{signal:c.signal});
+      if(c.signal.aborted)return;
+      setLoadError(null);setRoomRevision(n=>n+1);setLoaded(true);
+      const next=d.activities.findIndex(a=>a.id===selectedId.current);
+      setActivities(d.activities);setIndex(i=>next<0?Math.min(i,Math.max(0,d.activities.length-1)):next);
+    }catch(e){if(!c.signal.aborted)setLoadError(e)}
+    finally{if(catalogueRequest.current===c)catalogueRequest.current=null}
+  };
+  useEffect(()=>{reload();const timer=setInterval(reload,15000);return()=>{clearInterval(timer);catalogueRequest.current?.abort()}},[]);
   const goTo = (i) => {
     if (view === "tunnel") tunnel.current?.goTo(i);
     else setIndex(i);
@@ -219,20 +218,14 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
           </div>}</div>
           }/>
       </header>
-      {error && (
-        <p role="alert" className="gallery-error">
-          {error}
-        </p>
-      )}
+      {(error||(loadError&&current))&&<div className="gallery-status-banner"><StatusNotice error={error||loadError} scope={error?'浏览操作':'图库更新'} detail={!error&&current?'保留当前画面':undefined} onRetry={!error?reload:undefined} onDismiss={error?()=>setError(''):undefined}/></div>}
       {view==='tunnel'&&room==='calendar'&&<div className="gallery-room-host"><CalendarRoom api={api} anchor={anchor} setAnchor={setAnchor} state={roomStates.calendar || {}} onState={s=>setRoomStates(p=>({...p,calendar:s}))} onCollection={openCollection}/></div>}
       {view==='tunnel'&&room==='map'&&<div className="gallery-room-host"><MapRoom api={api} state={roomStates.map || {}} onState={s=>setRoomStates(p=>({...p,map:s}))} onCollection={openCollection}/></div>}
       {view==='tunnel'&&room==='gear'&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><GearRoom api={api} anchor={anchor} state={roomStates.gear || {}} onState={s=>setRoomStates(p=>({...p,gear:s}))} onCollection={openCollection} onPhoto={p=>open(p,'.room img')}/></div>}
       {view==='tunnel'&&CreativeRoom&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><CreativeRoom api={api} state={roomStates[room] || {}} onState={s=>setRoomStates(p=>({...p,[room]:s}))} onCollection={openCollection} onPhoto={p=>open(p,'.room img')}/></div>}
       {!current && ['cover','space'].includes(room) ? (
         <div className={'gallery-empty'+(!loaded?' gallery-initial-loading':'')}>
-          {loaded&&<Icon name="photo" />}
-          {loaded?<p>尚无可展示照片</p>:<PhotoLoading/>}
-          {loaded&&<button onClick={onAdmin}>查看刮削进度 →</button>}
+          <StatusPanel loading={!loaded&&!loadError} error={loadError} onRetry={reload} empty="尚无可展示照片" action={<button onClick={onAdmin}>查看刮削进度 →</button>}/>
         </div>
       ) : current || collection ? (
         <>
@@ -258,7 +251,6 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
               onCounts={setCounts}
               api={api}
               onOpen={open}
-              onError={setError}
             />
           </div>}
           {view === "tunnel" && ['cover','space'].includes(room) && (
@@ -321,7 +313,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
   const [manifest, setManifest] = useState(null),
     [source, setSource] = useState(photo.preview),
     [original, setOriginal] = useState(null),
-    [previewReady,setPreviewReady]=useState(false),
+    [previewReady,setPreviewReady]=useState(false),[previewFailed,setPreviewFailed]=useState(false),
     [phase, setPhase] = useState("4K 读取中"),
     [info, setInfo] = useState(true),
     [pinned, setPinned] = useState(photo.pinned),
@@ -400,6 +392,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
     }catch(e){if(!c.signal.aborted)setPhase('保留 4K · 原图暂不可用')}})();
     return()=>{c.abort();decoded?.removeAttribute('src');if(url)URL.revokeObjectURL(url)};
   },[photo.id,manifest,nativeChoice,requested,retryOriginal,preferences.ready,preferences.values.original_loading,preferences.ready?'':preferences.error]);
+  const visiblePhase=original?phase:previewFailed?'预览暂不可用':source===photo.thumbnail&&source!==photo.preview&&previewReady?'保留缩略图 · 4K 暂不可用':phase;
   return (
     <div
       ref={viewerRef}
@@ -457,17 +450,18 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
         ) : (
           <div className="image-stack">
             {!previewReady&&<PhotoLoading className="viewer-photo-loading"/>}
-            <img
+            {previewFailed&&!original&&<StatusPanel error="预览暂不可用" onRetry={()=>{setPreviewFailed(false);setPreviewReady(false);setSource(photo.preview)}}/>}
+            {source&&<img
               ref={previewRef}
               className="preview-layer"
               src={source}
               alt={photo.name}
               onLoad={() => {setPreviewReady(true);setPhase((p) => (p === "4K 读取中" ? "4K · 原图读取中" : p))}}
               onError={() => {
-                setSource(photo.thumbnail);
-                setPhase("保留缩略图 · 4K 暂不可用");
+                if(photo.thumbnail&&source!==photo.thumbnail){setSource(photo.thumbnail);setPhase("保留缩略图 · 4K 暂不可用")}
+                else{setSource(null);setPreviewReady(true);setPreviewFailed(true);setPhase('预览暂不可用')}
               }}
-            />
+            />}
             {original && previewReady && (
               <img
                 key={original}
@@ -481,7 +475,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
         )}
       </div>
       <div className="viewer-bottom">
-        <span aria-live="polite">{phase.includes("读取中")?<PhotoLoading compact label={phase}/>:phase}</span>
+        <span aria-live="polite">{visiblePhase.includes("读取中")?<PhotoLoading compact label={visiblePhase}/>:<MediaStatus failed={/暂不可用|失败|无法/.test(visiblePhase)}>{visiblePhase}</MediaStatus>}</span>
         <span>
           <button
             onClick={toggleImmersive}
@@ -501,7 +495,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
       {info && (
         <aside className="metadata-panel">
           <h2>照片档案</h2>
-          {mutationError && <p role="alert">{mutationError}</p>}
+          {mutationError && <StatusNotice error={mutationError} scope="照片档案"/>}
           <p>{photo.name}</p>
           <h3 className="archive-section-title">EXIF</h3>
           <PhotoArchive metadata={manifest?.effective_metadata || {}} media={manifest?.media || photo.info || {}} size={manifest?.size} place={analysis?.places?.data}/>

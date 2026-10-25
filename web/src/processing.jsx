@@ -1,3 +1,5 @@
+import {MediaStatus} from './system-status';
+import {PhotoLoading} from './loading-mark';
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 export const processingSteps = [
@@ -391,7 +393,7 @@ export function RecentStrip({ items = [] }) {
             />
             {(!loaded || failed) && (
               <span className="recent-preview-state">
-                {failed ? "4K 暂不可用" : "加载 4K"}
+                {failed ? <MediaStatus failed>4K 暂不可用</MediaStatus> : <PhotoLoading compact label="读取 4K"/>}
               </span>
             )}
           </div>

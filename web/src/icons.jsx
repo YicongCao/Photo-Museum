@@ -1,5 +1,8 @@
 import React from "react";
 const paths = {
+  refresh: 'M20 7v5h-5M4 17v-5h5M5.3 7a8 8 0 0 1 13-2L20 8M4 16l1.7 3a8 8 0 0 0 13-2',
+  connection: 'M8 8 4 12a4 4 0 0 0 6 6l3-3M16 16l4-4a4 4 0 0 0-6-6l-3 3M3 3l18 18',
+
   camera: 'M3 7h4l2-3h6l2 3h4v14H3zM12 10a4 4 0 1 0 0 8 4 4 0 0 0 0-8M18 10h.01',
   lens: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10M7 3l3 5M3 15l5-2M16 21l-2-5M21 8l-5 3',
   dimensions: 'M5 4h14v16H5zM2 4v16M1 4h2M1 20h2M5 23h14M5 22v2M19 22v2',

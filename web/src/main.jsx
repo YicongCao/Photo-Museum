@@ -11,68 +11,42 @@ import { PreferencesProvider } from './preferences';
 import { watchAutoUnlock } from "./auto-unlock";
 import './title-typography.css';
 import './museum-nav.css';
-const errors = {
-  credentials_or_permission: "NAS 拒绝访问，请检查凭据与目录权限。",
-  network_unavailable: "暂时无法连接 NAS。",
-  tls_verification_failed: "HTTPS 证书未通过验证，请提供受信 CA。",
-  partial_listing: "目录返回不完整，本次未提交，也未标记缺失。",
-};
-async function api(path, method = "GET", data, options = {}) {
-  const r = await fetch("/api" + path, {
-    method,
-    signal: options.signal,
-    headers: data !== undefined ? { "Content-Type": "application/json" } : {},
-    body: data !== undefined ? JSON.stringify(data) : undefined,
-  });
-  const value = await r.json();
-  if (!r.ok) {
-    const e = new Error(
-      errors[value.detail] ||
-        (typeof value.detail === "string" ? value.detail : "输入格式不正确"),
-    );
-    e.status = r.status;
-    throw e;
-  }
-  return value;
-}
+import {api} from './api';
+import {StatusNotice,StatusPanel,ServiceHealthContext,MuseumBoundary} from './system-status';
+import {failureInfo} from './status-text';
+import './system-status.css';
 function App() {
   const [initialized, setInitialized] = useState(null),
     [state, setState] = useState(null),
     [error, setError] = useState(""),
+    [pollError,setPollError]=useState(null),[checked,setChecked]=useState(false),[bootstrapError,setBootstrapError]=useState(null),
     [busy, setBusy] = useState(false),
     [autoUnlockAllowed, setAutoUnlockAllowed] = useState(true),
     [route, setRoute] = useState(location.hash);
-  const passwordInput = useRef(null), loginPending = useRef(false);
+  const passwordInput = useRef(null), loginPending = useRef(false), polling=useRef(false), stateRequest=useRef(null);
   useEffect(() => {
     if (initialized !== true || state || !autoUnlockAllowed || !passwordInput.current) return;
     return watchAutoUnlock(passwordInput.current, () => !loginPending.current);
-  }, [initialized, Boolean(state), autoUnlockAllowed]);
+  }, [initialized, Boolean(state), autoUnlockAllowed, checked, Boolean(pollError)]);
   async function refresh() {
-    try {
-      setState(await api("/state"));
-    } catch (e) {
-      if (e.status === 401) setState(null);
-      else setError(e.message);
-    }
+    if(polling.current)return;
+    polling.current=true;const c=new AbortController();stateRequest.current=c;
+    try {setState(await api('/state','GET',undefined,{signal:c.signal}));setInitialized(true);setPollError(null)}
+    catch(e){if(e.name!=='AbortError'){if(e.status===401){setState(null);setPollError(null)}else setPollError(e)}}
+    finally{if(!c.signal.aborted){setChecked(true);polling.current=false}}
   }
+  const bootstrap=signal=>api('/bootstrap','GET',undefined,{signal}).then(v=>{setInitialized(v.initialized);setBootstrapError(null)}).catch(e=>{if(e.name!=='AbortError')setBootstrapError(e)});
   useEffect(() => {
-    api("/bootstrap")
-      .then((v) => setInitialized(v.initialized))
-      .catch((e) => setError(e.message));
-    refresh();
-    const t = setInterval(refresh, 2500);
-    const f = () => setRoute(location.hash);
-    window.addEventListener("hashchange", f);
-    return () => {
-      clearInterval(t);
-      window.removeEventListener("hashchange", f);
-    };
-  }, []);
+    const c=new AbortController();bootstrap(c.signal);refresh();
+    const t=setInterval(refresh,2500), f=()=>setRoute(location.hash);
+    window.addEventListener('hashchange',f);
+    return()=>{c.abort();stateRequest.current?.abort();clearInterval(t);window.removeEventListener('hashchange',f)};
+  },[]);
   async function logout() {
     try {
       await api("/logout", "POST", {});
       setAutoUnlockAllowed(false);
-      setState(null);
+      setState(null);setError('');
     } catch (e) {
       setError(e.message);
     }
@@ -100,7 +74,7 @@ function App() {
     }
   }
   if (state)
-    return <PreferencesProvider api={api}>{route === "#manage" ? (
+    return <ServiceHealthContext.Provider value={failureInfo(pollError)}><PreferencesProvider api={api}>{pollError&&<div className="museum-service-banner"><StatusNotice global error={pollError} scope="服务连接" detail="保留当前画面 · 自动重连" onRetry={refresh}/></div>}{error&&!pollError&&<div className="museum-service-banner"><StatusNotice global error={error} onDismiss={()=>setError('')}/></div>}{route === "#manage" ? (
       <Manager api={api} state={state} refresh={refresh} onLogout={logout} />
     ) : route.startsWith('#settings') ? <Settings api={api} onLogout={logout}/> : route.startsWith('#curator') ? <Curator api={api} onLogout={logout}/> : (
       <Gallery
@@ -111,15 +85,14 @@ function App() {
         onAdmin={() => (location.hash = "manage")}
         onLogout={logout}
       />
-    )}</PreferencesProvider>;
+     )}</PreferencesProvider></ServiceHealthContext.Provider>;
+  if(initialized===null||!checked||pollError)return <div className="entrance-status"><StatusPanel loading={!pollError&&!bootstrapError} label="读取展馆" error={pollError||bootstrapError} onRetry={()=>Promise.all([bootstrap(),refresh()])}/></div>;
   return (
     <main>
       <section className="entrance">
         <Icon name="lock" className="entrance-icon" />
         {error && (
-          <div role="alert" className="message error">
-            {error}
-          </div>
+          <StatusNotice error={error}/>
         )}
         <form onSubmit={login}>
           <label>
@@ -145,4 +118,4 @@ function App() {
     </main>
   );
 }
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(document.getElementById("root")).render(<MuseumBoundary><App /></MuseumBoundary>);

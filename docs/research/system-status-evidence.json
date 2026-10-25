@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "Authenticated bootstrap uses centered folding mark, no password flash",
+    "Initial Gallery failure has finite state and working read-only retry",
+    "Background Gallery error preserves position, day/night and 3 narrow layouts, then clears on recovery",
+    "Global outage has one connection banner, retains scene and resumes without relogin",
+    "Dashboard preserves progress, exposes last update and has static reduced-motion feedback",
+    "Settings handles HTML errors safely and preserves unsaved edits on conflict",
+    "Calendar/map/gear/rings/constellation/scroll/revisit use the same room failure component",
+    "Curator retry only restores records, with zero paid run submissions",
+    "Password failure shares inline styling and keeps login usable on mobile"
+  ],
+  "errors": [],
+  "fixture": "Synthetic P5/P6 only. Faults injected in isolated browser routes; production service and NAS unchanged."
+}

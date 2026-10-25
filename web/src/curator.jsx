@@ -1,6 +1,8 @@
 import {MuseumNav} from './museum-nav';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Icon} from './icons';
+import {StatusNotice} from './system-status';
+import {PhotoLoading} from './loading-mark';
 import './curator.css';
 import {CuratorTimeline,CuratorActivity} from './curator-timeline.jsx';
 import {curatorTimeline} from './curator-timeline.js';
@@ -36,6 +38,11 @@ export function Curator({api,onLogout}){
   return()=>{c.abort();source.close()};
  },[runId]);
 
+ const reloadReadOnly=async()=>{try{
+  const [p,h]=await Promise.all([api('/curator/provider'),api('/curator/runs')]);setProvider(p);setHistory(h.items);
+  if(currentId.current){const id=currentId.current,r=await api('/curator/runs/'+id);if(currentId.current===id)setRun(r)}
+  setError('');
+ }catch(e){setError(e.message)}};
  const answer=useMemo(()=>events.filter(e=>e.kind==='answer').map(e=>e.data.text).join(''),[events]);
  const timeline=useMemo(()=>curatorTimeline(events),[events]);
  const callCount=timeline.filter(e=>e.kind==='tool').length;
@@ -46,7 +53,7 @@ export function Curator({api,onLogout}){
  useEffect(()=>{if(scroll.current&&stick.current)scroll.current.scrollTop=scroll.current.scrollHeight},[answer,exhibition,progress?.checked]);
  useEffect(()=>{if(processScroll.current&&processStick.current)processScroll.current.scrollTop=processScroll.current.scrollHeight},[events]);
  async function submit(e){e.preventDefault();if(!prompt.trim()||active||busy)return;setBusy(true);setError('');try{
-  const r=await api('/curator/runs','POST',{prompt,room,...(follow&&run?.id?{parent_run_id:run.id}:{})});currentId.current=r.id;setEvents([]);setExhibition(null);setImageStates({});setRun(r);setRunId(r.id);setPrompt('');setFollow(false);refreshHistory()
+  const r=await api('/curator/runs','POST',{prompt,room,...(follow&&run?.id?{parent_run_id:run.id}:{})});currentId.current=r.id;setEvents([]);setExhibition(null);setImageStates({});setRun(r);setRunId(r.id);setPrompt('');setFollow(false);refreshHistory().catch(e=>setError(e.message))
  }catch(e){setError(e.message)}finally{setBusy(false)}}
  async function cancel(){setError('');try{setRun(await api('/curator/runs/'+runId+'/cancel','POST',{}))}catch(e){setError(e.message)}}
  function show(){if(!exhibition)return;location.hash='gallery?exhibit='+exhibition.id+'&room='+showRoom}
@@ -61,7 +68,10 @@ export function Curator({api,onLogout}){
     {(answer||run?.answer)&&<article className="curator-response"><small>{active?'模型输出':'策展结果'}</small><p>{run?.status==='completed'?(run.answer || answer):answer || run?.answer}</p></article>}
     {progress&&<section className="curator-preparation" aria-label="展厅数据准备"><div><Icon name="thumbnail"/><span>本地缓存检查</span><output>{progress.checked} / {progress.total}</output></div><progress max={progress.total || 1} value={progress.checked}/><small>可用 {progress.ready}{progress.skipped>0&&` · 已失效 ${progress.skipped}`}</small></section>}
     {exhibition&&<section className="curator-result" aria-label="展览草案"><header><h2>{exhibition.title}</h2><span>{exhibition.count} 张照片</span></header><div className="curator-result-images">{exhibition.covers.map(p=><img key={p.id} src={p.thumbnail} alt="" decoding="async" onLoad={()=>setImageStates(s=>({...s,[p.id]:'loaded'}))} onError={()=>setImageStates(s=>({...s,[p.id]:'failed'}))}/>)}</div><small>预览 {loaded} / {exhibition.covers.length}{thumbnails.includes('failed')&&' · 部分预览不可用'}</small><div className="curator-show"><select aria-label="展示展厅" value={showRoom} onChange={e=>setShowRoom(e.target.value)}>{Object.entries(exhibitionRooms).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select><button onClick={show} disabled={exhibition.count===0}>Show ↗</button></div></section>}
-    {(error||run?.error)&&<p className="curator-error" role="alert">{error || run.error}</p>}
+    {!provider&&!error&&<PhotoLoading compact label="读取策展记录"/>}
+    {error&&<StatusNotice error={error} scope="策展记录" onRetry={reloadReadOnly}/>}
+    {run?.error&&<StatusNotice error={run.error} scope="本次策展"/>}
+    {active&&connection==='重连中'&&<StatusNotice tone="info" title="正在重新连接运行记录" detail="自动恢复事件 · 不重发策展请求"/>}
    </div>
    <form className="curator-composer" onSubmit={submit}><textarea aria-label="策展要求" placeholder="按时间、地点、器材、摄影风格或主题筛选…" value={prompt} maxLength={4000} onChange={e=>setPrompt(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();e.currentTarget.form.requestSubmit()}}}/><div>
     <select aria-label="目标展厅" value={room} onChange={e=>setRoom(e.target.value)}><option value="auto">助理建议展厅</option>{Object.entries(exhibitionRooms).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select>

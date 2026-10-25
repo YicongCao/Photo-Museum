@@ -1,3 +1,4 @@
+import {StatusNotice} from '../system-status';
 import {PhotoLoading} from '../loading-mark';
 import React,{useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {RoomStatus,useRoomData} from './common';
@@ -89,8 +90,8 @@ export function MemoryScrollRoom({api,state={},onState,onCollection,onPhoto}){
    <div className="scroll-editor-selection" inert={saving||undefined}><label>章节<select aria-label="章节" value={active.chapter.id} onChange={e=>go(layouts.find(c=>c.chapter.id===e.target.value))}>{chapters.map(c=><option key={c.id} value={c.id}>{c.customTitle||c.label}</option>)}</select></label><div><button aria-label="章节前移" disabled={!active.index||saving} onClick={()=>reorder(-1)}>←</button><button aria-label="章节后移" disabled={active.index===chapters.length-1||saving} onClick={()=>reorder(1)}>→</button></div></div>
    <label className="scroll-editor-title">标题<input disabled={saving} maxLength="120" value={draft.chapters.find(c=>c.activity_id===active.chapter.id)?.title??active.chapter.label} onChange={e=>change(active.chapter.id,{title:e.target.value})}/></label>
    <div className="scroll-editor-images" aria-busy={editor.loading} inert={saving||editor.loading||Boolean(editor.error)||undefined} aria-label="选择章节主图">{(editor.data?.items||active.chapter.selected||[]).map(p=><button key={p.id} aria-label={'主图 '+p.name} aria-pressed={(active.chapter.heroId||active.hero?.id)===p.id} onClick={()=>{setHeroes(h=>({...h,[p.id]:p}));change(active.chapter.id,{hero_id:p.id})}}><img src={p.thumbnail} alt="" decoding="async"/></button>)}</div>
-   {editor.error&&<p role="alert">{editor.error}<button onClick={editor.retry}>重试照片</button></p>}
-   {saveError&&<p role="alert">{saveError}<button onClick={()=>{setDraft(null);setEditing(false);saved.retry()}}>重新读取</button></p>}
+   {editor.error&&<StatusNotice error={editor.error} onRetry={editor.retry}/>}
+   {saveError&&<StatusNotice error={saveError} detail="编排尚未保存" onDismiss={()=>setSaveError('')}/>}
    <footer><span>{editor.loading?<PhotoLoading compact/>:editor.data?.total>60?'显示评分前 60 张':''}</span><button onClick={save} disabled={saving}>{saving?'保存中':'保存编排'}</button></footer>
   </section></div>}
  </section>;

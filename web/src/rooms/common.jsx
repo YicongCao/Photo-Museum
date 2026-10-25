@@ -1,4 +1,4 @@
-import {PhotoLoading} from '../loading-mark';
+import {StatusPanel} from '../system-status';
 import React,{createContext,useContext,useEffect,useState} from 'react';
 
 export const RoomRefreshContext=createContext(0);
@@ -16,9 +16,8 @@ export function useRoomData(api,path) {
  return {...result,retry:()=>setRetry(n=>n+1)};
 }
 export function RoomStatus({loading,error,retry,empty}) {
- if(error)return <div className="room-status" role="alert">{error}<button onClick={retry}>重试</button></div>;
- if(loading)return <div className="room-status"><PhotoLoading/></div>;
- return empty ? <div className="room-status">暂无可展示照片</div> : null;
+ if(!loading&&!error&&!empty)return null;
+ return <StatusPanel className="room-status" loading={loading} error={error} onRetry={retry}/>;
 }
 export function query(values) {
  return new URLSearchParams(Object.entries(values).filter(([,v])=>v!=null&&v!==false&&v!=='')).toString();

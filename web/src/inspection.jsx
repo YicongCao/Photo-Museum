@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
+import {StatusNotice} from "./system-status";
 import {photographyLabel,photographyTitle} from "./photography-labels";
 import {placeLabel,subjectLabel} from "./localized-labels";
 const size = (n) =>
@@ -282,9 +283,9 @@ export function CurrentInspection({ file, media, onClose }) {
                 `${size(derivative("playback").size)} · H.264 · SDR`,
             )}
           {data?.analysis_error && (
-            <div role="status">分析失败：{data.analysis_error}</div>
+            <div><StatusNotice error={data.analysis_error} scope="本地分析"/></div>
           )}
-          {error && <div role="status">{error}</div>}
+          {error && <div><StatusNotice error={error} scope="当前照片"/></div>}
         </dl>
         <div className="inspection-cache">
           <span>

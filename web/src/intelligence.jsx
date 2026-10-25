@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import {StatusNotice} from "./system-status";
 function FaceImage({ src, box, alt }) {
   const [x, y, w, h] = box || [0, 0, 1, 1];
   return (
@@ -25,7 +26,7 @@ export function Intelligence({ api }) {
     Promise.all([
       api("/intelligence").then(setStatus),
       api("/people").then((d) => setPeople(d.people)),
-    ]).catch((e) => setError(e.message));
+    ]).then(()=>setError('')).catch((e) => setError(e.message));
   useEffect(() => {
     refresh();
     const t = setInterval(refresh, 15000);
@@ -49,7 +50,7 @@ export function Intelligence({ api }) {
         </span>
         <span>{status?.faces || 0} 张人脸</span>
       </div>
-      {error && <p role="alert">{error}</p>}
+      {error && <StatusNotice error={error} scope="本地策展" onDismiss={()=>setError('')}/> }
       <div className="people-strip">
         {people.map((p, i) => (
           <button key={p.id} onClick={() => choose(p)}>

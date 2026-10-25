@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "Wall pagination read retry retains loaded tiles and clears its error",
+    "Failed detail display falls back to decoded thumbnail with a shared media status",
+    "Both previews failing produces a finite error and clickable cache-only retry"
+  ],
+  "errors": [],
+  "fixture": "Synthetic images only; original_loading forced on_demand in the isolated context."
+}

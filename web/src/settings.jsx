@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {Icon} from './icons';
+import {StatusNotice,StatusPanel,SavedStatus} from './system-status';
 import {ProviderForm} from './settings-provider';
 import {usePreferences} from './preferences';
 import './settings.css';
@@ -18,15 +19,15 @@ function SourceCard({source:s,api,reload}){
   {editing&&<form className="settings-form" onSubmit={e=>{e.preventDefault();act(async()=>{await api('/settings/sources/'+s.id,'PUT',{...form,ca_pem:form.ca_pem || null});setForm(p=>({...p,password:''}));setSaved(true);await reload()})}}>
    <label>名称<input value={form.name} required maxLength={80} onChange={e=>set('name',e.target.value)}/></label><label>NAS 用户名<input value={form.username} required maxLength={256} onChange={e=>set('username',e.target.value)}/></label>
    <label>NAS 密码<small>已保存 · 留空保留</small><input type="password" autoComplete="off" value={form.password} maxLength={1024} onChange={e=>set('password',e.target.value)}/></label>
-   <label>受信 CA（PEM，可选）<textarea value={form.ca_pem} maxLength={16000} onChange={e=>set('ca_pem',e.target.value)}/></label><p className="settings-note">更换地址或根目录请新建文件源，保留已有索引。</p><div className="settings-actions"><button disabled={busy}>保存文件源</button>{saved&&<span role="status">已保存</span>}</div>
-  </form>}{error&&<p role="alert">{error}</p>}
+   <label>受信 CA（PEM，可选）<textarea value={form.ca_pem} maxLength={16000} onChange={e=>set('ca_pem',e.target.value)}/></label><p className="settings-note">更换地址或根目录请新建文件源，保留已有索引。</p><div className="settings-actions"><button disabled={busy}>保存文件源</button>{saved&&<SavedStatus/>}</div>
+  </form>}{error&&<StatusNotice error={error}/>}
  </article>
 }
 function Sources({sources,api,reload}){
  const [adding,setAdding]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  async function add(e){e.preventDefault();const f=e.currentTarget,data=new FormData(f),body=Object.fromEntries(data);body.allow_http=data.get('allow_http')==='on';body.ca_pem=body.ca_pem || null;setBusy(true);setError('');try{await api('/sources','POST',body);f.reset();setAdding(false);await reload()}catch(e){setError(e.message)}finally{setBusy(false)}}
  return <><div className="settings-section-title"><h2>文件源</h2><button onClick={()=>setAdding(v=>!v)}>＋ 新建文件源</button></div>{sources.map(s=><SourceCard key={s.id} source={s} api={api} reload={reload}/>)}
- {(adding||!sources.length)&&<form className="settings-form settings-new-source" onSubmit={add}><h3>连接 WebDAV</h3>{[['name','名称',''],['url','WebDAV 地址','https://nas.local:5006'],['root','照片根目录','/'],['username','NAS 用户名',''],['password','NAS 密码','']].map(([name,label,placeholder])=><label key={name}>{label}<input name={name} type={name==='password'?'password':name==='url'?'url':'text'} placeholder={placeholder} required autoComplete={name==='password'?'off':undefined}/></label>)}<label>受信 CA（PEM，可选）<textarea name="ca_pem" maxLength={16000}/></label><label className="settings-check"><input name="allow_http" type="checkbox"/>允许内网 HTTP 明文连接</label>{error&&<p role="alert">{error}</p>}<button disabled={busy}>保存连接</button></form>}
+ {(adding||!sources.length)&&<form className="settings-form settings-new-source" onSubmit={add}><h3>连接 WebDAV</h3>{[['name','名称',''],['url','WebDAV 地址','https://nas.local:5006'],['root','照片根目录','/'],['username','NAS 用户名',''],['password','NAS 密码','']].map(([name,label,placeholder])=><label key={name}>{label}<input name={name} type={name==='password'?'password':name==='url'?'url':'text'} placeholder={placeholder} required autoComplete={name==='password'?'off':undefined}/></label>)}<label>受信 CA（PEM，可选）<textarea name="ca_pem" maxLength={16000}/></label><label className="settings-check"><input name="allow_http" type="checkbox"/>允许内网 HTTP 明文连接</label>{error&&<StatusNotice error={error}/>}<button disabled={busy}>保存连接</button></form>}
  </>
 }
 function PreferenceForm({kind,api,reload,geography,paused}){
@@ -47,7 +48,7 @@ function PreferenceForm({kind,api,reload,geography,paused}){
   <label>HDR / 原文件显示<select aria-label="HDR / 原文件显示" value={form.hdr_display} onChange={e=>set('hdr_display',e.target.value)}><option value="sdr">准确 SDR 优先</option><option value="native_if_supported">设备支持时尝试原生 HDR（实验）</option></select></label>
   <p className="settings-note">缩略图与 4K 始终为 sRGB / SDR。原生模式按设备能力尝试，解码失败回退 SDR；不改变缓存、不重刮。</p>
  </>}
- <div className="settings-actions"><button disabled={busy||!preferences.ready}>保存偏好</button>{saved&&<span role="status">已保存</span>}</div>{error&&<p role="alert">{error}<button type="button" className="settings-inline" onClick={async()=>{try{const value=await preferences.refresh();setForm(value);setError('')}catch(e){setError(e.message)}}}>重新读取</button></p>}
+ <div className="settings-actions"><button disabled={busy||!preferences.ready}>保存偏好</button>{saved&&<SavedStatus/>}</div>{error&&<StatusNotice error={error} onRetry={async()=>{try{const value=await preferences.refresh();setForm(value);setError('')}catch(e){setError(e.message)}}}/>}
  </form>
  {kind==='gps'&&geography&&<section className="settings-geography"><h3>地址处理</h3><div className="settings-data"><span>{!geography.available?'离线数据或分析进程未就绪':geography.paused?'地址解析已暂停':paused?'随媒体处理暂停':geography.awaiting_worker?'等待进程应用设置':geography.pending?'后台更新中':'当前规则已处理'}</span></div>{geography.pending!=null&&<><progress value={geography.completed} max={geography.total||1}/><p>{geography.completed} / {geography.total} · 待处理 {geography.pending}</p></>}<button disabled={busy||!geography.available||geography.paused} onClick={refresh}>重新解析已有 GPS</button>{queued&&<p role="status">已排队 · 仅本地地址计算</p>}</section>}
  </>
@@ -55,7 +56,7 @@ function PreferenceForm({kind,api,reload,geography,paused}){
 function CacheSettings({api,data,reload}){
  const [budget,setBudget]=useState(Math.round(data.budget_bytes/1024**3)),[busy,setBusy]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState(false);
  async function act(fn){setBusy(true);setError('');setSaved(false);try{await fn();await reload()}catch(e){setError(e.message)}finally{setBusy(false)}}
- return <><h2>缓存</h2><section className="settings-cache"><div className="settings-cache-total"><Icon name="thumbnail"/><strong>{gib(data.used_bytes)} <small>GiB 预览缓存</small></strong><span>/ {gib(data.budget_bytes)} GiB 预算</span></div><progress value={data.used_bytes} max={data.budget_bytes}/><p className="settings-note">常驻仅缩略图和 4K；原文件不常驻。预算还需容纳处理中临时文件。</p></section><form className="settings-form" onSubmit={e=>{e.preventDefault();act(async()=>{await api('/cache/budget','POST',{gib:Number(budget)});setSaved(true)})}}><label>缓存预算（GiB）<input type="number" min="4" max="200" step="1" required value={budget} onChange={e=>{setSaved(false);setBudget(e.target.value)}}/></label><p className="settings-note">修改预算前需暂停媒体处理；不会自动清理已有缓存。</p><div className="settings-actions"><button type="button" disabled={busy} onClick={()=>act(()=>api('/media/control','POST',{action:data.paused?'resume':'pause'}))}>{data.paused?'继续媒体处理':'暂停媒体处理'}</button><button disabled={busy||!data.paused}>保存预算</button>{saved&&<span role="status">已保存</span>}</div>{error&&<p role="alert">{error}</p>}</form></>
+ return <><h2>缓存</h2><section className="settings-cache"><div className="settings-cache-total"><Icon name="thumbnail"/><strong>{gib(data.used_bytes)} <small>GiB 预览缓存</small></strong><span>/ {gib(data.budget_bytes)} GiB 预算</span></div><progress value={data.used_bytes} max={data.budget_bytes}/><p className="settings-note">常驻仅缩略图和 4K；原文件不常驻。预算还需容纳处理中临时文件。</p></section><form className="settings-form" onSubmit={e=>{e.preventDefault();act(async()=>{await api('/cache/budget','POST',{gib:Number(budget)});setSaved(true)})}}><label>缓存预算（GiB）<input type="number" min="4" max="200" step="1" required value={budget} onChange={e=>{setSaved(false);setBudget(e.target.value)}}/></label><p className="settings-note">修改预算前需暂停媒体处理；不会自动清理已有缓存。</p><div className="settings-actions"><button type="button" disabled={busy} onClick={()=>act(()=>api('/media/control','POST',{action:data.paused?'resume':'pause'}))}>{data.paused?'继续媒体处理':'暂停媒体处理'}</button><button disabled={busy||!data.paused}>保存预算</button>{saved&&<SavedStatus/>}</div>{error&&<StatusNotice error={error}/>}</form></>
 }
 export function Settings({api,onLogout}){
  const query=new URLSearchParams(location.hash.split('?')[1]),wanted=query.get('tab'),from=query.get('from');
@@ -66,8 +67,8 @@ export function Settings({api,onLogout}){
  const navigate=id=>{setTab(id);window.history.replaceState(null,'','#settings?tab='+id+(from?'&from='+encodeURIComponent(from):''))};
  const back=()=>{location.hash=from&&/^(manage|gallery|curator)(\?|$)/.test(from)?from:'manage'};
  return <div className="settings-shell"><header className="settings-header"><div><button className="settings-back" onClick={back}>← 返回</button><h1>Settings</h1></div><MuseumNav current="settings" onLogout={onLogout}/></header><div className="settings-layout"><nav className="settings-tabs" aria-label="设置分类">{Object.entries(tabs).map(([id,[icon,label]])=><button key={id} aria-current={tab===id?'page':undefined} onClick={()=>navigate(id)}><Icon name={icon}/>{label}</button>)}</nav><main className="settings-content">
- {error&&<p role="alert">{error}<button className="settings-inline" onClick={()=>reload().catch(e=>setError(e.message))}>重试</button></p>}
- {!data?<p role="status">读取设置</p>:tab==='sources'?<Sources sources={data.sources} api={api} reload={reload}/>:tab==='llm'?<><div className="settings-section-title"><h2>LLM Provider</h2><span>{data.provider.configured?data.provider.enabled?'已配置':'已停用':'待配置'}</span></div><ProviderForm api={api} initial={data.provider} onSaved={()=>reload().catch(e=>setError(e.message))}/></>:tab==='cache'?<CacheSettings api={api} data={data.cache} reload={reload}/>:<PreferenceForm key={tab} kind={tab} api={api} reload={reload} geography={data.geography} paused={data.cache.paused}/>}
- {preferences.error&&<p role="alert">偏好读取失败：{preferences.error}</p>}
+ {error&&data&&<StatusNotice error={error} scope="设置更新" detail="保留当前设置" onRetry={()=>reload().catch(e=>setError(e.message))}/>}
+ {!data?<StatusPanel loading={!error} label="读取设置" error={error} onRetry={()=>reload().catch(e=>setError(e.message))}/>:tab==='sources'?<Sources sources={data.sources} api={api} reload={reload}/>:tab==='llm'?<><div className="settings-section-title"><h2>LLM Provider</h2><span>{data.provider.configured?data.provider.enabled?'已配置':'已停用':'待配置'}</span></div><ProviderForm api={api} initial={data.provider} onSaved={()=>reload().catch(e=>setError(e.message))}/></>:tab==='cache'?<CacheSettings api={api} data={data.cache} reload={reload}/>:<PreferenceForm key={tab} kind={tab} api={api} reload={reload} geography={data.geography} paused={data.cache.paused}/>}
+ {preferences.error&&<StatusNotice error={preferences.error} scope="显示偏好" onRetry={()=>preferences.refresh().catch(()=>{})}/>}
  </main></div></div>
 }

@@ -5,6 +5,8 @@ import { CurrentInspection } from "./inspection";
 import { Intelligence } from "./intelligence";
 import "./manager.css";
 import {MuseumNav} from "./museum-nav";
+import {StatusNotice} from "./system-status";
+import {failureText} from "./status-text";
 import { taskStatus } from "./task-status.mjs";
 const labels = {
   queued: "等待开始",
@@ -25,18 +27,6 @@ const stageNames = {
   publish: "发布藏品",
   analysis: "本地分析",
   photography: "摄影风格 / 主题",
-};
-const errorNames = {
-  media_DecompressionBombError: "图像尺寸超过安全上限",
-  pq_or_hlg_transfer: "HDR 传递函数待适配",
-  gainmap_requires_sdr_base_validation: "增益图 SDR 基底待复验",
-  unknown_color_profile: "缺少色域标记",
-  unknown_video_color: "视频色域待适配",
-  hdr_metadata_requires_sdr_base_or_tonemap_validation: "HDR 编码待适配",
-  codec_timeout: "转码超时",
-  network_unavailable: "NAS 连接中断",
-  source_exceeds_2gib_limit: "原文件超过 2 GiB",
-  cache_budget_exceeded: "缓存空间不足",
 };
 const fmt = (n) => Number(n || 0).toLocaleString();
 export function Manager({ api, state, refresh, onLogout }) {
@@ -184,19 +174,8 @@ export function Manager({ api, state, refresh, onLogout }) {
               </span>
             </div>
           </div>
-          {(pollError || directoryError) && <div role="alert" className="keeper-alert">
-            {pollError ? `进度：${pollError}` : `目录：${directoryError}`}
-            {pollError && updatedAt && <span> · 上次更新 {updatedAt.toLocaleTimeString()}</span>}
-            <button onClick={poll}>重新加载</button>
-          </div>}
-          {error && (
-            <div role="alert" className="keeper-alert">
-              {error}
-              <button onClick={() => setError("")} aria-label="关闭提示">
-                ×
-              </button>
-            </div>
-          )}
+          {(pollError || directoryError)&&<StatusNotice error={pollError||directoryError} scope={pollError?'刮削进度':'目录列表'} detail={updatedAt?`上次更新 ${updatedAt.toLocaleTimeString()} · 保留已有数据`:undefined} onRetry={poll}/>}
+          {error&&<StatusNotice error={error} scope="刮削操作" onDismiss={()=>setError('')}/>}
           <section className="keeper-progress" aria-label="刮削进度">
             <div
               className="keeper-ring"
@@ -472,7 +451,7 @@ export function Manager({ api, state, refresh, onLogout }) {
                         </small>
                         <progress value={j.done_dirs} max={j.total_dirs || 1} />
                         {j.error && (
-                          <small className="error-text">{j.error}</small>
+                          <small className="error-text">{failureText(j.error)}</small>
                         )}
                       </div>
                       <div className="job-buttons">
@@ -596,7 +575,7 @@ export function Manager({ api, state, refresh, onLogout }) {
                         <strong>{e.path.split("/").pop()}</strong>
                         <small>
                           {stageNames[e.stage]} ·{" "}
-                          {errorNames[e.error] || e.error}
+                          {failureText(e.error)}
                         </small>
                       </span>
                       <small>{labels[e.status]}</small>

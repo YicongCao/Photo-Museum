@@ -1,3 +1,4 @@
+import {MediaStatus} from './system-status';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import './wall-image.css';
 // Thumbnail paints first; the display layer is requested only after that paint.
@@ -33,5 +34,6 @@ export function WallImage({photo,display}){
  };
  return <>{!settled&&photo.thumbnail&&<img ref={thumbRef} className="wall-thumb" fetchPriority="high" src={photo.thumbnail} alt={photo.name} aria-hidden={ready?true:undefined} draggable="false" decoding="async" onLoad={()=>setThumbReady(true)} onError={()=>setThumbReady(true)}/>}
   {target&&!failed&&<img ref={displayRef} className={'wall-display '+(ready?'ready ':'')+(settled?'settled':'')} fetchPriority="low" src={target} alt={ready?photo.name:''} draggable="false" decoding="async" onLoad={reveal} onError={fail}
-   onTransitionEnd={e=>{if(e.target===e.currentTarget&&e.propertyName==='opacity'&&ready)setSettled(true)}}/>}</>;
+   onTransitionEnd={e=>{if(e.target===e.currentTarget&&e.propertyName==='opacity'&&ready)setSettled(true)}}/>}
+  {failed&&<MediaStatus failed className="wall-preview-status">4K 暂不可用</MediaStatus>}</>;
 }

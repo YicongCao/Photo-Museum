@@ -1,3 +1,4 @@
+import {StatusNotice} from '../system-status';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {geoNaturalEarth1,geoPath} from 'd3-geo';
 import {useRoomData,RoomStatus,collection} from './common';
@@ -66,7 +67,7 @@ export function MapRoom({api,state,onState,onCollection}) {
   </header>
   <div className="map-layout">
    <div className="map-surface">
-    {worldError&&<div className="map-load-error" role="alert">底图未载入 <button onClick={()=>location.reload()}>重新载入</button></div>}
+    {worldError&&<StatusNotice className="map-load-error" error="底图未载入" onRetry={()=>location.reload()}/>}
     <svg ref={svg} viewBox="0 0 1050 540" role="group" aria-label="离线照片地图" tabIndex={0}
       onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
       onKeyDown={e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const t=latest.current;const next={...t,x:t.x+(e.key==='ArrowLeft'?35:e.key==='ArrowRight'?-35:0),y:t.y+(e.key==='ArrowUp'?35:e.key==='ArrowDown'?-35:0)};update(next);save(next)}}}>

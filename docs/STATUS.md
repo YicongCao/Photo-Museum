@@ -119,3 +119,5 @@ Dashboard、Settings、Gallery及策展助理统一共享导航，固定Dashboar
 Cover Flow时间线按imagegen新概念改为悬浮烟色玻璃：取消左侧黄褐分隔线，使用浅色圆角边缘、当前活动缩略图的模糊漫反射、局部选中块和右侧细滚动条；日夜、Dock、三层月份与预览保留，纵向年份/手机月份标题固定。8组材质、2组对比度、15项预览及12项日夜回归见[概念与复验](research/timeline-smoke-glass.md)。
 
 本轮发布校验再次发现旧扫描worker因SQLite锁退出并连带关闭正式supervisor；已沿用原数据与模型恢复8790。静态UI变更本身不要求重启；当前未修复锁冲突的根因，运行日志留data/timeline-smoke-glass/。
+
+统一界面状态系统（2026-10-26）：登录、Gallery/展厅、照片墙/暗房、Dashboard、Settings与策展助理共享烟色玻璃、细线图标、折叠Logo及安全中文文案。区分首次读取与后台失败，保留数据/位置/输入，恢复清除旧错误，读取重试不重发写操作或付费任务；修正初始化自动解锁竞争与双预览失败的无限加载。66组/项本轮检查及设计skill校验通过，正式前端已更新，现有会话核对Gallery正常、位置保留，API及worker未重启；见[规范](design/system-status-language.md)、[图册](design/status-atlas.html)和[复验](research/system-status-validation.md)。

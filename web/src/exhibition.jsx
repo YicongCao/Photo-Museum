@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import {WallImage} from "./wall-image";
 import {PhotoLoading} from "./loading-mark";
+import {StatusNotice} from "./system-status";
 import { Icon } from "./icons";
 import {coverLayout,coverPose,coverWindow} from "./cover-layout";
 import {planCoverMosaic} from './cover-mosaic';
@@ -283,7 +284,7 @@ export const Tunnel = forwardRef(function Tunnel(
   );
 });
 
-export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts, endpoint, initialLeft=0, onPosition }) {
+export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, initialLeft=0, onPosition }) {
   const container = useRef(null),
     request=useRef(null),restoreTarget=useRef(initialLeft),
     drag = useRef(null),
@@ -292,7 +293,7 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts, endp
     [total, setTotal] = useState(warm?.data?.total ?? null),
     [height, setHeight] = useState(500),
     [left, setLeft] = useState(0),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),[loadError,setLoadError]=useState(null);
   const state = useRef({
     offset: warm?.data?.items.length || 0,
     total: warm?.data?.total ?? Infinity,
@@ -310,13 +311,14 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts, endp
         (endpoint || "/gallery/" + activity.id) + (endpoint?.includes('?') ? '&' : '?') + "offset=" + s.offset + "&limit=200",'GET',undefined,{signal:controller.signal},
       );
       if (s.stopped) return;
+      setLoadError(null);
       s.offset += d.items.length;
       s.total = d.total;
       setTotal(d.total);
       onCounts?.({photos:d.photos,videos:d.videos});
       setItems((p) => [...p, ...d.items]);
     } catch (e) {
-      if (!s.stopped && e.name!=='AbortError') onError?.(e.message);
+      if (!s.stopped && e.name!=='AbortError') setLoadError(e);
     } finally {
       s.loading = false;
       if (!s.stopped) setBusy(false);
@@ -462,6 +464,7 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts, endp
         )}
       </div>
     </section>
+    {loadError&&<div className="wall-data-notice"><StatusNotice error={loadError} scope="照片流" detail="保留已展开的照片" onRetry={load}/></div>}
     {busy && <PhotoLoading compact className="gallery-photo-loading wall-photo-loading" label="加载照片"/>}
     <div className="wall-scroll-control"><input type="range" aria-label="照片流横向位置" min="0" max={Math.max(0,extent-(container.current?.clientWidth || 0))} step="1" value={Math.min(left,Math.max(0,extent-(container.current?.clientWidth || 0)))}
       onChange={e=>{container.current.scrollLeft=Number(e.target.value);setLeft(Number(e.target.value));onPosition?.(Number(e.target.value))}}/><output>{extent>(container.current?.clientWidth || 0)?Math.round(left/Math.max(1,extent-(container.current?.clientWidth || 0))*100):0}%</output></div>

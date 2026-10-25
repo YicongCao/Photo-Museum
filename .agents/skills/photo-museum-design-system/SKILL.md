@@ -1,0 +1,26 @@
+---
+name: photo-museum-design-system
+description: 修改 photo-museum 页面视觉或加载、错误、空状态、连接反馈时，复用项目设计语言并做跨页状态验证；不代替媒体色彩、模型质量或 NAS 协议验收。
+---
+
+# Photo Museum 界面设计
+
+先读项目 AGENTS.md、docs/STATUS.md 和与任务有关的 docs/design/visual-language.md 段落；状态/文案工作以 docs/design/system-status-language.md 为当前规范。时间线材质参考 docs/research/timeline-smoke-glass.md 的已保存概念和实现，不回到纯黑底上只有 backdrop-filter 的做法。
+
+## 实作判断
+
+- 先明确用户看到的状态、已有内容应否保留、真实恢复动作，再修改布局。首次读取、后台刷新、未解锁、空结果、部分失败不能共用一个布尔值。刷新后等待鉴权检查，不因短暂初始化误判密码失效。
+- 共享导航用 MuseumNav；读取用 PhotoLoading/MuseumMark；错误用 StatusNotice，首次/空状态用 StatusPanel，保存完成用 SavedStatus，局部媒体降级用 MediaStatus。不要复制 SVG、错误段落或各造一套颜色。管理页允许品牌字样，观展/登录不加品牌和口号。
+- 错误在 api.js 分类、status-text.js 公共文案白名单映射；未知异常安全回退。新增业务错误只加入已审阅的公开文案，不直接显示异常、HTML 或私密路径。
+- 只读重试与写入/策展提交分开。失败保留可看的照片、位置与草稿；恢复清除对应错误；主动取消不报错。全局服务提示与局部同类错误去重。已有细节日志保留供用户主动展开，不冒充用户状态说明。
+- 材质有实际底色才可见；日间黑字、夜间浅字独立于背景图片。尽量复用局部材质和现有语义变量，不给图片套滤镜，不为状态图层读取 NAS 原图。
+
+## 已跑通的复验
+
+1. 按 media-validation skill 的隔离 P5 fixture 方法构建到 data/<本轮>/web-dist，端口8793，正式8790不注入故障。fixture可启用 MUSEUM_VALIDATION_CREATIVE=1 和 MUSEUM_VALIDATION_CURATOR=1；模型是本地假接口。
+2. `node --test web/tests/status-text.test.mjs` 验证连接/超时/HTTP/非JSON/取消/密码和未知文案边界。`node web/tests/status-system.mjs` 验证跨页故障→恢复，输出合成截图到 docs/design/previews/system-status 和本轮证据 JSON。`node web/tests/status-media.mjs` 另验证分页、单图预览降级/双失败与缓存重试，零NAS原图请求。先检查脚本端口与输出位置，保留历史证据。
+3. 围绕修改跑有意义的回归：主导航 museum-nav.mjs；观展层级 gallery-navigation.mjs；策展 p6.mjs。查看各脚本环境变量，避免连接正式provider或覆盖历史截图；镜面像素测试串行。
+4. 对截图自审：状态位置、文字层级、长文换行、图标/按钮、日夜对比、390/320手机与844×390矮屏、无整页滚动、44px目标、减少动态效果。真实点击恢复按钮，不能只看 DOM 已存在；历史加载容器的 pointer-events:none 曾导致内部重试不可点击。
+5. 记录具体测试与失败边界，公开只放合成图。正式前端先复制带hash资源，再原子替换index；不因静态更新重启worker。用现有会话查看正式页面，截图仅 data/。不要锁定用户会话或为重试触发付费策展。
+
+不把合成故障注入当成真实断网根因修复。结束保留用户当前正式页面和后台任务，停止自己的fixture；交付附规范、验证与截图的绝对路径。
