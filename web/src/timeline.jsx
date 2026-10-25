@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from "react";
 import {createPortal} from "react-dom";
 import {TimelinePreview} from "./timeline-preview";
 
+const monthLabels=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) {
   const root = useRef(null), frame = useRef(0), pointer = useRef(null),pointerFocus=useRef(false);
   const [preview,setPreview]=useState(null);
@@ -98,7 +100,7 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) 
     {groups.map((year) => <section className="timeline-year-group" key={year.year} aria-label={String(year.year)}>
       <h2 data-dock className={"timeline-year " + (activities[index]?.event.year === year.year ? "selected" : "")}><span className="dock-label">{year.year}</span></h2>
       {year.months.map((month) => <section className="timeline-month-group" key={month.month} aria-label={month.month === "年度" ? "年度" : `${month.month}月`}>
-        <h3 data-dock className="timeline-month"><span className="dock-label">{month.month}</span></h3>
+        <h3 data-dock className="timeline-month"><span className="dock-label">{monthLabels[Number(month.month)-1] || month.month}</span></h3>
         <ul>{month.items.map(({activity, i}) => <li data-dock key={activity.id}>
           <button aria-current={i === index ? "true" : undefined} className={i === index ? "selected" : ""}
             aria-describedby={preview?.activity.id===activity.id && !preview.closing ? 'timeline-photo-preview' : undefined}
