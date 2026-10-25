@@ -67,3 +67,7 @@ TokenHub/hy4-preview、高强度深度思考与temperature1.1已通过真实合�
 ## 统一 Settings
 
 文件源、LLM Provider、GPS地址、原图/HDR显示与缓存预算已集中至独立Settings页；Dashboard、Gallery菜单和策展页Provider入口共用。默认行为及已保存凭据保留，按需原图零自动下载、离线地址可增量重算，设置冲突不会静默覆盖。111项后端测试、11项Settings浏览器检查及11项P6及7项Dashboard回归通过。正式服务已更新并打开Settings入口；正常解锁后可用，后台处理继续。见[验证记录](research/unified-settings-validation.md)。
+
+## Cover Flow 日夜模式
+
+Cover Flow首页新增太阳/月亮SVG切换，支持当前浏览器记忆；白底标题、时间线、预览气泡、按钮和不透明倒影均已适配，照片不反色。照片墙/暗房及其他展厅仍为黑底。12项专项与26项P5回归通过，正式前端已更新，后台刮削保持运行。见[验证](research/coverflow-light-validation.md)。

@@ -74,3 +74,7 @@ Timeline活动hover/focus时使用336×236px气泡预览最高分前3–5张本�
 ## P6 策展助理（2026-10-25）
 
 用户已指定TokenHub/hy4-preview。Provider密钥只在服务端加密，不进前端/Git/日志；默认temperature1.1、thinking enabled、reasoning_effort high。页面只展示provider实际返回思考；tools限本地索引检索和展览草案，无SQL/shell/HTTP/NAS写入。外发摘要不含原图、路径、精确GPS、人脸特征/人物库姓名；真实provider验证用合成索引。空结果不偷偷放宽条件；未接受推断/过期模型不当命中。模型结束后核对筛选、隐藏、版本和双缓存，进度按实际计数；六种Show都必须限定同一集合。取消/重启/重连不自动重发付费请求。见docs/decisions/0006-curation-assistant.md与docs/research/p6-curation-assistant.md。
+
+## Cover Flow 日夜模式（2026-10-25）
+
+用户新增Cover Flow首页白天/黑夜切换，作为纯黑页面规范的局部例外。太阳/月亮SVG按钮放Gallery与最右全屏之间；白底文字、时间线、Portal预览气泡、控件及倒影均须适配，照片不反色。当前浏览器记忆选择；照片墙、暗房、Dashboard和其他展厅仍保持黑底，返回恢复模式及活动位置。规范/验证见docs/research/coverflow-light-validation.md。

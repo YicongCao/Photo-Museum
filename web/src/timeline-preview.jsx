@@ -1,7 +1,7 @@
 import React, {useEffect,useState} from 'react';
 import {planTimelineCollage} from './timeline-collage';
 
-export function TimelinePreview({activity,anchor,closing}) {
+export function TimelinePreview({activity,anchor,closing,theme="dark"}) {
   const width=Math.min(336,innerWidth-24), height=236;
   const plan=planTimelineCollage(activity.selected,(width-18)/180);
   const [sources,setSources]=useState({});
@@ -30,7 +30,7 @@ export function TimelinePreview({activity,anchor,closing}) {
     : clamp(anchor.x+anchor.width/2-left,18,width-18);
   return <div id="timeline-photo-preview" role="tooltip" aria-label={`${activity.event.theme} · 评分前${plan.count}张照片`}
     data-activity={activity.id} data-photo-count={plan.count}
-    className={`timeline-preview ${leftward ? 'from-left' : 'from-above'} ${closing ? 'closing' : ''}`}
+    data-theme={theme} className={`timeline-preview ${leftward ? 'from-left' : 'from-above'} ${closing ? 'closing' : ''}`}
     style={{left,top,width,height,'--preview-arrow':`${arrow}px`}}>
     <div className={`timeline-preview-mosaic layout-${plan.count}`} aria-busy={plan.photos.some(p=>!sources[p.id]&&!failed[p.id])}>
       {plan.photos.map((p,i)=><div className={`timeline-preview-cell preview-cell-${i}`} key={p.id} data-score={p.score}>

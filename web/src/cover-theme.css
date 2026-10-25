@@ -1,0 +1,38 @@
+/* Cover Flow day/night surfaces; photographs and the SDR media pipeline stay unchanged. */
+.gallery-nav .cover-theme-button{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;padding:5px;border:1px solid transparent;border-radius:50%;flex:none}
+.cover-theme-button .icon{width:22px;height:22px}
+.gallery-nav .cover-theme-button:hover{background:#b88b4a14;border-color:#8c6b3f}
+.gallery-shell[data-theme=light]{color-scheme:light;background:#fff;color:#25231e;--museum-text:#25231e;--museum-muted:#655e54;--museum-accent:#866128;--museum-accent-bright:#73501e;--museum-line:#ded7cb;--museum-control:#866128;--museum-error:#a02f24}
+.gallery-shell[data-theme=light] .gallery-nav button{color:#655e54}
+.gallery-shell[data-theme=light] .gallery-nav button:is(.active,:hover,:focus-visible){color:#866128}
+.gallery-shell[data-theme=light] .gallery-nav .fullscreen-button{border-color:#b4a58c}
+.gallery-shell[data-theme=light] .gallery-nav .fullscreen-button:hover{border-color:#866128}
+.gallery-shell[data-theme=light] .gallery-room-menu{background:#fffffff5;border-color:#cfc3af;box-shadow:0 16px 40px #4937191a}
+.gallery-shell[data-theme=light] .gallery-room-menu button[aria-checked=true]{color:#866128;background:#b88b4a12}
+.gallery-shell[data-theme=light] .gallery-curated-context{color:#655e54}
+.gallery-shell[data-theme=light] .classic-coverflow .photo-mosaic{background:#fff;box-shadow:0 0 0 1px #57452d26,0 12px 30px #49371914}
+.gallery-shell[data-theme=light] .mosaic-cell{background:#f3f1ed}
+.gallery-shell[data-theme=light] .classic-coverflow .panel-reflection{background:#fff}
+.gallery-shell[data-theme=light] .classic-coverflow .panel-reflection>.photo-mosaic{filter:blur(1.8px) brightness(calc(var(--cover-light,1) * .85)) saturate(.78);box-shadow:none}
+.gallery-shell[data-theme=light] .classic-coverflow .panel-reflection::after{background:linear-gradient(to top,#fff9 0%,#fffc 30%,#ffff 82%,#fff 100%)}
+.gallery-shell[data-theme=light] .classic-coverflow::after{background:linear-gradient(#fff0,#fff2)}
+.gallery-shell[data-theme=light] .continuous-tunnel .activity-panel:focus-visible{outline-color:#866128}
+.gallery-shell[data-theme=light] .gallery-caption{text-shadow:none;color:#25231e}
+.gallery-shell[data-theme=light] .gallery-caption .caption-main{color:#25231e}
+.gallery-shell[data-theme=light] .gallery-caption .caption-date{color:#655e54}
+.gallery-shell[data-theme=light] .tunnel-controls button{color:#655e54}
+.gallery-shell[data-theme=light] .tunnel-controls button:hover{color:#866128}
+.gallery-shell[data-theme=light] .dock-timeline{background:#ffffffb8;border-color:#ded7cb}
+.gallery-shell[data-theme=light] .dock-timeline :is(.timeline-year,button){color:#655e54}
+.gallery-shell[data-theme=light] .dock-timeline :is(.selected,.timeline-month,button:hover,button:focus-visible){color:#866128}
+.gallery-shell[data-theme=light] .timeline-dot{border-color:#866128}
+.gallery-shell[data-theme=light] .selected .timeline-dot{background:#866128}
+.gallery-shell[data-theme=light] :is(.cover-pending,.gallery-empty>.icon){color:#866128}
+.gallery-shell[data-theme=light] .gallery-error{color:#a02f24}
+/* Preview lives in a portal, so carry the local theme rather than changing body/root. */
+.timeline-preview[data-theme=light]{color-scheme:light;color:#25231e;background:#fffffff5;border-color:#aa9470;box-shadow:0 16px 48px #49371926,0 0 0 1px #b88b4a12}
+.timeline-preview[data-theme=light]::after{background:#fff;border-color:#aa9470}
+.timeline-preview[data-theme=light] :is(.timeline-preview-mosaic,.timeline-preview-cell){background:#f3f1ed}
+.timeline-preview[data-theme=light] :is(.timeline-preview-label small,.timeline-preview-empty,.preview-unavailable){color:#73501e}
+.timeline-preview[data-theme=light] .preview-loading{background:linear-gradient(135deg,#eee9e0,#e0d6c6)}
+@media(max-width:700px){.gallery-room-cover .gallery-nav>div{gap:12px}.gallery-nav .cover-theme-button{width:30px;height:30px}.gallery-nav .cover-theme-button .icon{width:20px;height:20px}}

@@ -1,5 +1,7 @@
 import React from "react";
 const paths = {
+  sun: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4",
+  moon: "M20.5 14.8A9 9 0 0 1 9.2 3.5a9 9 0 1 0 11.3 11.3Z",
   download: "M12 3v12M7 10l5 5 5-5M4 16v5h16v-5",
   metadata: "M5 2h10l4 4v16H5zM14 2v5h5M8 11h8M8 15h8M8 19h5",
   frame:

@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {createPortal} from "react-dom";
 import {TimelinePreview} from "./timeline-preview";
 
-export function ActivityTimeline({ activities, index, onSelect }) {
+export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) {
   const root = useRef(null), frame = useRef(0), pointer = useRef(null);
   const [preview,setPreview]=useState(null);
   const showTimer=useRef(null),closeTimer=useRef(null),removeTimer=useRef(null);
@@ -82,5 +82,5 @@ export function ActivityTimeline({ activities, index, onSelect }) {
         </li>)}</ul>
       </section>)}
     </section>)}
-  </aside>{preview && createPortal(<TimelinePreview key={preview.activity.id} activity={preview.activity} anchor={preview.anchor} closing={preview.closing}/>,document.body)}</>;
+  </aside>{preview && createPortal(<TimelinePreview key={preview.activity.id} activity={preview.activity} anchor={preview.anchor} closing={preview.closing} theme={theme}/>,document.body)}</>;
 }

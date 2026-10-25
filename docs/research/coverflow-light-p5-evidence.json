@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-25T04:36:19.744Z",
+  "checks": [
+    "Default Gallery remains classic Cover Flow",
+    "Calendar month displays dated local covers without original requests",
+    "Year grain has twelve month cells",
+    "Year to month control selects an observed month without inventing a January bucket",
+    "Month drilldown and week grain use real date buckets",
+    "Unknown dates are a separate photo collection rather than January first",
+    "Calendar collection shares the 4K/original viewer and returns to its source room, releasing staged previews",
+    "Offline world map has real geometry and controlled zoom",
+    "Country/province/city/activity drilldown reads only local data",
+    "Place collections return with map hierarchy retained",
+    "Equipment has distinct line drawings, actual usage counts and score-selected photos",
+    "Equipment collage has no implicit overflowing image rows",
+    "Equipment marked-photo filter is independent from Cover Flow ranking",
+    "Equipment photo closes back to the same selected device",
+    "Lens records have their own equipment view",
+    "Spacetime is a separate bounded depth scene with keyboard navigation",
+    "Spacetime activity wall returns to the same activity",
+    "Reduced motion uses a single flat activity instead of flight",
+    "All four rooms stay within a 390 by 720 viewport",
+    "All four rooms also fit a short 1280 by 720 desktop",
+    "Room selection and calendar grain survive authenticated reload",
+    "Leaving photo collections releases staged Blob URLs",
+    "A room fetch failure keeps the last view and can retry",
+    "A missing map asset has an explicit recovery while the local location list remains usable",
+    "No external map, font, image or GPS service requests",
+    "No uncaught browser errors"
+  ],
+  "errors": [],
+  "fixture": "synthetic photos and explicitly injected metadata; not real photo color or subjective selection acceptance"
+}

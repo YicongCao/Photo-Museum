@@ -14,6 +14,7 @@ import { SpacetimeRoom } from './rooms/spacetime';
 import { RoomRefreshContext } from './rooms/common';
 import './rooms/rooms.css';
 import {usePreferences} from './preferences';
+import './cover-theme.css';
 
 const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道'};
 function savedRooms(key='museum.rooms'){try{return JSON.parse(sessionStorage.getItem(key) || '{}')}catch{return {}}}
@@ -22,6 +23,8 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
   const storageKey=exhibitionId?'museum.rooms.'+exhibitionId:'museum.rooms';
   const api=useMemo(()=>exhibitionId?((path,...args)=>baseApi((path==='/gallery'||path.startsWith('/gallery/')||path.startsWith('/exhibitions/'))?'/curator/exhibitions/'+encodeURIComponent(exhibitionId)+path:path,...args)):baseApi,[baseApi,exhibitionId]);
   const [scopeMeta,setScopeMeta]=useState(null);
+  const [coverTheme,setCoverTheme]=useState(()=>{try{return localStorage.getItem('museum.cover-theme')==='light'?'light':'dark'}catch{return 'dark'}});
+  const toggleCoverTheme=()=>setCoverTheme(previous=>{const next=previous==='dark'?'light':'dark';try{localStorage.setItem('museum.cover-theme',next)}catch{}return next});
   const [loaded, setLoaded] = useState(false),
     [activities, setActivities] = useState([]),
     [index, setIndex] = useState(0),
@@ -154,8 +157,9 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
     const focus=lastFocus.current;lastFocus.current=null;
     requestAnimationFrame(() => {if(focus?.isConnected)focus.focus({preventScroll:true})});
   };
+  const displayTheme=room==='cover'&&view==='tunnel'&&!photo?coverTheme:'dark';
   return (
-    <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening}>
+    <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening} data-theme={displayTheme}>
       <nav className="gallery-nav" inert={!!photo}>
         {view === "wall" && <button className="gallery-back" onClick={rootWall?returnCurator:backGallery} aria-label={rootWall?'返回策展助理':room==='cover'?'返回 Gallery':'返回 '+roomNames[room]}>← {rootWall?'策展助理':room==='cover'?'Gallery':roomNames[room]}</button>}
         {exhibitionId&&view==='tunnel'&&<><button className="gallery-curated-back" onClick={returnCurator}>← 策展助理</button><span className="gallery-curated-context">{scopeMeta?.title}</span></>}
@@ -175,6 +179,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
             <button role="menuitem" className="curator-menu-entry" onClick={()=>{location.hash='curator'}}>策展助理</button>
             <button role="menuitem" onClick={()=>{location.hash='settings?from='+encodeURIComponent(location.hash.slice(1))}}>Settings</button>
           </div>}</div>
+          {room==='cover'&&view==='tunnel'&&<button className="cover-theme-button" aria-label={coverTheme==='dark'?'切换白天模式':'切换黑夜模式'} title={coverTheme==='dark'?'切换白天模式':'切换黑夜模式'} aria-pressed={coverTheme==='light'} onClick={toggleCoverTheme}><Icon name={coverTheme==='dark'?'sun':'moon'}/></button>}
           <FullscreenButton />
         </div>
       </nav>
@@ -219,7 +224,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
             />
           </div>}
           {view === "tunnel" && ['cover','space'].includes(room) && (
-            <ActivityTimeline activities={activities} index={index} onSelect={goTo} />
+            <ActivityTimeline activities={activities} index={index} onSelect={goTo} theme={displayTheme} />
           )}
           {(view==='wall'||['cover','space'].includes(room))&&displayedActivity&&<div className="gallery-caption">
             <div className="caption-date">
