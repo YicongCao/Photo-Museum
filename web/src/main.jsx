@@ -10,6 +10,7 @@ import { Settings } from './settings';
 import { PreferencesProvider } from './preferences';
 import { watchAutoUnlock } from "./auto-unlock";
 import './title-typography.css';
+import './museum-nav.css';
 const errors = {
   credentials_or_permission: "NAS 拒绝访问，请检查凭据与目录权限。",
   network_unavailable: "暂时无法连接 NAS。",
@@ -101,7 +102,7 @@ function App() {
   if (state)
     return <PreferencesProvider api={api}>{route === "#manage" ? (
       <Manager api={api} state={state} refresh={refresh} onLogout={logout} />
-    ) : route.startsWith('#settings') ? <Settings api={api} onLogout={logout}/> : route.startsWith('#curator') ? <Curator api={api}/> : (
+    ) : route.startsWith('#settings') ? <Settings api={api} onLogout={logout}/> : route.startsWith('#curator') ? <Curator api={api} onLogout={logout}/> : (
       <Gallery
         key={new URLSearchParams(route.split('?')[1]).get('exhibit') || 'library'}
         exhibitionId={new URLSearchParams(route.split('?')[1]).get('exhibit')}

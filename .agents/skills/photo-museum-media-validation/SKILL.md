@@ -5,6 +5,8 @@ description: 复验 photo-museum 媒体缓存、Gallery/P5展厅、P6策展助�
 
 # 正式媒体与馆务复验
 
+统一主导航复验见docs/research/navigation-unification.md：隔离P5 fixture运行node web/tests/museum-nav.mjs，覆盖三大入口及策展页、5种视口、日夜、全屏跨页和锁定。只能在合成会话测试登出；不要锁定用户正式浏览器来验证按钮。旧测试中的Dashboard/Settings现在用语义link选择器，Gallery在自身页面仍为展厅menu按钮。
+
 四款Cover Flow、概念截图对照及四个创意展厅见[创意展厅复验](references/creative-gallery.md)。
 
 统一文件源、LLM、GPS、原图/HDR和缓存偏好的隔离验证见[Settings复验](references/settings.md)。

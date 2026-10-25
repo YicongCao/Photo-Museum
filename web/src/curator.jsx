@@ -1,12 +1,12 @@
+import {MuseumNav} from './museum-nav';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Icon} from './icons';
-import {FullscreenButton} from './exhibition';
 import './curator.css';
 export const exhibitionRooms={cover:'Cover Flow',wall:'照片墙',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道',rings:'人生年轮',constellation:'记忆星图',scroll:'记忆长卷',revisit:'故地重游'};
 const statuses={queued:'等待中',running:'策展中',preparing:'准备展厅',completed:'已结束',failed:'失败',cancelled:'已取消',interrupted:'已中断'};
 const terminal=s=>['completed','failed','cancelled','interrupted'].includes(s);
 const tools={catalog_schema:['metadata','读取字段'],library_overview:['server','图库概况'],list_facets:['topic','分类检索'],search_photos:['subject','筛选照片'],photo_details:['photo','候选详情'],create_exhibition:['frame','展览草案']};
-export function Curator({api}){
+export function Curator({api,onLogout}){
  const [provider,setProvider]=useState(null),[history,setHistory]=useState([]),
  [run,setRun]=useState(null),[events,setEvents]=useState([]),[prompt,setPrompt]=useState(''),[room,setRoom]=useState('auto'),
  [showRoom,setShowRoom]=useState('wall'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[connection,setConnection]=useState(''),
@@ -49,7 +49,7 @@ export function Curator({api}){
  function show(){if(!exhibition)return;location.hash='gallery?exhibit='+exhibition.id+'&room='+showRoom}
  return <div className="curator-shell">
   <header className="curator-header"><div><h1>策展助理</h1><button className="curator-provider-button" aria-label={'Provider '+(provider?.model || '')} onClick={()=>{location.hash='settings?tab=llm&from='+encodeURIComponent(location.hash.slice(1))}} disabled={!provider}><Icon name="server"/><span className="curator-provider-model">{provider?.model || 'Provider'}</span><span>{provider?.configured&&provider?.enabled?'已配置':'待配置'}</span></button></div>
-   <nav><a href="#manage">Dashboard</a><a href="#gallery">Gallery</a><FullscreenButton/></nav>
+   <MuseumNav current="curator" onLogout={onLogout}/>
   </header>
   <div className="curator-layout"><section className="curator-conversation" aria-label="策展对话">
    <div className="curator-conversation-head"><select aria-label="策展记录" value={runId || ''} onChange={e=>{setRunId(e.target.value);setFollow(false)}}><option value="">策展记录</option>{history.map(r=><option key={r.id} value={r.id}>{new Date(r.created*1000).toLocaleDateString()} · {r.prompt.slice(-40).replaceAll('\n',' ')}</option>)}</select>{run&&<span className={'curator-state '+run.status}><Icon name={active?'pulse':run.status==='completed'?'check':'alert'}/>{statuses[run.status]}</span>}</div>

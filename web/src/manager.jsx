@@ -4,6 +4,7 @@ import { FileProcessing, RecentStrip } from "./processing";
 import { CurrentInspection } from "./inspection";
 import { Intelligence } from "./intelligence";
 import "./manager.css";
+import {MuseumNav} from "./museum-nav";
 import { taskStatus } from "./task-status.mjs";
 const labels = {
   queued: "等待开始",
@@ -145,14 +146,7 @@ export function Manager({ api, state, refresh, onLogout }) {
     <div className="keeper-shell">
       <header className="keeper-header">
         <a href="#gallery">PHOTO MUSEUM</a>
-        <nav>
-          <button onClick={() => {location.hash='settings?from=manage'}}>Settings</button>
-          <a href="#manage" aria-current="page">Dashboard</a>
-          <a href="#gallery">Gallery</a>
-          <button onClick={onLogout} aria-label="锁定">
-            <Icon name="lock" />
-          </button>
-        </nav>
+        <MuseumNav current="dashboard" onLogout={onLogout}/>
       </header>
       <div className="keeper-body">
         <div className="keeper-main">

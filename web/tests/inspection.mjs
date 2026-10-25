@@ -17,7 +17,7 @@ try {
  let mock={...initial,active:[],completion_events:[]};
  await page.route('**/api/media/state*',route=>route.fulfill({json:mock}));
  let nasOriginals=0;page.on('request',r=>{if(r.url().includes('/original?'))nasOriginals++});
- await page.getByRole('button',{name:'Dashboard',exact:true}).click();
+ await page.getByRole('link',{name:'Dashboard',exact:true}).click();
  await page.getByRole('img',{name:'已完成处理目录 7 / 7',exact:true}).waitFor();
  assert.equal(await page.getByText('已索引成片与视频',{exact:true}).count(),0);
  assert.equal(await page.getByText('已连接来源',{exact:true}).count(),0);

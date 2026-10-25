@@ -14,7 +14,7 @@ try {
  await expect.poll(()=>requests.filter(u=>u.includes('/media/display?')).length,{timeout:10000}).toBeGreaterThanOrEqual(15);
  assert.ok(requests.some(u=>u.includes('limit=15')));assert.ok(requests.filter(u=>u.includes('/media/display?')).length>=15);
  assert.equal(requests.filter(u=>u.includes('/original?')).length,0);check('Activity stop preloads fifteen 4K previews without NAS originals');
- const expectedOrder=['Dashboard','Gallery'];assert.deepEqual((await page.locator('.gallery-nav>div button').allTextContents()).filter(s=>expectedOrder.includes(s)),expectedOrder);check('Dashboard before Gallery');
+ assert.deepEqual((await page.locator('.museum-nav-pages').locator('a,button').allTextContents()).map(s=>s.trim()),['Dashboard','Settings','Gallery']);check('Shared Dashboard / Settings / Gallery order');
  const sizes=[];for(const [w,h] of [[390,844],[1440,900],[2800,1500]]){
   await page.setViewportSize({width:w,height:h});await page.waitForTimeout(100);
   const n=Number(await page.locator('.tunnel-stage').getAttribute('data-cover-count'));assert.ok(n>=5&&n<=20);sizes.push([w,n]);

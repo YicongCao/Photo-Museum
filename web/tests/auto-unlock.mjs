@@ -18,7 +18,7 @@ async function ready(page) {
 async function silentFill(page,value) {
  await page.locator('input[name="password"]').evaluate((input,value)=>{input.value=value},value);
 }
-async function unlocked(page) {await page.getByRole('button',{name:'Settings',exact:true}).waitFor()}
+async function unlocked(page) {await page.getByRole('link',{name:'Settings',exact:true}).waitFor()}
 try {
  await scenario('Value present before bootstrap automatically unlocks the requested Dashboard',async(page,requests)=>{
   await page.route('**/api/bootstrap',async route=>{await new Promise(r=>setTimeout(r,350));await route.continue()});

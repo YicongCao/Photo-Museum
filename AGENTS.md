@@ -87,6 +87,10 @@ Timeline活动hover/focus时使用336×236px气泡预览最高分前3–5张本�
 
 用户新增Cover Flow首页白天/黑夜切换，作为纯黑页面规范的局部例外。太阳/月亮SVG按钮放Gallery与最右全屏之间；白底文字、时间线、Portal预览气泡、控件及倒影均须适配，照片不反色。当前浏览器记忆选择；照片墙、暗房、Dashboard和其他展厅仍保持黑底，返回恢复模式及活动位置。规范/验证见docs/research/coverflow-light-validation.md。
 
+## 统一主导航（2026-10-25）
+
+最新约束覆盖此前分散的导航清单：Dashboard、Settings、Gallery和策展助理共用MuseumNav，固定Dashboard → Settings → Gallery。锁定与最右全屏各页都有，日夜仅Cover Flow首页显示；Gallery菜单保留展厅与策展助理，Settings直接进入。统一字体、选中下划线、细线图标、44px高度与键盘焦点；窄屏标题/返回与导航分行，不能挤出视口。详情的沉浸与返回控件保持原有方式。见docs/research/navigation-unification.md。
+
 ## 概念复审与可选展厅样式（2026-10-25）
 
 Cover Flow 在 Settings → 照片显示中可选经典镜面、金框画廊、纵深展廊、全景弧幕；服务端保存 cover_style，默认经典。四款分别对齐原 B、最新金框、原 A、原 C 概念，保留Top10、原图/缓存边界和日夜模式。320–3440px响应式连续缩放，选中活动和分数滚动位置不能因resize归零；手机纵深主封面与标题居中。时间线随选中项及尺寸变化保持可见。

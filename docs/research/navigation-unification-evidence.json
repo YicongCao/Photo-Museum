@@ -1,0 +1,18 @@
+{
+  "checks": [
+    "gallery: consistent order, active page, lock/fullscreen, 44px targets and zero overlap/overflow at 5 viewport sizes",
+    "manage: consistent order, active page, lock/fullscreen, 44px targets and zero overlap/overflow at 5 viewport sizes",
+    "settings?tab=display&from=gallery: consistent order, active page, lock/fullscreen, 44px targets and zero overlap/overflow at 5 viewport sizes",
+    "curator: consistent order, active page, lock/fullscreen, 44px targets and zero overlap/overflow at 5 viewport sizes",
+    "Day mode adapts navigation text, active state and tool colors",
+    "Direct Settings link preserves return target; current Settings link retains selected tab; Gallery menu and local day-mode boundary work",
+    "Fullscreen state stays accurate when changing page and exits using the same shared tool",
+    "Shared lock logs out the isolated synthetic session"
+  ],
+  "errors": [],
+  "colors": {
+    "text": "rgb(81, 73, 62)",
+    "active": "rgb(128, 89, 31)"
+  },
+  "fixture": "Isolated synthetic P5 catalog. No real credentials, NAS changes or LLM calls."
+}

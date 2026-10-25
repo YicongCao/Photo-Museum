@@ -11,7 +11,7 @@ try {
  const state=await (await context.request.get('http://localhost:8793/api/media/state')).json();
  const active={asset_id:photo.id,revision:photo.revision,path:'/synthetic/中文显示/IMG_0000.jpg',kind:'image_candidate',stage:'score',lane:'analysis',steps:{download:'done',exif:'done',display:'done',thumb:'done',publish:'done',address:'done',subject:'done',faces:'done',score:'running'}};
  await page.route('**/api/media/state**',route=>route.fulfill({json:{...state,active:[active],completion_events:[],paused:false}}));
- await page.getByRole('button',{name:'Dashboard',exact:true}).click();
+ await page.getByRole('link',{name:'Dashboard',exact:true}).click();
  const address=page.locator('.inspection-row').filter({hasText:'地址'}).locator('dd');await page.waitForFunction(()=>[...document.querySelectorAll('.inspection-row dd')].some(e=>e.textContent.includes('中国 · 新疆 · 新源')));
  assert.ok((await address.innerText()).includes('最近城市'));checks.push('Dashboard address shows China / Xinjiang / Xinyuan in Chinese while retaining city approximation');
  const subject=page.locator('.inspection-row').filter({hasText:'主体'}).locator('dd');assert.match(await subject.innerText(),/高尔夫球 90%/);assert.match(await subject.innerText(),/湖边 80%/);assert.match(await subject.innerText(),/油菜 70%/);checks.push('Dashboard subjects show Chinese with unchanged confidences');

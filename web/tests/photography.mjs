@@ -12,7 +12,7 @@ try {
  assert.equal(state.fully_done,60);checks.push('All synthetic files complete only with photography results');
  const active={asset_id:photo.id,revision:photo.revision,path:'/synthetic/风格主题/IMG_0000.jpg',kind:'image_candidate',photography_enabled:true,stage:'topic',lane:'photography',steps:{download:'done',exif:'done',display:'done',thumb:'done',publish:'done',address:'done',subject:'done',faces:'done',score:'done',style:'done',topic:'running'}};
  await page.route('**/api/media/state**',route=>route.fulfill({json:{...state,active:[active],completion_events:[],paused:false}}));
- await page.getByRole('button',{name:'Dashboard',exact:true}).click();
+ await page.getByRole('link',{name:'Dashboard',exact:true}).click();
  await page.locator('.inspection-row[data-task="style"]').getByText('极简留白',{exact:true}).waitFor();
  await page.locator('.inspection-row[data-task="topic"]').getByText('自然风光',{exact:true}).waitFor();
  checks.push('Dashboard displays separate Chinese style and topic candidates');

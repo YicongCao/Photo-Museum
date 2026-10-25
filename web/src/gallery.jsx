@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "./icons";
+import {MuseumNav} from "./museum-nav";
 import {placeLabel,subjectLabel} from "./localized-labels";
 import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
 import "./gallery.css";
@@ -30,7 +31,7 @@ const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材�
 const creativeRooms={rings:RingsRoom,constellation:ConstellationRoom,scroll:MemoryScrollRoom,revisit:RevisitRoom};
 function savedRooms(key='museum.rooms'){try{return JSON.parse(sessionStorage.getItem(key) || '{}')}catch{return {}}}
 
-export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }) {
+export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHint=null }) {
   const {values:preferences}=usePreferences();
   const coverStyle=preferences.cover_style || 'classic';
   const storageKey=exhibitionId?'museum.rooms.'+exhibitionId:'museum.rooms';
@@ -197,16 +198,17 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
   const displayTheme=room==='cover'&&view==='tunnel'&&!photo?coverTheme:'dark';
   return (
     <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening} data-theme={displayTheme} data-cover-style={coverStyle}>
-      <nav className="gallery-nav" inert={!!photo || opening}>
+      <header className="gallery-nav" inert={!!photo || opening}>
         {view === "wall" && <button className="gallery-back" onClick={rootWall?returnCurator:backGallery} aria-label={rootWall?'返回策展助理':room==='cover'?'返回 Gallery':'返回 '+roomNames[room]}>← {rootWall?'策展助理':room==='cover'?'Gallery':roomNames[room]}</button>}
         {exhibitionId&&view==='tunnel'&&<><button className="gallery-curated-back" onClick={returnCurator}>← 策展助理</button><span className="gallery-curated-context">{scopeMeta?.title}</span></>}
-        <div>
-          <button onClick={onAdmin}>Dashboard</button>
+        <MuseumNav current="gallery" onLogout={onLogout}
+          theme={coverTheme} onTheme={room==='cover'&&view==='tunnel'?toggleCoverTheme:undefined}
+          galleryControl={
           <div ref={roomMenuRef} className="gallery-room-switch"><button
-            className={view === "tunnel" ? "active" : ""}
+            aria-current="page"
             onClick={()=>setRoomMenu(v=>!v)} onKeyDown={e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();setRoomMenu(true)}}} aria-haspopup="menu" aria-expanded={roomMenu}
           >
-            Gallery
+            Gallery <svg className="nav-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
           </button>{roomMenu&&<div className="gallery-room-menu" role="menu" aria-label="展厅" onKeyDown={e=>{
             if(!['ArrowDown','ArrowUp','Home','End'].includes(e.key))return;
             e.preventDefault();const items=[...e.currentTarget.querySelectorAll('[role^="menuitem"]')],i=items.indexOf(document.activeElement);
@@ -214,12 +216,9 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
           }}>
             {Object.entries(roomNames).map(([id,name])=><button role="menuitemradio" key={id} aria-checked={room===id} onClick={()=>changeRoom(id)}>{name}</button>)}
             <button role="menuitem" className="curator-menu-entry" onClick={()=>{location.hash='curator'}}>策展助理</button>
-            <button role="menuitem" onClick={()=>{location.hash='settings?from='+encodeURIComponent(location.hash.slice(1))}}>Settings</button>
           </div>}</div>
-          {room==='cover'&&view==='tunnel'&&<button className="cover-theme-button" aria-label={coverTheme==='dark'?'切换白天模式':'切换黑夜模式'} title={coverTheme==='dark'?'切换白天模式':'切换黑夜模式'} aria-pressed={coverTheme==='light'} onClick={toggleCoverTheme}><Icon name={coverTheme==='dark'?'sun':'moon'}/></button>}
-          <FullscreenButton />
-        </div>
-      </nav>
+          }/>
+      </header>
       {error && (
         <p role="alert" className="gallery-error">
           {error}

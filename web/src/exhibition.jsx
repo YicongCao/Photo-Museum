@@ -16,6 +16,7 @@ export function FullscreenButton({ target, className = "" }) {
   const [active, setActive] = useState(false);
   useEffect(() => {
     const sync = () => setActive(Boolean(document.fullscreenElement));
+    sync();
     document.addEventListener("fullscreenchange", sync);
     return () => document.removeEventListener("fullscreenchange", sync);
   }, []);
@@ -23,6 +24,7 @@ export function FullscreenButton({ target, className = "" }) {
     <button
       className={"fullscreen-button " + className}
       aria-label={active ? "退出全屏" : "全屏显示"}
+      title={active ? "退出全屏" : "全屏显示"}
       aria-pressed={active}
       onClick={() => {
         const action = document.fullscreenElement

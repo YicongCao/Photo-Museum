@@ -1,0 +1,65 @@
+/* Shared navigation layer comes last, after legacy page header and theme rules. */
+:is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav{
+ --nav-text:#ded6c9;--nav-active:#d8ae72;--nav-line:#b88b4a40;--nav-hover:#b88b4a12;
+ display:flex;align-items:center;gap:12px;flex:none;margin-left:auto;pointer-events:auto;
+}
+.gallery-shell[data-theme=light] .museum-nav{--nav-text:#51493e;--nav-active:#80591f;--nav-line:#86612845;--nav-hover:#b88b4a16}
+:is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav :is(.museum-nav-pages,.museum-nav-tools){display:flex;align-items:center;gap:4px;min-width:0}
+:is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .museum-nav-tools{border-left:1px solid var(--nav-line);padding-left:12px}
+:is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .museum-nav-pages>a,
+:is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .gallery-room-switch>button{
+ display:inline-flex;align-items:center;justify-content:center;gap:5px;position:relative;
+ font:500 19px/1 var(--museum-title-latin),var(--museum-ui-font);letter-spacing:.015em;
+ color:var(--nav-text);background:transparent;border:0;border-radius:4px;text-decoration:none;
+ padding:0 12px;height:44px;min-height:44px;white-space:nowrap;cursor:pointer;
+}
+:is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .museum-nav-tool{
+ display:inline-flex;align-items:center;justify-content:center;width:40px;height:44px;min-height:44px;flex:none;
+ padding:10px;border:0;border-radius:4px;background:transparent;color:var(--nav-text);cursor:pointer;
+}
+:is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .museum-nav-tool :is(svg,.icon){width:20px;height:20px;flex:none;color:inherit}
+:is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav :is(a,button):hover{color:var(--nav-active);background:var(--nav-hover)}
+:is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav :is(a,button):focus-visible{outline:1px solid var(--nav-active);outline-offset:2px}
+:is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav :is(a,button)[aria-current=page]{color:var(--nav-active)}
+:is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .museum-nav-tool[aria-pressed=true]{color:var(--nav-active)}
+.museum-nav [aria-current=page]::after{content:'';position:absolute;bottom:3px;left:12px;right:12px;height:2px;background:var(--nav-active);border-radius:1px}
+.museum-nav .gallery-room-switch{position:relative}
+.museum-nav .nav-chevron{width:10px;height:10px;opacity:.65;transition:transform .18s}
+.museum-nav [aria-expanded=true] .nav-chevron{transform:rotate(180deg)}
+.gallery-shell .museum-nav .gallery-room-menu{right:0;top:calc(100% + 10px);border-radius:6px;max-height:calc(100dvh - 112px);overflow:auto}
+.gallery-shell .museum-nav .gallery-room-menu button{font:400 14px/1.3 var(--museum-ui-font);border:0;border-radius:3px}
+.gallery-shell .gallery-nav{justify-content:flex-end;align-items:center;gap:16px;padding:16px 24px;height:auto;border:0;min-height:76px}
+.gallery-shell .gallery-nav>.gallery-back{margin-right:auto}
+.gallery-shell .gallery-nav>.gallery-curated-back{position:static;flex:none;margin-right:auto}
+.gallery-shell .gallery-nav>.gallery-curated-context{position:static;min-width:0;max-width:none;flex:1}
+.keeper-shell .keeper-header,.settings-shell .settings-header,.curator-shell .curator-header{align-items:center;gap:20px}
+.settings-shell .settings-header>div:first-child{flex:none}
+@media(max-width:760px){
+ :is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav.museum-nav{gap:6px}
+ :is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .museum-nav-tools{padding-left:6px;gap:0}
+ :is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .museum-nav-pages{gap:0}
+ :is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .museum-nav-pages>a,
+ :is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .gallery-room-switch>button{font-size:17px;padding:0 8px}
+ :is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .museum-nav-tool{width:34px;padding:8px}
+ .museum-nav [aria-current=page]::after{left:8px;right:8px}
+ .gallery-shell .gallery-nav{padding:8px 12px;flex-wrap:wrap;gap:0}
+ .gallery-shell .gallery-nav>.museum-nav{order:-1;flex-basis:100%;justify-content:flex-end}
+ .gallery-shell .gallery-nav>.gallery-back{height:32px;min-height:32px;padding:0}
+ .gallery-shell .gallery-nav>.gallery-curated-back{height:32px;min-height:32px;padding:0}
+ .keeper-shell{grid-template-rows:100px minmax(0,1fr) var(--strip-height)}
+ .settings-shell,.curator-shell{grid-template-rows:110px minmax(0,1fr)}
+ .keeper-shell .keeper-header,.settings-shell .settings-header,.curator-shell .curator-header{flex-wrap:wrap;align-content:center;gap:0}
+ :is(.keeper-header,.settings-header,.curator-header)>.museum-nav{flex-basis:100%;justify-content:flex-end}
+ .keeper-shell .keeper-header>a{font-size:14px;letter-spacing:.16em;line-height:30px}
+ .settings-shell .settings-header h1{font-size:24px}
+ .settings-shell .settings-header>div:first-child{height:40px;gap:14px}
+ .curator-shell .curator-header>div:first-child{height:44px}
+}
+@media(max-width:360px){
+ .gallery-shell .gallery-nav{padding-right:6px;padding-left:6px}
+ :is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .museum-nav-pages>a,
+ :is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .gallery-room-switch>button{font-size:15px;padding:0 4px}
+ :is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav .museum-nav-tool{width:31px;padding:7px}
+ :is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav.museum-nav{gap:4px}
+}
+@media(prefers-reduced-motion:reduce){.museum-nav .nav-chevron{transition:none}}

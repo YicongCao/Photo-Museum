@@ -3,6 +3,7 @@ import {Icon} from './icons';
 import {ProviderForm} from './settings-provider';
 import {usePreferences} from './preferences';
 import './settings.css';
+import {MuseumNav} from './museum-nav';
 import {coverStyles} from './cover-layout';
 import './cover-settings.css';
 const tabs={sources:['folder','文件源'],llm:['server','LLM Provider'],gps:['pin','GPS 地址'],display:['display','照片显示'],cache:['thumbnail','缓存']};
@@ -64,7 +65,7 @@ export function Settings({api,onLogout}){
  useEffect(()=>{let stopped=false;const fetch=()=>api('/settings').then(d=>{if(!stopped){setData(d);setError('')}}).catch(e=>{if(!stopped)setError(e.message)});fetch();const timer=setInterval(fetch,5000);return()=>{stopped=true;clearInterval(timer)}},[]);
  const navigate=id=>{setTab(id);window.history.replaceState(null,'','#settings?tab='+id+(from?'&from='+encodeURIComponent(from):''))};
  const back=()=>{location.hash=from&&/^(manage|gallery|curator)(\?|$)/.test(from)?from:'manage'};
- return <div className="settings-shell"><header className="settings-header"><div><button className="settings-back" onClick={back}>← 返回</button><h1>Settings</h1></div><nav><a href="#manage">Dashboard</a><a href="#gallery">Gallery</a><button aria-label="锁定" onClick={onLogout}><Icon name="lock"/></button></nav></header><div className="settings-layout"><nav className="settings-tabs" aria-label="设置分类">{Object.entries(tabs).map(([id,[icon,label]])=><button key={id} aria-current={tab===id?'page':undefined} onClick={()=>navigate(id)}><Icon name={icon}/>{label}</button>)}</nav><main className="settings-content">
+ return <div className="settings-shell"><header className="settings-header"><div><button className="settings-back" onClick={back}>← 返回</button><h1>Settings</h1></div><MuseumNav current="settings" onLogout={onLogout}/></header><div className="settings-layout"><nav className="settings-tabs" aria-label="设置分类">{Object.entries(tabs).map(([id,[icon,label]])=><button key={id} aria-current={tab===id?'page':undefined} onClick={()=>navigate(id)}><Icon name={icon}/>{label}</button>)}</nav><main className="settings-content">
  {error&&<p role="alert">{error}<button className="settings-inline" onClick={()=>reload().catch(e=>setError(e.message))}>重试</button></p>}
  {!data?<p role="status">读取设置</p>:tab==='sources'?<Sources sources={data.sources} api={api} reload={reload}/>:tab==='llm'?<><div className="settings-section-title"><h2>LLM Provider</h2><span>{data.provider.configured?data.provider.enabled?'已配置':'已停用':'待配置'}</span></div><ProviderForm api={api} initial={data.provider} onSaved={()=>reload().catch(e=>setError(e.message))}/></>:tab==='cache'?<CacheSettings api={api} data={data.cache} reload={reload}/>:<PreferenceForm key={tab} kind={tab} api={api} reload={reload} geography={data.geography} paused={data.cache.paused}/>}
  {preferences.error&&<p role="alert">偏好读取失败：{preferences.error}</p>}

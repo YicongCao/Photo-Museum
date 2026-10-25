@@ -7,9 +7,9 @@ const context=await browser.newContext({viewport:{width:1586,height:992},hasTouc
 const position=()=>page.locator('.tunnel-stage').getAttribute('data-position').then(Number);
 try {
  await page.goto(base);await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'解锁'}).click();await page.locator('.depth-0 > .photo-mosaic img').first().waitFor();
- assert.deepEqual(await page.locator('.gallery-nav button').allTextContents(),['Gallery','Dashboard','']);
+ assert.deepEqual((await page.locator('.museum-nav-pages').locator('a,button').allTextContents()).map(s=>s.trim()),['Dashboard','Settings','Gallery']);
  assert.equal(await page.locator('.gallery-caption p').count(),0);assert.ok(await page.locator('.depth-0 .panel-reflection').isVisible());
- checks.push('Only Gallery / Dashboard / fullscreen navigation; no selection count; actual image reflections');
+ checks.push('Shared section navigation and fullscreen/lock tools; no selection count; actual image reflections');
  const oldId=await page.locator('.depth-0').getAttribute('data-activity');
  await page.evaluate(()=>{window.positions=[];let start=performance.now();function tick(){window.positions.push(Number(document.querySelector('.tunnel-stage').dataset.position));if(performance.now()-start<1300)requestAnimationFrame(tick)}requestAnimationFrame(tick)});
  await page.keyboard.press('ArrowRight');await page.waitForFunction(()=>Number(document.querySelector('.tunnel-stage').dataset.position)>.98);
