@@ -230,10 +230,10 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
       {view==='tunnel'&&room==='gear'&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><GearRoom api={api} anchor={anchor} state={roomStates.gear || {}} onState={s=>setRoomStates(p=>({...p,gear:s}))} onCollection={openCollection} onPhoto={p=>open(p,'.room img')}/></div>}
       {view==='tunnel'&&CreativeRoom&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><CreativeRoom api={api} state={roomStates[room] || {}} onState={s=>setRoomStates(p=>({...p,[room]:s}))} onCollection={openCollection} onPhoto={p=>open(p,'.room img')}/></div>}
       {!current && ['cover','space'].includes(room) ? (
-        <div className="gallery-empty">
+        <div className={'gallery-empty'+(!loaded?' gallery-initial-loading':'')}>
           {loaded&&<Icon name="photo" />}
-          {loaded?<p>尚无可展示照片</p>:<PhotoLoading compact className="gallery-photo-loading" label="加载照片"/>}
-          <button onClick={onAdmin}>查看刮削进度 →</button>
+          {loaded?<p>尚无可展示照片</p>:<PhotoLoading/>}
+          {loaded&&<button onClick={onAdmin}>查看刮削进度 →</button>}
         </div>
       ) : current || collection ? (
         <>

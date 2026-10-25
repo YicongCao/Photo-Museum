@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "1500x940: logo/text group centered; no scrape-progress button or document scrolling",
+    "390x844: logo/text group centered; no scrape-progress button or document scrolling",
+    "844x390: logo/text group centered; no scrape-progress button or document scrolling",
+    "Reduced motion retains the centered static logo",
+    "An actually empty library retains its management action after loading"
+  ],
+  "errors": [],
+  "fixture": "Isolated static build with delayed mocked catalog response, no real authentication or NAS access"
+}
