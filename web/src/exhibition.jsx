@@ -128,23 +128,16 @@ export const Tunnel = forwardRef(function Tunnel(
     scroll.current.scrollTo({left:pos.current * stride.current,behavior:"instant"});
     resizing.current = false;
   }, [viewport]);
+  const previousActivities=useRef(activities);
   useLayoutEffect(()=>{
-    if(Math.round(pos.current)!==index){pos.current=index;scroll.current.scrollTo({left:index*stride.current,behavior:'instant'});setPosition(index)}
-  },[index]);
-  const previousActivities = useRef(activities);
-  useLayoutEffect(() => {
-    const before = previousActivities.current,
-      oldIndex = Math.round(pos.current),
-      anchor = before[oldIndex]?.id;
-    previousActivities.current = activities;
-    const next = activities.findIndex((a) => a.id === anchor);
-    if (next >= 0 && next !== oldIndex) {
-      pos.current += next - oldIndex;
-      scroll.current.scrollLeft = pos.current * stride.current;
-      setPosition(pos.current);
-      onIndex(next);
-    }
-  }, [activities]);
+    const before=previousActivities.current,oldIndex=Math.round(pos.current),anchor=before[oldIndex]?.id;
+    previousActivities.current=activities;
+    const moved=before!==activities,next=activities.findIndex(a=>a.id===anchor);
+    let wanted=pos.current;
+    if(moved&&next===index&&next>=0)wanted=index+(pos.current-oldIndex);
+    else if(Math.round(pos.current)!==index)wanted=index;
+    if(Math.abs(wanted-pos.current)>.0001){pos.current=wanted;scroll.current.scrollTo({left:wanted*stride.current,behavior:'instant'});setPosition(wanted)}
+  },[index,activities]);
   const update = () => {
     if (frame.current) return;
     frame.current = requestAnimationFrame(() => {

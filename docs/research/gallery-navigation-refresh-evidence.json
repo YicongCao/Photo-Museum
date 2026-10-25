@@ -1,0 +1,8 @@
+{
+  "checks": [
+    "Periodic gallery reorder preserves the selected activity through repeated refreshes",
+    "Authenticated full reload restores the same activity after reordered results"
+  ],
+  "errors": [],
+  "fixture": "synthetic photos"
+}

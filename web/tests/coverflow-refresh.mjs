@@ -1,0 +1,9 @@
+import {chromium} from '../../prototype/node_modules/@playwright/test/index.mjs';import assert from 'node:assert/strict';import fs from 'node:fs/promises';
+const base=process.env.MUSEUM_BROWSER_BASE||'http://localhost:8793';const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true}),page=await browser.newPage({viewport:{width:1586,height:992}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.addInitScript(()=>{const interval=setInterval;window.setInterval=(fn,ms,...args)=>interval(fn,ms===15000?150:ms,...args)});
+let reorder=false,updates=0;await page.route('**/api/gallery',async route=>{const r=await route.fetch(),d=await r.json();if(reorder){d.activities=[...d.activities.slice(1),d.activities[0]];updates++}await route.fulfill({response:r,json:d})});
+try{
+await page.goto(base+'/#gallery');await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.locator('.depth-0').waitFor();await page.getByRole('button',{name:'下一场活动',exact:true}).click();await page.waitForTimeout(850);const id=await page.locator('.depth-0').getAttribute('data-activity');reorder=true;await page.waitForTimeout(850);assert.ok(updates>=2);assert.equal(await page.locator('.depth-0').getAttribute('data-activity'),id);
+await page.reload();await page.locator('.depth-0').waitFor();await page.waitForTimeout(500);assert.equal(await page.locator('.depth-0').getAttribute('data-activity'),id);assert.deepEqual(errors,[]);
+const evidence={checks:['Periodic gallery reorder preserves the selected activity through repeated refreshes','Authenticated full reload restores the same activity after reordered results'],errors,fixture:'synthetic photos'};await fs.writeFile('docs/research/gallery-navigation-refresh-evidence.json',JSON.stringify(evidence,null,2));console.log(JSON.stringify(evidence));
+}finally{await browser.close()}

@@ -17,7 +17,7 @@ export function useSceneMotion(root) {
       if(mode==='fit'){
         const old=root.current.querySelector('.viewer-image-area')?.getBoundingClientRect();flushSync(change);
         const area=root.current.querySelector('.viewer-image-area'),next=area?.getBoundingClientRect();
-        if(old&&next){const scale=Math.min(old.width/next.width,old.height/next.height);motions.push(area.animate([
+        if(old&&next){const ratio=Number(getComputedStyle(root.current.querySelector('.photo-viewer')).getPropertyValue('--photo-ratio')) || 1.5;const scale=Math.min(old.width,old.height*ratio)/Math.max(1,Math.min(next.width,next.height*ratio));motions.push(area.animate([
           {translate:`${old.x+old.width/2-next.x-next.width/2}px ${old.y+old.height/2-next.y-next.height/2}px`,scale,opacity:.85},
           {translate:'0px 0px',scale:1,opacity:1}],{duration:460,easing:'cubic-bezier(.16,1,.3,1)',fill:'both'}))}
         find('.metadata-panel').forEach(el=>motions.push(el.animate([{opacity:0,translate:'18px 0px'},{opacity:1,translate:'0px 0px'}],{duration:400,fill:'both'})));
