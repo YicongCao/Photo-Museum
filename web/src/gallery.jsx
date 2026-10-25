@@ -1,14 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "./icons";
 import {MuseumNav} from "./museum-nav";
-import {placeLabel,subjectLabel} from "./localized-labels";
 import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
 import "./gallery.css";
 import { useSceneMotion, createActivityWarmup } from "./scene-motion";
 import {PhotoLoading} from "./loading-mark";
 import {useGalleryHistory} from "./gallery-history";
 import { PhotoArchive } from "./photo-archive";
-import { PhotographyLabels } from "./photography-labels";
+import {PhotoAnalysisArchive} from "./photo-analysis";
 import { ActivityTimeline } from "./timeline";
 import { CalendarRoom } from './rooms/calendar';
 import { MapRoom } from './rooms/map';
@@ -504,39 +503,15 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
           <h2>照片档案</h2>
           {mutationError && <p role="alert">{mutationError}</p>}
           <p>{photo.name}</p>
-          <PhotoArchive metadata={manifest?.effective_metadata || {}} media={manifest?.media || photo.info || {}} size={manifest?.size} />
-          {analysis?.visual?.data?.score != null && (
-            <div>
-              <small><Icon name="score"/>技术评分</small>
-              <p>{analysis.visual.data.score} / 100{analysis.visual.data.score_penalty_reason === "assumed_srgb" ? " · 色域假定 −15" : ""}</p>
-            </div>
-          )}
-          {analysis?.visual?.data?.tags?.length > 0 && (
-            <div>
-              <small><Icon name="subject"/>本地主体识别</small>
-              <p>
-                {analysis.visual.data.tags
-                  .slice(0, 3)
-                  .map(subjectLabel)
-                  .join(" · ")}
-              </p>
-            </div>
-          )}
-          <PhotographyLabels analysis={analysis?.photography} />
-          {analysis?.places && (
-            <div>
-              <small><Icon name="pin"/>近似城市 · GeoNames</small>
-              <p>
-                {placeLabel(analysis.places.data)}
-              </p>
-            </div>
-          )}
+          <h3 className="archive-section-title">EXIF</h3>
+          <PhotoArchive metadata={manifest?.effective_metadata || {}} media={manifest?.media || photo.info || {}} size={manifest?.size} place={analysis?.places?.data}/>
+          <PhotoAnalysisArchive analysis={analysis}/>
           {suggestions
             .filter((s) => !s.info.accepted)
             .map((s) => (
               <div key={s.record_id}>
-                <small><Icon name="metadata"/>{s.field} · 近邻建议</small>
-                <p>{JSON.stringify(s.value)}</p>
+                <small><Icon name="metadata"/>{s.field==='gps'?'近似城市':s.field==='captured_at'?'拍摄时间':s.field} · 近邻建议</small>
+                <p>{s.field==='gps'?'位置建议 · 待城市解析':JSON.stringify(s.value)}</p>
                 <button
                   onClick={() =>
                     api(

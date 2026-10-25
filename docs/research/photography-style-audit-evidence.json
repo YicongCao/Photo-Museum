@@ -1,0 +1,35 @@
+{
+  "eligible_snapshot": 18246,
+  "current_photography_records": 18246,
+  "style_status_counts": {
+    "uncertain": 15619,
+    "candidates": 2627
+  },
+  "style_label_counts": {
+    "黑白摄影": 21,
+    "逆光剪影": 295,
+    "低调暗色": 29,
+    "动态抓拍": 497,
+    "霓虹光影": 215,
+    "浅景深虚化": 863,
+    "纪实抓拍": 374,
+    "几何对称": 100,
+    "长曝光拖影": 127,
+    "鲜明高饱和": 128,
+    "极简留白": 111,
+    "柔和低饱和": 127,
+    "胶片质感": 38,
+    "高调明亮": 16
+  },
+  "sample_counts": {
+    "uncertain": 8,
+    "candidates": 8
+  },
+  "uncertain_sample_gate_failures": {
+    "absolute_threshold": 6,
+    "neutral_margin": 2
+  },
+  "network_attempts": 0,
+  "model_version_verified": true,
+  "boundary": "Current-version persisted results plus 16 deterministic stratified local-thumbnail score probes. No human style ground truth, no threshold changes or model/NAS downloads."
+}

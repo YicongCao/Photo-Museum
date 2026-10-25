@@ -1,5 +1,5 @@
 import React from 'react';
-import {Icon} from './icons';
+import {ArchiveRow} from './photo-archive';
 
 export function photographyLabel(data,axis) {
   if(!data || data.error) return data?.error ? '识别失败' : null;
@@ -9,14 +9,15 @@ export function photographyLabel(data,axis) {
 }
 
 export function photographyTitle(data,axis) {
-  return (data?.[axis]?.labels || []).map(t=>`${t.label} · 相似度 ${t.similarity} · 领先基线 ${t.margin}`).join('\n') || '本地模型候选；相似度不是正确率。';
+  return '本地模型推断，未校准；相似度不是正确率。\n'+(data?.[axis]?.labels || []).map(t=>`${t.label} · 相似度 ${t.similarity} · 领先基线 ${t.margin}`).join('\n');
 }
 
 export function PhotographyLabels({analysis}) {
   const data=analysis?.data;
   if(!data || data.status==='not_applicable') return null;
-  return <>{[['style','摄影风格'],['topic','摄影主题']].map(([axis,label])=><div key={axis} className="photography-labels">
-    <small><Icon name={axis}/>{label} · 候选</small>
-    <p title={data.error ? '本地识别失败' : photographyTitle(data,axis)}>{photographyLabel(data,axis)}</p>
-  </div>)}</>;
+  return <>{[['style','摄影风格'],['topic','摄影主题']].map(([axis,label])=>{
+    if(axis==='style'&&!data.error&&!data.style?.labels?.length)return null;
+    const content=photographyLabel(data,axis);if(!content)return null;
+    return <ArchiveRow key={axis} className="photography-labels" label={label} icon={axis} title={data.error?'本地识别失败':photographyTitle(data,axis)}>{content}</ArchiveRow>;
+  })}</>;
 }

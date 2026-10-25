@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "SDR omits preview conversion label; only equivalent focal length and approximate city are shown; GPS coordinates and candidate suffixes are absent, including unaccepted suggestions",
+    "Generated score, subjects, style and topic use the exact same row typography, icon, separator and spacing as EXIF",
+    "HDR retains the explicit sRGB / SDR preview conversion label",
+    "Missing equivalent focal length is not invented from actual focal length; unresolved location never falls back to coordinates; uncertain style is omitted while topic remains",
+    "An older city tied to a different GPS metadata record cannot appear as the current location",
+    "Short landscape and 320/390px detail layouts retain internal scrolling without document overflow",
+    "No uncaught browser errors or original downloads while inspecting archive metadata in on-demand mode"
+  ],
+  "errors": [],
+  "fixture": "Synthetic P5 photos with controlled SDR/HDR/equivalent-focal/GPS/style metadata. No physical HDR or private photo validation."
+}

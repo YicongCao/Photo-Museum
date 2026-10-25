@@ -22,7 +22,7 @@ try {
  assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight));await page.screenshot({path:output+'/dashboard.png'});
  await page.getByRole('link',{name:'Gallery',exact:true}).click();await page.locator('.depth-0').waitFor();await page.locator('.depth-0').click();await page.locator('.wall-photo').first().waitFor();await page.waitForTimeout(1100);await page.locator('.wall-photo').first().click();
  await page.locator('.metadata-panel .photography-labels').getByText('极简留白',{exact:true}).waitFor();await page.locator('.metadata-panel .photography-labels').getByText('自然风光',{exact:true}).waitFor();
- assert.ok((await page.locator('.photography-labels p').first().getAttribute('title')).includes('相似度 0.31'));
+ assert.ok((await page.locator('.photography-labels dd').first().getAttribute('title')).includes('相似度 0.31'));
  checks.push('Photo archive shows candidates with similarity rather than a correctness percentage');await page.waitForTimeout(1100);await page.screenshot({path:output+'/archive.png'});
  await page.setViewportSize({width:390,height:720});await page.waitForTimeout(250);
  assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight));checks.push('Desktop and short mobile viewport retain no page scrolling');

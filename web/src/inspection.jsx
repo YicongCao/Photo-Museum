@@ -243,8 +243,8 @@ export function CurrentInspection({ file, media, onClose }) {
               .join("\n"),
           )}
           {(file?.photography_enabled || data?.photography) && <>
-            {row('style','风格 · 候选','style',photographyLabel(data?.photography?.data,'style'),photographyTitle(data?.photography?.data,'style'))}
-            {row('topic','主题 · 候选','topic',photographyLabel(data?.photography?.data,'topic'),photographyTitle(data?.photography?.data,'topic'))}
+            {row('style','摄影风格','style',photographyLabel(data?.photography?.data,'style'),photographyTitle(data?.photography?.data,'style'))}
+            {row('topic','摄影主题','topic',photographyLabel(data?.photography?.data,'topic'),photographyTitle(data?.photography?.data,'topic'))}
           </>}
           {row(
             "faces",

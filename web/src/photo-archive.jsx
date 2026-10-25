@@ -7,10 +7,12 @@ const text=(field,value)=>{
   if(field==='aperture')return `ƒ/${value}`;
   if(field==='iso')return `ISO ${value}`;
   if(field==='focal_length')return `${value} mm`;
-  if(field==='gps' && typeof value==='object')return `${Number(value.latitude).toFixed(5)}, ${Number(value.longitude).toFixed(5)}`;
   return String(value);
 };
-export function PhotoArchive({metadata,media,size}) {
+export function ArchiveRow({label,icon,note,children,title,className=''}){
+  return <div className={className}><dt><Icon name={icon}/>{label}{note&&<small> · {note}</small>}</dt><dd title={title}>{children}</dd></div>;
+}
+export function PhotoArchive({metadata,media,size,place}) {
   const value=k=>metadata[k]?.value;
   const provenance=keys=>[...new Set(keys.map(k=>metadata[k]?.layer).filter(Boolean))].map(layer=>({manual:'已修订',inferred:'近邻推断'}[layer])).filter(Boolean).join(' / ');
   const rows=[];
@@ -23,9 +25,13 @@ export function PhotoArchive({metadata,media,size}) {
   add('文件体积',[],!(Number.isFinite(size)&&size>=0)?'未记录':size>=1024**3?`${(size/1024**3).toFixed(2)} GiB`:size>=1024**2?`${(size/1024**2).toFixed(2)} MiB`:size>=1024?`${(size/1024).toFixed(1)} KiB`:`${size} B`);
   const depth=Array.isArray(media.source_bit_depth) ? Math.max(...media.source_bit_depth) : media.source_bit_depth;
   const sourceColor=media.source_color || value('color_profile');
-  if(!media.metadata_only) add('色彩',[],[sourceColor,depth && `${depth} bit`,media.hdr_source ? 'HDR 源图' : media.hdr_source===false ? 'SDR 源图' : null,media.assumed_color ? 'sRGB 假定' : null,'sRGB · SDR 预览'].filter(Boolean).join(' · '));
+  const hdr=media.hdr_source===true || media.hdr_source===1,sdr=media.hdr_source===false || media.hdr_source===0;
+  if(!media.metadata_only) add('色彩',[],[sourceColor,depth && `${depth} bit`,hdr ? 'HDR 源图' : sdr ? 'SDR 源图' : null,media.assumed_color ? 'sRGB 假定' : null,hdr?'sRGB · SDR 预览':null].filter(Boolean).join(' · '));
   add('曝光',['aperture','exposure','iso'],['aperture','exposure','iso'].map(k=>text(k,value(k))).filter(Boolean).join(' · '));
-  add('焦距',['focal_length','focal_35mm'],[text('focal_length',value('focal_length')),value('focal_35mm') && `等效 ${value('focal_35mm')} mm`].filter(Boolean).join(' · '));
-  add('GPS',['gps'],text('gps',value('gps')));
-  return <dl className="photo-archive">{rows.map(r=><div key={r.label}><dt><Icon name={{'拍摄时间':'clock','相机':'camera','镜头':'lens','尺寸':'dimensions','文件体积':'file','色彩':'color','曝光':'exposure','焦距':'focus','GPS':'pin'}[r.label]}/>{r.label}{r.note && <small> · {r.note}</small>}</dt><dd>{r.content}</dd></div>)}</dl>;
+  const equivalent=Number(value('focal_35mm'));
+  add('等效焦距',['focal_35mm'],Number.isFinite(equivalent)&&equivalent>0?`${equivalent} mm`:value('focal_length')?'未记录':null);
+  const resolved=place&&(!place.input_record||!metadata.gps?.record_id||place.input_record===metadata.gps.record_id)?place:null;
+  const city=resolved?.display_zh?.city || resolved?.city;
+  if(city || value('gps'))add('近似城市',['gps'],city || '未解析');
+  return <dl className="photo-archive" aria-label="EXIF">{rows.map(r=><ArchiveRow key={r.label} label={r.label} note={r.note} icon={{'拍摄时间':'clock','相机':'camera','镜头':'lens','尺寸':'dimensions','文件体积':'file','色彩':'color','曝光':'exposure','等效焦距':'focus','近似城市':'pin'}[r.label]} title={r.label==='近似城市'?'GPS最近城市，不代表行政区归属':undefined}>{r.content}</ArchiveRow>)}</dl>;
 }

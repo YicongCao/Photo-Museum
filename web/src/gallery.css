@@ -931,3 +931,7 @@
 .count-7 .cell-5{grid-column:1/6;grid-row:3/4}.count-7 .cell-6{grid-column:6/11;grid-row:3/4}
 .count-8 .cell-5{grid-column:1/4;grid-row:3/4}.count-8 .cell-6{grid-column:4/8;grid-row:3/4}.count-8 .cell-7{grid-column:8/11;grid-row:3/4}
 .count-9 .cell-5{grid-column:1/4;grid-row:3/4}.count-9 .cell-6{grid-column:4/6;grid-row:3/4}.count-9 .cell-7{grid-column:6/8;grid-row:3/4}.count-9 .cell-8{grid-column:8/11;grid-row:3/4}
+
+/* Derived metadata shares the same definition-list rhythm as EXIF. */
+.metadata-panel .archive-section-title{font-size:11px;font-weight:400;letter-spacing:.08em;color:#a7a198;margin:20px 0 4px}
+.metadata-panel .photo-analysis-archive{margin-top:0}
