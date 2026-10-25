@@ -1,0 +1,252 @@
+{
+  "date": "2026-10-25T14:23:58.433Z",
+  "checks": [
+    "Slow 4K decode keeps the painted thumbnail visible; no premature ready state",
+    "Frame samples preserve opaque image coverage throughout the real crossfade; thumbnail and compositor hint retire only after full opacity",
+    "Late warm-up Blob aliases plus parent reflow do not replace an already displayed image src",
+    "Loading indicator stays bottom-right on desktop and phone, clear of the centered scrollbar",
+    "Rejected decode preserves the thumbnail instead of exposing a broken/blank 4K layer",
+    "Returning during decode removes image src and ignores late completion after unmount",
+    "Reduced motion reveals decoded opaque 4K directly and releases its thumbnail",
+    "Zero original-file requests and uncaught browser errors"
+  ],
+  "errors": [],
+  "frames": [
+    {
+      "opacity": 0,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.0973454,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.189708,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.277911,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.361709,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.442153,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.518208,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.590645,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.658783,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.722342,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.780638,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.833943,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.881094,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.922002,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.955538,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.980653,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 0.995983,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": true
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    },
+    {
+      "opacity": 1,
+      "covered": true,
+      "thumb": false
+    }
+  ],
+  "fixture": "Synthetic photos; controlled network and decode gates. Frame coverage is measured on rendered image layers; private photo color remains separate."
+}

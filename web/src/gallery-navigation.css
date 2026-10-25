@@ -3,7 +3,6 @@
 .gallery-shell[data-cover-style=depth].gallery-room-cover.gallery-view-tunnel .gallery-caption{left:50%}
 .wall-scroll-control{position:absolute;z-index:24;left:50%;bottom:30px;transform:translateX(-50%);width:min(36vw,540px);display:flex;align-items:center;gap:10px;color:#b88b4a;isolation:isolate}
 .wall-scroll-control input{width:100%;height:22px;padding:0;margin:0;min-height:22px;accent-color:#b88b4a;background:transparent;cursor:ew-resize}.wall-scroll-control output{font:10px/1 system-ui;min-width:30px;text-align:right;color:#bba887}
-.wall-photo .wall-thumb,.wall-photo .wall-display{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.wall-photo .wall-display{opacity:0;transition:opacity 220ms ease-out}.wall-photo .wall-display.ready{opacity:1}
 .photo-archive dt{display:flex;align-items:center;gap:8px}.photo-archive dt>.icon,.metadata-panel small>.icon{width:16px;height:16px;min-width:16px;color:inherit;vertical-align:middle}.metadata-panel small>.icon{margin-right:8px}
 .image-stack{isolation:isolate}.original-layer.darkroom-reveal{animation:photographic-development 1.45s cubic-bezier(.16,.7,.18,1) both;will-change:opacity,filter,clip-path}.image-stack:has(.original-layer.darkroom-reveal):after{content:'';position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;background:linear-gradient(115deg,transparent 22%,#b88b4a16 49%,transparent 72%);animation:developer-sweep 1.45s ease-out both;z-index:2}
 @keyframes photographic-development{0%{opacity:0;filter:blur(5px) sepia(.75) saturate(.35) brightness(.62);clip-path:inset(0 0 100%)}35%{opacity:.65;filter:blur(2px) sepia(.45) saturate(.65) brightness(.82);clip-path:inset(0 0 32%)}72%{opacity:1;filter:blur(.5px) sepia(.12) saturate(.9) brightness(.97);clip-path:inset(0)}100%{opacity:1;filter:none;clip-path:inset(0)}}
@@ -11,7 +10,7 @@
 @media(max-width:1100px){.classic-coverflow{clip-path:none}}
 @media(max-height:540px) and (min-width:700px){.classic-coverflow{clip-path:inset(0 180px)}}
 @media(max-width:700px){.wall-scroll-control{width:54vw;bottom:70px}.gallery-view-wall .horizontal-wall{bottom:110px}.gallery-view-wall .gallery-caption{bottom:16px}}
-@media(prefers-reduced-motion:reduce){.original-layer.darkroom-reveal,.image-stack:has(.original-layer.darkroom-reveal):after{animation:none;will-change:auto}.wall-photo .wall-display{transition:none}}
+@media(prefers-reduced-motion:reduce){.original-layer.darkroom-reveal,.image-stack:has(.original-layer.darkroom-reveal):after{animation:none;will-change:auto}}
 
 .viewer-photo-loading{position:absolute;inset:0;z-index:2;pointer-events:none}.gallery-shell[data-theme=light] .photo-loading{color:#756040}.gallery-shell[data-theme=light] .museum-mark{color:#866128}
 .wall-scroll-control input,.spacetime-position input{appearance:none;-webkit-appearance:none;height:24px;min-height:24px;background:transparent;border:0;outline-offset:3px}

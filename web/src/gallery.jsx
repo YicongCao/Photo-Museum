@@ -232,7 +232,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
       {!current && ['cover','space'].includes(room) ? (
         <div className="gallery-empty">
           {loaded&&<Icon name="photo" />}
-          {loaded?<p>尚无可展示照片</p>:<PhotoLoading/>}
+          {loaded?<p>尚无可展示照片</p>:<PhotoLoading compact className="gallery-photo-loading" label="加载照片"/>}
           <button onClick={onAdmin}>查看刮削进度 →</button>
         </div>
       ) : current || collection ? (
@@ -276,8 +276,8 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
               <h1 title={displayedActivity.event.theme}>{displayedActivity.event.theme}</h1>
               {view==='wall' && <p className="activity-counts">{counts?.photos ?? displayedActivity.photos ?? 0} 张照片{(counts?.videos ?? displayedActivity.videos)>0 && <span> · {counts?.videos ?? displayedActivity.videos} 个视频</span>}</p>}
             </div>
-            {opening && <PhotoLoading compact/>}
           </div>}
+          {opening && (view==='wall'||['cover','space'].includes(room)) && <PhotoLoading compact className="gallery-photo-loading" label="加载照片"/>}
           {view === "tunnel" && ['cover','space'].includes(room) && (
             <div className="tunnel-controls">
               <button

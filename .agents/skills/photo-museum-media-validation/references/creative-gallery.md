@@ -20,3 +20,5 @@
 封面边框/镜面/密度复验：按上述方式以最新隔离构建运行8793，再执行 `node web/tests/cover-finish.mjs`。脚本只在浏览器里扩展合成活动至25项、复用合成图，用命中采样检查四样式实际露出9张，核对日夜双边框、轻圆角、投影、14px间隔及无框5px模糊镜面。不能把创建9个DOM节点当成看到9张封面。模糊及地面backdrop有采样半径，像素遮挡测试应在镜面内部64px处取样，不在镜面接缝上断言零颜色变化；接缝另用截图检查。Chrome可能为outline-style:none报告3px的默认outline-width，应检查style而非width。保留减少动态效果、手机/矮屏控件命中及零原图请求断言。当前结果见docs/research/cover-finish-validation.md。
 
 毛玻璃复查须检查最终构建的getComputedStyle(...).backdropFilter；仅看源CSS不足以证明模糊生效。WebKit前缀声明放在标准声明之前，避免压缩器仅保留当前Chromium不识别的前缀。对比度按半透明底色与极端黑/白背板合成后测算，不能只对页面纯黑/纯白计算；文字本身不使用整体opacity。已验证方法与数值见docs/research/timeline-glass-validation.md。
+
+照片流4K升级复验运行`node web/tests/wall-promotion.mjs`（同8793合成fixture）。控制网络及decode延迟，用requestAnimationFrame采样确认整个淡入都有已绘制缩略图或完全不透明的4K覆盖；不能只检查最终ready类。覆盖预热Blob迟到后父组件重绘不换src、解码拒绝、解码中返回清理src、减少动态效果、右下加载提示避让展签与横滚条。fixture每活动仅14张，脚本将首批items缩到8张来验证真实分页路径，不新增虚构媒体；见docs/research/wall-promotion-validation.md。

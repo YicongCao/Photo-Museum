@@ -445,18 +445,19 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts, endp
               <span>{p.kind === "video_candidate" ? "▶" : ""}</span>
             </button>
           ))}
-        {items.length < (total ?? Infinity) && (
+        {!busy && items.length < (total ?? Infinity) && (
           <button
             className="wall-load"
             style={{ left: extent }}
             disabled={busy}
             onClick={load}
           >
-            {busy ? <PhotoLoading compact/> : "继续展开"}
+            继续展开
           </button>
         )}
       </div>
     </section>
+    {busy && <PhotoLoading compact className="gallery-photo-loading wall-photo-loading" label="加载照片"/>}
     <div className="wall-scroll-control"><input type="range" aria-label="照片流横向位置" min="0" max={Math.max(0,extent-(container.current?.clientWidth || 0))} step="1" value={Math.min(left,Math.max(0,extent-(container.current?.clientWidth || 0)))}
       onChange={e=>{container.current.scrollLeft=Number(e.target.value);setLeft(Number(e.target.value));onPosition?.(Number(e.target.value))}}/><output>{extent>(container.current?.clientWidth || 0)?Math.round(left/Math.max(1,extent-(container.current?.clientWidth || 0))*100):0}%</output></div>
     </>
