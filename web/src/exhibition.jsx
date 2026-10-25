@@ -10,6 +10,8 @@ import {WallImage} from "./wall-image";
 import {PhotoLoading} from "./loading-mark";
 import { Icon } from "./icons";
 import {coverLayout,coverPose,coverWindow} from "./cover-layout";
+import {planCoverMosaic} from './cover-mosaic';
+import './cover-mosaic.css';
 export function FullscreenButton({ target, className = "" }) {
   const [active, setActive] = useState(false);
   useEffect(() => {
@@ -217,6 +219,7 @@ export const Tunnel = forwardRef(function Tunnel(
       <div className="tunnel-panels">
         {visible.map(({ a, i, d }) => {
           const {x,y,scale,angle,light,origin,z}=coverPose(d,layout,style);
+          const mosaic=planCoverMosaic(a.selected,ratio);
           return (
             <button
               key={a.id}
@@ -242,7 +245,7 @@ export const Tunnel = forwardRef(function Tunnel(
                 pointerEvents:"auto",
               }}
             >
-              <div className={"photo-mosaic count-" + a.selected.length}>
+              <div className={mosaic.className} style={mosaic.style}>
                 {!a.selected.length && <span className="cover-pending">{a.unscored ? "评分中" : "暂无精选照片"}</span>}
                 {a.selected.map((p, j) => (
                   <div className={"mosaic-cell cell-" + j} key={p.id}>
@@ -257,7 +260,7 @@ export const Tunnel = forwardRef(function Tunnel(
                 ))}
               </div>
               <div className="panel-reflection" aria-hidden="true">
-                <div className={"photo-mosaic count-" + a.selected.length}>
+                <div className={mosaic.className} style={mosaic.style}>
                   {a.selected.map((p, j) => (
                     <div className={"mosaic-cell cell-" + j} key={p.id}>
                       <img

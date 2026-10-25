@@ -1,0 +1,226 @@
+{
+  "date": "2026-10-25T14:50:18.436Z",
+  "checks": [
+    "All four styles preserve normal, portrait, square and panoramic hero shapes; non-wide photos never use the full-width ribbon",
+    "Actual image intrinsic ratios match synthetic metadata; measured hero crop retains at least 90% in all sixteen desktop combinations",
+    "Every ten-photo layout fits without overlapping cells, and reflection shares exactly the same layout class and parameters",
+    "Phone covers retain the same hero aspect rules and one-page layout",
+    "Empty and smaller selections keep their real photo counts and do not force a panoramic hero",
+    "Day mode preserves the corrected composition",
+    "Zero original-file requests and uncaught browser errors"
+  ],
+  "errors": [],
+  "measurements": [
+    {
+      "style": "classic",
+      "shape": "landscape",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 1.5,
+      "heroRatio": 1.5041939308769927
+    },
+    {
+      "style": "classic",
+      "shape": "portrait",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 0.6666666666666666,
+      "heroRatio": 0.6689025673400674
+    },
+    {
+      "style": "classic",
+      "shape": "square",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 1,
+      "heroRatio": 1.0016863406408094
+    },
+    {
+      "style": "classic",
+      "shape": "wide",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 3,
+      "heroRatio": 3.025327834179357
+    },
+    {
+      "style": "framed",
+      "shape": "landscape",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 1.5,
+      "heroRatio": 1.5041939308769927
+    },
+    {
+      "style": "framed",
+      "shape": "portrait",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 0.6666666666666666,
+      "heroRatio": 0.6689025673400674
+    },
+    {
+      "style": "framed",
+      "shape": "square",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 1,
+      "heroRatio": 1.0016863406408094
+    },
+    {
+      "style": "framed",
+      "shape": "wide",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 3,
+      "heroRatio": 3.025327834179357
+    },
+    {
+      "style": "depth",
+      "shape": "landscape",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 1.5,
+      "heroRatio": 1.503991974250721
+    },
+    {
+      "style": "depth",
+      "shape": "portrait",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 0.6666666666666666,
+      "heroRatio": 0.6687950721153846
+    },
+    {
+      "style": "depth",
+      "shape": "square",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 1,
+      "heroRatio": 1.0016051364365972
+    },
+    {
+      "style": "depth",
+      "shape": "wide",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 3,
+      "heroRatio": 3.024104267310789
+    },
+    {
+      "style": "arc",
+      "shape": "landscape",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 1.5,
+      "heroRatio": 1.50869929084262
+    },
+    {
+      "style": "arc",
+      "shape": "portrait",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 0.6666666666666666,
+      "heroRatio": 0.6698888351860802
+    },
+    {
+      "style": "arc",
+      "shape": "square",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 1,
+      "heroRatio": 1.029054029667593
+    },
+    {
+      "style": "arc",
+      "shape": "wide",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "sourceRatio": 3,
+      "heroRatio": 3.0367284114431294
+    },
+    {
+      "style": "framed",
+      "shape": "landscape",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sourceRatio": 1.5,
+      "heroRatio": 1.5151898734177216
+    },
+    {
+      "style": "framed",
+      "shape": "portrait",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sourceRatio": 0.6666666666666666,
+      "heroRatio": 0.6746555953953576
+    },
+    {
+      "style": "framed",
+      "shape": "square",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sourceRatio": 1,
+      "heroRatio": 1.0060759493670886
+    },
+    {
+      "style": "framed",
+      "shape": "wide",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "sourceRatio": 3,
+      "heroRatio": 3.092062271766289
+    },
+    {
+      "style": "framed",
+      "shape": "landscape",
+      "viewport": {
+        "width": 1500,
+        "height": 940
+      },
+      "sourceRatio": 1.5,
+      "heroRatio": 1.5050446357825789
+    }
+  ],
+  "fixture": "Public synthetic SVG hero with intrinsic aspect matching injected metadata; remaining photos use the synthetic catalog. No private NAS images or ranking changes."
+}
