@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-25T00:31:39.843Z",
+  "checks": [
+    "Opaque layered reflections with dark blurred images and preserved mirror proportions",
+    "Caption has no rectangular background or backdrop blur",
+    "Pixel occlusion regression: rear colors cannot bleed through front reflection",
+    "Desktop/mobile horizontal theme and counts, gold divider, compact non-overlapping footer",
+    "Nonzero video count remains visible beside photo count on mobile",
+    "No uncaught browser errors"
+  ],
+  "errors": [],
+  "surfaces": [
+    {
+      "opacity": "1",
+      "reflectionOpacity": "1",
+      "mask": "none",
+      "background": "rgb(0, 0, 0)",
+      "filter": "blur(1.8px) brightness(0.2958) saturate(0.78)",
+      "coverHeight": 412.7424621582031,
+      "mirrorHeight": 413.33709716796875
+    },
+    {
+      "opacity": "1",
+      "reflectionOpacity": "1",
+      "mask": "none",
+      "background": "rgb(0, 0, 0)",
+      "filter": "blur(1.8px) brightness(0.3179) saturate(0.78)",
+      "coverHeight": 412.7424621582031,
+      "mirrorHeight": 413.33709716796875
+    },
+    {
+      "opacity": "1",
+      "reflectionOpacity": "1",
+      "mask": "none",
+      "background": "rgb(0, 0, 0)",
+      "filter": "blur(1.8px) brightness(0.34) saturate(0.78)",
+      "coverHeight": 463.1875,
+      "mirrorHeight": 463.1875
+    },
+    {
+      "opacity": "1",
+      "reflectionOpacity": "1",
+      "mask": "none",
+      "background": "rgb(0, 0, 0)",
+      "filter": "blur(1.8px) brightness(0.3179) saturate(0.78)",
+      "coverHeight": 412.7424621582031,
+      "mirrorHeight": 413.33709716796875
+    },
+    {
+      "opacity": "1",
+      "reflectionOpacity": "1",
+      "mask": "none",
+      "background": "rgb(0, 0, 0)",
+      "filter": "blur(1.8px) brightness(0.2958) saturate(0.78)",
+      "coverHeight": 412.7424621582031,
+      "mirrorHeight": 413.33709716796875
+    },
+    {
+      "opacity": "1",
+      "reflectionOpacity": "1",
+      "mask": "none",
+      "background": "rgb(0, 0, 0)",
+      "filter": "blur(1.8px) brightness(0.2737) saturate(0.78)",
+      "coverHeight": 412.7424621582031,
+      "mirrorHeight": 413.33709716796875
+    }
+  ],
+  "caption": {
+    "background": "rgba(0, 0, 0, 0)",
+    "blur": "none"
+  },
+  "fixtures": "synthetic geometry; video count is a controlled UI fixture"
+}

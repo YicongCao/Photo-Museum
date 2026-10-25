@@ -8,7 +8,7 @@ import time
 import threading
 from PIL import Image,ImageDraw,ImageCms
 import uvicorn
-os.environ['MUSEUM_HOSTS']='127.0.0.1:8794'
+os.environ['MUSEUM_HOSTS']='127.0.0.1:8794,localhost:8794'
 spec=importlib.util.spec_from_file_location('fixture',Path(__file__).resolve().parents[1]/'tests/p1/fixture.py')
 fixture=importlib.util.module_from_spec(spec);spec.loader.exec_module(fixture)
 from photo_museum.api import create_app

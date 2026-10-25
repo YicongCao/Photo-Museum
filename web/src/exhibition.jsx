@@ -203,7 +203,7 @@ export const Tunnel = forwardRef(function Tunnel(
           const d = i - position, distance=Math.abs(d), lean=Math.min(1,distance),
             x=Math.sign(d)*(Math.min(distance,1)*coverWidth*.57+Math.max(0,distance-1)*spacing),
             scale=1-.19*lean, angle=-Math.sign(d)*64*lean,
-            opacity=Math.max(.42,1-distance*.045);
+            light=Math.max(.48,1-distance*.065);
           return (
             <button
               key={a.id}
@@ -220,10 +220,12 @@ export const Tunnel = forwardRef(function Tunnel(
               style={{
                 width:coverWidth,height:coverWidth/1.5,top:Math.max(24,height*.08),
                 transform: `translateX(-50%) translateX(${x}px) perspective(${Math.max(900,coverWidth*4)}px) rotateY(${angle}deg) scale(${scale})`,
-                opacity,
+                opacity:1,
+                "--cover-light":light,
+                "--cover-height":`${coverWidth/1.5}px`,
                 zIndex: 1000 - Math.round(Math.abs(d) * 10),
                 "--reflection-height":`${Math.max(180,(height-coverWidth/1.5-Math.max(24,height*.08))/scale)}px`,
-                pointerEvents: opacity > 0.05 ? "auto" : "none",
+                pointerEvents:"auto",
               }}
             >
               <div className={"photo-mosaic count-" + a.selected.length}>

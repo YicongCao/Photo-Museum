@@ -39,3 +39,5 @@ Dashboard导航及进度加载语义已简化；异常分类与缓存建议见 [
 Gallery已采用用户选择的经典Cover Flow：5–20封面、增强长倒影/毛玻璃、严格分数Top10、预热15张4K、两层飞散入场、返回保位与合并照片档案。75项后端测试和16项浏览器检查通过。见[本轮验收](research/classic-coverflow-validation.md)，入口 <http://127.0.0.1:8790/#gallery>。
 
 Cover Flow滑动结束后自动以动画归位到最近活动、中央封面转正；新输入立即打断，减少动态效果时直接定位。构建及6项专项浏览器检查通过，见[归位记录](research/classic-coverflow-validation.md#2026-10-25滑动结束自动转正)。
+
+Cover Flow倒影已改为真实前后遮挡并压暗，展签去底色；照片墙主题与数量横排、黄褐线分隔，缩减底部占位。6项视觉检查＋6项归位回归通过，见[本轮复审](research/coverflow-polish-validation.md)。

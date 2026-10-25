@@ -25,3 +25,5 @@ description: 复验 photo-museum 正式媒体缓存、Gallery、单图进度与�
 缓存迁移与 HDR HEIC 复验先读 `docs/research/preview-cache-hdr-policy.md`：停 supervisor 后等待租约过期，先 dry-run `tools/apply_preview_policy.py`，再以 `--apply --receipt data/...json` 执行用户已授权的缓存清理和定向重试，随后恢复 supervisor。收据只放忽略目录。验证缓存账本仅 thumb/display、兼容原图响应后临时目录为空、占位文件零 GET 且不参与分析/精选。用真实主图 NCLX 区分 PQ 与辅助图误标；合成 HLG 灰阶测试不能当真实 HLG HEIC 或 HDR 屏幕验收。入队数量不能当完成数量，交付前重新按收据统计状态。
 
 经典Cover Flow专项复验：`PYTHONPATH=. uv run --all-extras python tools/coverflow_validation_server.py`（8794，24活动/432合成图，准备需数分钟），ready后运行 `node web/tests/coverflow.mjs`。覆盖5–20封面、严格Top10后端测试、预取15项不取原图、飞散/中心落位及克隆清理、返回保位、档案合并、浏览器内铺满和减少动态效果。公开证据只用合成图。用户要求验收Gallery时留8790/#gallery，后台刮削继续；真实截图仅存data。
+
+手动IAB验证fixture时使用 `http://localhost:8793` / `http://localhost:8794`；正式页使用 `127.0.0.1:8790`。Cookie不区分端口，同主机名的fixture登录会覆盖正式会话；自动Playwright须始终使用独立browser context。倒影/展签专项运行 `node web/tests/coverflow-polish.mjs`，以像素遮挡与桌面/390px横排位置检查确认，不只检查CSS值。

@@ -22,7 +22,7 @@ try {
   if(w===390)await page.screenshot({path:output+'/mobile.png'});
  }assert.deepEqual(sizes,[[390,5],[1440,10],[2800,20]]);check('Responsive 5 / 10 / 20 covers and no document overflow');
  await page.setViewportSize({width:1440,height:900});await page.waitForTimeout(200);
- const reflection=await page.locator('.depth-0 .panel-reflection').evaluate(el=>({opacity:getComputedStyle(el).opacity,filter:getComputedStyle(el).filter,bottom:el.getBoundingClientRect().bottom}));assert.ok(Number(reflection.opacity)>=.65);assert.ok(reflection.filter.includes('blur'));assert.ok(reflection.bottom>=890);check('Brighter blurred reflection extends to viewport bottom');
+ const reflection=await page.locator('.depth-0 .panel-reflection').evaluate(el=>({opacity:getComputedStyle(el).opacity,mask:getComputedStyle(el).maskImage,filter:getComputedStyle(el.firstElementChild).filter,bottom:el.getBoundingClientRect().bottom}));assert.equal(reflection.opacity,'1');assert.equal(reflection.mask,'none');assert.ok(reflection.filter.includes('brightness(0.34)'));assert.ok(reflection.bottom>=890);check('Opaque dark reflection extends to viewport bottom');
  await page.screenshot({path:output+'/coverflow.png'});
  await page.mouse.move(550,300);await page.mouse.wheel(53,0);await page.waitForTimeout(100);
  let position=Number(await page.locator('.tunnel-stage').getAttribute('data-position'));assert.ok(Math.abs(position-Math.round(position))>.01);check('Trackpad has continuous fractional cover movement');

@@ -148,14 +148,16 @@ export function Gallery({ api, onAdmin }) {
             <ActivityTimeline activities={activities} index={index} onSelect={goTo} />
           )}
           <div className="gallery-caption">
-            <div>
+            <div className="caption-date">
               {displayedActivity.event.year}
               {displayedActivity.event.month
                 ? " · " + String(displayedActivity.event.month).padStart(2, "0")
                 : ""}
             </div>
-            <h1>{displayedActivity.event.theme}</h1>
-            {view==='wall' && <p className="activity-counts">{counts?.photos ?? displayedActivity.photos ?? 0} 张照片{(counts?.videos ?? displayedActivity.videos)>0 && <span> · {counts?.videos ?? displayedActivity.videos} 个视频</span>}</p>}
+            <div className="caption-main">
+              <h1 title={displayedActivity.event.theme}>{displayedActivity.event.theme}</h1>
+              {view==='wall' && <p className="activity-counts">{counts?.photos ?? displayedActivity.photos ?? 0} 张照片{(counts?.videos ?? displayedActivity.videos)>0 && <span> · {counts?.videos ?? displayedActivity.videos} 个视频</span>}</p>}
+            </div>
             {opening && <p role="status">读取照片</p>}
           </div>
           {view === "tunnel" && (
