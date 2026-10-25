@@ -47,7 +47,7 @@ Settings → 照片显示 → Cover Flow。选择后保存偏好，服务端持�
 - 布局/拼贴 Node 测试 12 项通过；超宽屏/分数位置/快速样式切换专项 6 项通过，见 [resize 证据](gallery-refinement-resize-evidence.json)。四样式响应式、日夜、切换、原图请求边界及空间遮挡见 [浏览器证据](gallery-refinement-browser-evidence.json)。
 - 年轮/星图 14 项、长卷/重游 14 项、配对草稿 6 项通过；检查包括请求失败、版本/范围变化、快速返回、Blob 释放及手机布局。
 - 日夜模式专项 12 项通过，包含照片像素不变、白底文字对比度≥4.5:1和倒影遮挡，见 [日夜证据](gallery-refinement-light-evidence.json)。
-- 时间线预览 14 项回归通过，包含手机屏外项键盘聚焦、自动滚动后气泡保留和手动滚动关闭，见 [时间线证据](gallery-refinement-timeline-evidence.json)。
+- 时间线预览 15 项回归通过，包含手机屏外项键盘聚焦、自动滚动后气泡保留、手动滚动关闭与鼠标点击后连续浏览的时间线定位，见 [时间线证据](gallery-refinement-timeline-evidence.json)。
 - P5 既有展厅 26 项回归通过，见 [P5 当前证据](gallery-refinement-p5-evidence.json)。
 - 正式 SQLite 已先做私密在线备份，再迁移 schema 8→9；原 entries/sources/metadata/curation/cache_files 行数保持。正式服务使用已保存凭据启动，不创建新扫描批次。
 

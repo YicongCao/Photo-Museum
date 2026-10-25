@@ -4,7 +4,7 @@ import {createPortal} from "react-dom";
 import {TimelinePreview} from "./timeline-preview";
 
 export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) {
-  const root = useRef(null), frame = useRef(0), pointer = useRef(null);
+  const root = useRef(null), frame = useRef(0), pointer = useRef(null),pointerFocus=useRef(false);
   const [preview,setPreview]=useState(null);
   const showTimer=useRef(null),closeTimer=useRef(null),removeTimer=useRef(null),pendingFocus=useRef(null);
   const closePreview=()=>{
@@ -55,7 +55,7 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) 
   useEffect(()=>{
     const node=root.current;let timer;
     const reveal=()=>{
-      if(node?.contains(document.activeElement) && document.activeElement.matches(':focus-visible'))return;
+      if(!pointerFocus.current && node?.contains(document.activeElement) && document.activeElement.matches(':focus-visible'))return;
       const item=node?.querySelector('button[aria-current="true"]');if(!item)return;
       // The narrow layout has two independent scrollers: month items and the year rail.
       for(const container of [item.closest('.timeline-month-group'),node]){
@@ -88,6 +88,7 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) 
     });
   };
   return <><aside ref={root} className="activity-timeline dock-timeline" aria-label="活动时间线"
+    onPointerDown={()=>{pointerFocus.current=true;}} onKeyDown={()=>{pointerFocus.current=false;}} onBlur={()=>{pointerFocus.current=false;}}
     onPointerMove={magnify} onPointerLeave={()=>{reset();leavePreview();}} onScroll={()=>{
       // Native focus can scroll both narrow-layout rails before its preview opens.
       const focused=pendingFocus.current;

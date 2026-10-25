@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-25T11:30:24.396Z",
+  "date": "2026-10-25T11:37:42.219Z",
   "checks": [
     "Loads only leading score-ranked photos and selects 3–5 images",
     "Uniform 336×236 speech bubble opens left outside timeline scroll clipping",
@@ -12,6 +12,7 @@
     "Reduced motion disables bubble animations",
     "Narrow viewport keeps preview on screen above timeline",
     "Offscreen keyboard focus survives native reveal; later manual scroll still dismisses preview",
+    "Pointer-focused activity does not block timeline reveal after Cover Flow wheel navigation",
     "Three, four and five photo layouts fill the same rectangle without clipping",
     "Preview never fetches NAS originals",
     "No uncaught browser errors"
