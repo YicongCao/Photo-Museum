@@ -41,11 +41,11 @@ export function useSceneMotion(root) {
 }
 
 // Keep encoded 4K previews only. Never prefetch NAS originals or retain decoded Image objects.
-export function createActivityWarmup(api,id) {
+export function createActivityWarmup(api,id,endpoint) {
   const controller=new AbortController(), urls=new Map();
   const item={id,urls,data:null,dispose(){controller.abort();urls.forEach(URL.revokeObjectURL);urls.clear();}};
   item.promise=(async()=>{
-    const data=await api(`/gallery/${id}?limit=15`,'GET',undefined,{signal:controller.signal});
+    const data=await api(endpoint || `/gallery/${id}?limit=15`,'GET',undefined,{signal:controller.signal});
     item.data=data;
     const previews=data.previews || data.items;
     let next=0;

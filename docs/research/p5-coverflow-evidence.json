@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-25T02:54:16.434Z",
+  "browser": "155.0.8059.85",
+  "checks": [
+    "Activity stop preloads fifteen 4K previews without NAS originals",
+    "Dashboard before Gallery",
+    "Responsive 5 / 10 / 20 covers and no document overflow",
+    "Opaque dark reflection extends to viewport bottom",
+    "Trackpad has continuous fractional cover movement",
+    "Idle trackpad settles to a straight cover",
+    "Cover ten photos scatter; wall photos arrive from center",
+    "Transition clones released",
+    "Wall count omits zero videos",
+    "Photo archive fades on shared arrival timeline",
+    "3:2 image fits image area without top/bottom bars",
+    "Dimensions, color and exposure grouped; camera and lens adjacent",
+    "Image click fills browser, second click restores archive without fullscreen API",
+    "Back restores wall scroll and focus",
+    "Back preserves settled Gallery position",
+    "Reduced motion bypasses scatter",
+    "No uncaught browser errors"
+  ],
+  "sizes": [
+    [
+      390,
+      5
+    ],
+    [
+      1440,
+      10
+    ],
+    [
+      2800,
+      20
+    ]
+  ],
+  "errors": [],
+  "fixtures": "synthetic geometry only"
+}

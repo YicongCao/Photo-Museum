@@ -7,6 +7,15 @@ import { useSceneMotion, createActivityWarmup } from "./scene-motion";
 import { PhotoArchive } from "./photo-archive";
 import { PhotographyLabels } from "./photography-labels";
 import { ActivityTimeline } from "./timeline";
+import { CalendarRoom } from './rooms/calendar';
+import { MapRoom } from './rooms/map';
+import { GearRoom } from './rooms/gear';
+import { SpacetimeRoom } from './rooms/spacetime';
+import { RoomRefreshContext } from './rooms/common';
+import './rooms/rooms.css';
+
+const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道'};
+function savedRooms(){try{return JSON.parse(sessionStorage.getItem('museum.rooms') || '{}')}catch{return {}}}
 
 export function Gallery({ api, onAdmin }) {
   const [loaded, setLoaded] = useState(false),
@@ -18,6 +27,20 @@ export function Gallery({ api, onAdmin }) {
     [wallId,setWallId]=useState(null),
     [counts,setCounts]=useState(null),
     [opening,setOpening]=useState(false);
+  const [room,setRoom]=useState(()=>roomNames[savedRooms().room]?savedRooms().room:'cover'),[roomMenu,setRoomMenu]=useState(false),
+    [anchor,setAnchor]=useState(()=>savedRooms().anchor || null),[roomStates,setRoomStates]=useState(()=>savedRooms().states || {}),
+    [collection,setCollection]=useState(null);
+  const roomMenuRef=useRef(null),wallPositions=useRef({});
+  const [roomRevision,setRoomRevision]=useState(0);
+  useEffect(()=>{try{sessionStorage.setItem('museum.rooms',JSON.stringify({room,anchor,states:roomStates,activityId:activities[index]?.id || savedRooms().activityId}))}catch{}},[room,anchor,roomStates,activities[index]?.id]);
+  useEffect(()=>{
+    if(!roomMenu)return;
+    const focus=requestAnimationFrame(()=>roomMenuRef.current?.querySelector('[aria-checked="true"]')?.focus());
+    const close=e=>{if(!roomMenuRef.current?.contains(e.target))setRoomMenu(false)};
+    const key=e=>{if(e.key==='Escape'){setRoomMenu(false);roomMenuRef.current?.querySelector('button')?.focus()}};
+    document.addEventListener('pointerdown',close);document.addEventListener('keydown',key);
+    return()=>{cancelAnimationFrame(focus);document.removeEventListener('pointerdown',close);document.removeEventListener('keydown',key)};
+  },[roomMenu]);
   const tunnel = useRef(null),
     lastFocus = useRef(null),
     selectedId = useRef(null);
@@ -26,19 +49,34 @@ export function Gallery({ api, onAdmin }) {
   const current = activities[index];
   const wallActivity=activities.find(a=>a.id===wallId);
   useEffect(()=>{
-    if (!current || view!=='tunnel' || openingRef.current) return;
+    if (!current || view!=='tunnel' || !['cover','space'].includes(room) || openingRef.current) return;
     const timer=setTimeout(()=>{
       if(warm.current?.id===current.id)return;
       warm.current?.dispose();warm.current=createActivityWarmup(api,current.id);
     },280);
     return ()=>clearTimeout(timer);
-  },[current?.id,view]);
+  },[current?.id,view,room]);
   useEffect(()=>()=>warm.current?.dispose(),[]);
-  const displayedActivity=view==="wall" && wallActivity ? wallActivity : current;
-  selectedId.current = current?.id;
+  const displayedActivity=collection && view==='wall' ? {event:{theme:collection.title}} : view==="wall" && wallActivity ? wallActivity : current;
+  const changeRoom=next=>{
+    setRoomMenu(false);warm.current?.dispose();warm.current=null;setPhoto(null);setView('tunnel');setRoom(next);
+    roomMenuRef.current?.querySelector('button')?.focus();
+  };
+  const openCollection=async descriptor=>{
+    if(openingRef.current)return;
+    openingRef.current=true;setOpening(true);setError('');
+    try{
+      warm.current?.dispose();const staged=createActivityWarmup(api,descriptor.id,descriptor.endpoint+'&limit=15');warm.current=staged;
+      const data=await staged.promise;if(warm.current!==staged)return;setCounts({photos:data.photos,videos:data.videos});
+      await animate('.room img',()=>{setCollection(descriptor);setWallId(null);setView('wall')},'.wall-scene .wall-photo');
+    }catch(e){if(e.name!=='AbortError')setError(e.message)}
+    finally{openingRef.current=false;setOpening(false)}
+  };
+  selectedId.current = current?.id || savedRooms().activityId;
   const reload = () =>
     api("/gallery")
       .then((d) => {
+        setRoomRevision(n=>n+1);
         setLoaded(true);
         const next = d.activities.findIndex((a) => a.id === selectedId.current);
         setActivities(d.activities);
@@ -58,7 +96,7 @@ export function Gallery({ api, onAdmin }) {
   };
   const move = (n) => tunnel.current?.move(n);
   const backGallery=()=>{
-    if(openingRef.current){warm.current?.dispose();warm.current=null;}
+    if(openingRef.current || !['cover','space'].includes(room)){warm.current?.dispose();warm.current=null;}
     setPhoto(null);setView('tunnel');
 
   };
@@ -68,7 +106,8 @@ export function Gallery({ api, onAdmin }) {
     openingRef.current=true;setOpening(true);setError("");
     try {
       if(warm.current?.id!==id){warm.current?.dispose();warm.current=createActivityWarmup(api,id);}
-      const data=await warm.current.promise;
+      const staged=warm.current,data=await staged.promise;if(warm.current!==staged)return;
+      setCollection(null);setIndex(i);
       setCounts({photos:data.photos,videos:data.videos});
       await animate(`[data-activity="${id}"] > .photo-mosaic img`,()=>{setWallId(id);setView('wall');},'.wall-scene .wall-photo');
     }catch(e){warm.current?.dispose();warm.current=null;if(e.name!=='AbortError')setError(e.message);}
@@ -81,7 +120,7 @@ export function Gallery({ api, onAdmin }) {
         backGallery();
         return;
       }
-      if (view !== "tunnel") return;
+      if (view !== "tunnel" || !['cover','space'].includes(room) || roomMenu) return;
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
         e.preventDefault();
         move(e.key === "ArrowRight" ? 1 : -1);
@@ -89,27 +128,36 @@ export function Gallery({ api, onAdmin }) {
     };
     window.addEventListener("keydown", f);
     return () => window.removeEventListener("keydown", f);
-  }, [photo, view]);
-  const open = (p) => {
+  }, [photo, view,room,roomMenu]);
+  const open = (p,selector='.wall-scene .wall-photo img') => {
+    if(p.period)setAnchor(p.period);
+    if(p.activity_id){const i=activities.findIndex(a=>a.id===p.activity_id);if(i>=0)setIndex(i)}
     lastFocus.current = document.activeElement;
-    animate(".wall-scene .wall-photo img",()=>setPhoto({...p,preview:warm.current?.urls.get(p.id) || p.preview}),".viewer-image-area,.photo-viewer .metadata-panel");
+    animate(selector,()=>setPhoto({...p,preview:warm.current?.urls.get(p.id) || p.preview}),".viewer-image-area,.photo-viewer .metadata-panel");
   };
   const close = () => {
     setPhoto(null);
-    requestAnimationFrame(() => lastFocus.current?.focus({preventScroll:true}));
+    const focus=lastFocus.current;lastFocus.current=null;
+    requestAnimationFrame(() => {if(focus?.isConnected)focus.focus({preventScroll:true})});
   };
   return (
-    <div ref={shell} className={"gallery-shell gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening}>
-      <nav className="gallery-nav">
-        {view === "wall" && <button className="gallery-back" onClick={backGallery} aria-label="返回 Gallery">← Gallery</button>}
+    <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening}>
+      <nav className="gallery-nav" inert={!!photo}>
+        {view === "wall" && <button className="gallery-back" onClick={backGallery} aria-label={room==='cover'?'返回 Gallery':'返回 '+roomNames[room]}>← {room==='cover'?'Gallery':roomNames[room]}</button>}
         <div>
           <button onClick={onAdmin}>Dashboard</button>
-          <button
+          <div ref={roomMenuRef} className="gallery-room-switch"><button
             className={view === "tunnel" ? "active" : ""}
-            onClick={backGallery}
+            onClick={()=>setRoomMenu(v=>!v)} onKeyDown={e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();setRoomMenu(true)}}} aria-haspopup="menu" aria-expanded={roomMenu}
           >
             Gallery
-          </button>
+          </button>{roomMenu&&<div className="gallery-room-menu" role="menu" aria-label="展厅" onKeyDown={e=>{
+            if(!['ArrowDown','ArrowUp','Home','End'].includes(e.key))return;
+            e.preventDefault();const items=[...e.currentTarget.querySelectorAll('[role="menuitemradio"]')],i=items.indexOf(document.activeElement);
+            items[e.key==='Home'?0:e.key==='End'?items.length-1:(i+(e.key==='ArrowDown'?1:-1)+items.length)%items.length]?.focus();
+          }}>
+            {Object.entries(roomNames).map(([id,name])=><button role="menuitemradio" key={id} aria-checked={room===id} onClick={()=>changeRoom(id)}>{name}</button>)}
+          </div>}</div>
           <FullscreenButton />
         </div>
       </nav>
@@ -118,15 +166,18 @@ export function Gallery({ api, onAdmin }) {
           {error}
         </p>
       )}
-      {!current ? (
+      {view==='tunnel'&&room==='calendar'&&<div className="gallery-room-host"><CalendarRoom api={api} anchor={anchor} setAnchor={setAnchor} state={roomStates.calendar || {}} onState={s=>setRoomStates(p=>({...p,calendar:s}))} onCollection={openCollection}/></div>}
+      {view==='tunnel'&&room==='map'&&<div className="gallery-room-host"><MapRoom api={api} state={roomStates.map || {}} onState={s=>setRoomStates(p=>({...p,map:s}))} onCollection={openCollection}/></div>}
+      {view==='tunnel'&&room==='gear'&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><GearRoom api={api} anchor={anchor} state={roomStates.gear || {}} onState={s=>setRoomStates(p=>({...p,gear:s}))} onCollection={openCollection} onPhoto={p=>open(p,'.room img')}/></div>}
+      {!current && ['cover','space'].includes(room) ? (
         <div className="gallery-empty">
           <Icon name="photo" />
           <p>{loaded ? "尚无可展示照片" : "读取照片"}</p>
           <button onClick={onAdmin}>查看刮削进度 →</button>
         </div>
-      ) : (
+      ) : current || collection ? (
         <>
-          <div className={"cover-scene scene-layer " + (view!=="tunnel" || photo ? "scene-inactive" : "")} inert={view!=="tunnel" || !!photo}>
+          {room==='cover'&&<div className={"cover-scene scene-layer " + (view!=="tunnel" || photo ? "scene-inactive" : "")} inert={view!=="tunnel" || !!photo}>
             <Tunnel
               ref={tunnel}
               activities={activities}
@@ -134,24 +185,28 @@ export function Gallery({ api, onAdmin }) {
               onIndex={setIndex}
               onOpen={openActivity}
             />
-          </div>
-          {wallActivity && <div className={"wall-scene scene-layer " + (view!=="wall" || photo ? "scene-inactive" : "")} inert={view!=="wall" || !!photo}>
+          </div>}
+          {room==='space'&&view==='tunnel'&&!photo&&<SpacetimeRoom ref={tunnel} activities={activities} index={index} onIndex={setIndex} onOpen={openActivity} state={roomStates.space || {}} onState={s=>setRoomStates(p=>({...p,space:s}))}/>}
+          {(wallActivity || collection) && view==='wall' && <div className={"wall-scene scene-layer " + (photo ? "scene-inactive" : "")} inert={!!photo}>
             <PhotoWall
-              key={wallActivity.id}
-              activity={wallActivity}
-              warm={warm.current?.id===wallActivity.id ? warm.current : null}
+              key={collection?.id || wallActivity.id}
+              activity={collection ? {id:collection.id,photos:counts?.photos,videos:0} : wallActivity}
+              endpoint={collection?.endpoint}
+              initialLeft={wallPositions.current[collection?.id || wallActivity?.id] || 0}
+              onPosition={x=>{wallPositions.current[collection?.id || wallActivity?.id]=x}}
+              warm={warm.current?.id===(collection?.id || wallActivity.id) ? warm.current : null}
               onCounts={setCounts}
               api={api}
               onOpen={open}
               onError={setError}
             />
           </div>}
-          {view === "tunnel" && (
+          {view === "tunnel" && ['cover','space'].includes(room) && (
             <ActivityTimeline activities={activities} index={index} onSelect={goTo} />
           )}
-          <div className="gallery-caption">
+          {(view==='wall'||['cover','space'].includes(room))&&displayedActivity&&<div className="gallery-caption">
             <div className="caption-date">
-              {displayedActivity.event.year}
+              {collection && view==='wall' ? collection.dateLabel : displayedActivity.event.year}
               {displayedActivity.event.month
                 ? " · " + String(displayedActivity.event.month).padStart(2, "0")
                 : ""}
@@ -161,8 +216,8 @@ export function Gallery({ api, onAdmin }) {
               {view==='wall' && <p className="activity-counts">{counts?.photos ?? displayedActivity.photos ?? 0} 张照片{(counts?.videos ?? displayedActivity.videos)>0 && <span> · {counts?.videos ?? displayedActivity.videos} 个视频</span>}</p>}
             </div>
             {opening && <p role="status">读取照片</p>}
-          </div>
-          {view === "tunnel" && (
+          </div>}
+          {view === "tunnel" && ['cover','space'].includes(room) && (
             <div className="tunnel-controls">
               <button
                 onClick={() => move(-1)}
@@ -181,7 +236,7 @@ export function Gallery({ api, onAdmin }) {
             </div>
           )}
         </>
-      )}
+      ) : null}
       {photo && (
         <Viewer
           key={photo.id}
@@ -189,13 +244,14 @@ export function Gallery({ api, onAdmin }) {
           api={api}
           onClose={close}
           onChanged={reload}
+          returnLabel={view==='wall'?'返回照片墙':'返回'+roomNames[room]}
         />
       )}
-    </div>
+    </div></RoomRefreshContext.Provider>
   );
 }
 
-function Viewer({ photo, api, onClose, onChanged }) {
+function Viewer({ photo, api, onClose, onChanged,returnLabel='返回照片墙' }) {
   const [suggestions, setSuggestions] = useState([]),
     [mutationError, setMutationError] = useState("");
   const [manifest, setManifest] = useState(null),
@@ -310,7 +366,7 @@ function Viewer({ photo, api, onClose, onChanged }) {
       aria-label="照片细看"
     >
       <div className="viewer-toolbar">
-        <button ref={closeRef} className="viewer-back" onClick={onClose} aria-label="返回照片墙">← 返回</button>
+        <button ref={closeRef} className="viewer-back" onClick={onClose} aria-label={returnLabel}>← 返回</button>
         <div>
           <button
             onClick={() => {

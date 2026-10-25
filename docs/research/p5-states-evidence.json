@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-25T03:02:28.250Z",
+  "checks": [
+    "Gallery menu opens and selects a room using only keyboard controls",
+    "Switching rooms during delayed 4K warmup cannot reopen a stale collection",
+    "Empty calendar exposes no invented clickable photos",
+    "Empty map explicitly shows that no valid locations are available",
+    "Empty equipment view does not fabricate devices or photographs",
+    "Empty spacetime view has no blank interactive activity boards",
+    "Empty state checks request no NAS originals and have no uncaught browser errors"
+  ],
+  "errors": [],
+  "fixture": "synthetic local photos; empty responses injected in an isolated browser context"
+}

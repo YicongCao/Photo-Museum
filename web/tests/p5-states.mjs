@@ -1,0 +1,20 @@
+import {chromium} from '../../prototype/node_modules/@playwright/test/index.mjs';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
+const context=await browser.newContext({viewport:{width:1280,height:720}}),page=await context.newPage(),checks=[],errors=[],requests=[];
+page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
+async function room(name){await page.getByRole('button',{name:'Gallery',exact:true}).click();await page.getByRole('menuitemradio',{name,exact:true}).click()}
+try{
+ await page.goto('http://localhost:8795/#gallery');await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'解锁'}).click();await page.locator('.depth-0').waitFor();
+ await page.getByRole('button',{name:'Gallery',exact:true}).press('ArrowDown');await page.getByRole('menu',{name:'展厅'}).waitFor();await page.getByRole('menuitemradio',{name:'Cover Flow',exact:true}).press('ArrowDown');assert.equal(await page.evaluate(()=>document.activeElement.textContent),'日历');await page.getByRole('menuitemradio',{name:'日历',exact:true}).press('Enter');await page.locator('.calendar-cell').first().waitFor();checks.push('Gallery menu opens and selects a room using only keyboard controls');
+ await page.route('**/media/display?**',async route=>{await new Promise(r=>setTimeout(r,1000));await route.continue().catch(()=>{})});
+ const fetching=page.waitForRequest('**/media/display?**');await page.locator('.calendar-cell:has(img)').first().click();await fetching;await room('地图');await page.locator('.map-room').waitFor();await page.waitForTimeout(1300);assert.equal(await page.locator('.wall-photo').count(),0);assert.ok(await page.locator('.map-room').isVisible());await page.unroute('**/media/display?**');checks.push('Switching rooms during delayed 4K warmup cannot reopen a stale collection');await room('日历');await page.locator('.calendar-cell').first().waitFor();
+ await page.route('**/api/exhibitions/calendar?**',async route=>{const d=await(await route.fetch()).json();await route.fulfill({json:{...d,total:0,undated:0,period_unknown:0,unknown:0,cells:d.cells.map(c=>({...c,count:0,estimated:0,cover:null}))}})});
+ await page.getByRole('button',{name:'下一时段',exact:true}).click();await page.getByText('暂无可展示照片',{exact:true}).waitFor();assert.equal(await page.locator('.calendar-cell:not(:disabled)').count(),0);checks.push('Empty calendar exposes no invented clickable photos');
+ await page.route('**/api/exhibitions/map*',route=>route.fulfill({json:{level:'country',parent:null,breadcrumbs:[],groups:[],count:0,missing_gps:0,unresolved:0,estimated:0}}));await room('地图');await page.getByText('暂无有效定位',{exact:true}).waitFor();checks.push('Empty map explicitly shows that no valid locations are available');
+ await page.route('**/api/exhibitions/gear?kind=*',route=>route.fulfill({json:{devices:[],total:0,kind:'camera'}}));await room('器材馆');await page.getByText('暂无可展示照片',{exact:true}).waitFor();assert.equal(await page.locator('.device-list>button').count(),0);checks.push('Empty equipment view does not fabricate devices or photographs');
+ await page.route('**/api/gallery',route=>route.fulfill({json:{activities:[]}}));await page.reload();await page.locator('.gear-room').waitFor();await room('时空隧道');await page.getByText('尚无可展示照片',{exact:true}).waitFor();assert.equal(await page.locator('.spacetime-board').count(),0);checks.push('Empty spacetime view has no blank interactive activity boards');
+ assert.equal(requests.filter(u=>/\/original(?:-compatible)?\?/.test(u)).length,0);assert.deepEqual(errors,[]);checks.push('Empty state checks request no NAS originals and have no uncaught browser errors');
+ await fs.writeFile('docs/research/p5-states-evidence.json',JSON.stringify({date:new Date().toISOString(),checks,errors,fixture:'synthetic local photos; empty responses injected in an isolated browser context'},null,2));console.log(JSON.stringify({checks,errors},null,2));
+}finally{await browser.close()}

@@ -253,6 +253,7 @@ def register(app,database,owner):
             if not c.execute('SELECT 1 FROM entries WHERE id=?',(aid,)).fetchone():
                 raise HTTPException(404)
             c.execute('INSERT OR REPLACE INTO curation VALUES(?,?,?,?)',(aid,int(body.pinned),int(body.excluded),time.time()))
+        app.state.exhibitions.invalidate()
         return {'ok':True}
 
     @app.post('/api/assets/{aid}/metadata',dependencies=[Depends(owner)])
@@ -267,6 +268,7 @@ def register(app,database,owner):
             database.set_metadata(aid,body.field,body.value,'manual',info={'precision':'manual'})
         except ValueError:
             raise HTTPException(404,'照片不存在')
+        app.state.exhibitions.invalidate()
         return {'ok':True}
 
 def live_pair(database,row):

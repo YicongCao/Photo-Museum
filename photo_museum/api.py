@@ -260,6 +260,7 @@ def create_app(directory=None, dav_factory=WebDAV):
             if not r:raise HTTPException(409,'推断已经更新')
             info=json.loads(r['info_json']);info.update(accepted=action=='accept',reviewed=action)
             c.execute("UPDATE metadata SET info_json=? WHERE asset_id=? AND record_id=?",(json.dumps(info),aid,record_id))
+        app.state.exhibitions.invalidate()
         return {'ok':True}
 
     def reject_placeholder(row):
@@ -345,12 +346,14 @@ def create_app(directory=None, dav_factory=WebDAV):
             raise
 
     register_gallery(app, db, owner)
+    from .exhibitions import register as register_exhibitions
+    register_exhibitions(app, db, owner)
     from .inspection import register as register_inspection
     register_inspection(app, db, owner)
     from .intelligence_api import register as register_intelligence
     register_intelligence(app, db, owner)
 
-    build = ROOT / 'web/dist'
+    build = Path(os.environ.get('MUSEUM_WEB_DIST', ROOT / 'web/dist')).resolve()
     if (build / 'assets').exists():
         app.mount('/assets', StaticFiles(directory=build / 'assets'), name='static')
 

@@ -265,8 +265,9 @@ export const Tunnel = forwardRef(function Tunnel(
   );
 });
 
-export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts }) {
+export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts, endpoint, initialLeft=0, onPosition }) {
   const container = useRef(null),
+    request=useRef(null),restoreTarget=useRef(initialLeft),
     drag = useRef(null),
     suppress = useRef(false),
     [items, setItems] = useState(warm?.data?.items || []),
@@ -285,9 +286,10 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts }) {
     if (s.loading || s.stopped || s.offset >= s.total) return;
     s.loading = true;
     setBusy(true);
+    const controller=new AbortController();request.current=controller;
     try {
       const d = await api(
-        "/gallery/" + activity.id + "?offset=" + s.offset + "&limit=200",
+        (endpoint || "/gallery/" + activity.id) + (endpoint?.includes('?') ? '&' : '?') + "offset=" + s.offset + "&limit=200",'GET',undefined,{signal:controller.signal},
       );
       if (s.stopped) return;
       s.offset += d.items.length;
@@ -296,7 +298,7 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts }) {
       onCounts?.({photos:d.photos,videos:d.videos});
       setItems((p) => [...p, ...d.items]);
     } catch (e) {
-      if (!s.stopped) onError(e.message);
+      if (!s.stopped && e.name!=='AbortError') onError?.(e.message);
     } finally {
       s.loading = false;
       if (!s.stopped) setBusy(false);
@@ -308,6 +310,7 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts }) {
     load();
     return () => {
       state.current.stopped = true;
+      request.current?.abort();
     };
   }, []);
   useLayoutEffect(() => {
@@ -342,6 +345,13 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts }) {
       return { p, x, y: row * (h + gap), w };
     }),
     extent = Math.max(...ends, 1);
+  useLayoutEffect(()=>{
+    const wanted=restoreTarget.current,node=container.current;
+    if(!wanted || !items.length)return;
+    node.scrollLeft=wanted;setLeft(node.scrollLeft);
+    if(extent>=wanted+node.clientWidth || items.length>=state.current.total)restoreTarget.current=0;
+    else load();
+  },[extent,items.length]);
   useEffect(() => {
     if (extent - left < (container.current?.clientWidth || 0) * 2) load();
   }, [left, extent, total]);
@@ -351,7 +361,7 @@ export function PhotoWall({ activity, api, onOpen, onError, warm, onCounts }) {
       ref={container}
       aria-label="活动照片墙"
       tabIndex="0"
-      onScroll={(e) => setLeft(e.currentTarget.scrollLeft)}
+      onScroll={(e) => {setLeft(e.currentTarget.scrollLeft);onPosition?.(e.currentTarget.scrollLeft)}}
       onKeyDown={(e) => {
         if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
           e.preventDefault();

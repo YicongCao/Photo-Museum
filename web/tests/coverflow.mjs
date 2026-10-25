@@ -1,7 +1,7 @@
 import {chromium,expect} from '../../prototype/node_modules/@playwright/test/index.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-const output='docs/design/previews/classic-coverflow';await fs.mkdir(output,{recursive:true});
+const output=process.env.MUSEUM_BROWSER_OUTPUT || 'docs/design/previews/classic-coverflow';await fs.mkdir(output,{recursive:true});
 const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
 const context=await browser.newContext({viewport:{width:1440,height:900}}),page=await context.newPage();
 const errors=[],checks=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
@@ -14,7 +14,7 @@ try {
  await expect.poll(()=>requests.filter(u=>u.includes('/media/display?')).length,{timeout:10000}).toBeGreaterThanOrEqual(15);
  assert.ok(requests.some(u=>u.includes('limit=15')));assert.ok(requests.filter(u=>u.includes('/media/display?')).length>=15);
  assert.equal(requests.filter(u=>u.includes('/original?')).length,0);check('Activity stop preloads fifteen 4K previews without NAS originals');
- const expectedOrder=['Dashboard','Gallery'];assert.deepEqual((await page.locator('.gallery-nav>div>button').allTextContents()).filter(Boolean),expectedOrder);check('Dashboard before Gallery');
+ const expectedOrder=['Dashboard','Gallery'];assert.deepEqual((await page.locator('.gallery-nav>div button').allTextContents()).filter(s=>expectedOrder.includes(s)),expectedOrder);check('Dashboard before Gallery');
  const sizes=[];for(const [w,h] of [[390,844],[1440,900],[2800,1500]]){
   await page.setViewportSize({width:w,height:h});await page.waitForTimeout(100);
   const n=Number(await page.locator('.tunnel-stage').getAttribute('data-cover-count'));assert.ok(n>=5&&n<=20);sizes.push([w,n]);
@@ -55,5 +55,5 @@ try {
  await page.getByRole('button',{name:'返回 Gallery',exact:true}).click();assert.ok(Math.abs(Number(await page.locator('.tunnel-stage').getAttribute('data-position'))-position)<.01);check('Back preserves settled Gallery position');
  await page.emulateMedia({reducedMotion:'reduce'});await page.locator('.depth-0').click();await page.locator('.wall-scene:not(.scene-inactive)').waitFor();assert.equal(await page.locator('body>img').count(),0);check('Reduced motion bypasses scatter');
  assert.deepEqual(errors,[]);check('No uncaught browser errors');
- await fs.writeFile('docs/research/classic-coverflow-evidence.json',JSON.stringify({date:new Date().toISOString(),browser:browser.version(),checks,sizes,errors,fixtures:'synthetic geometry only'},null,2));console.log(JSON.stringify({checks,sizes,errors},null,2));
+ await fs.writeFile(process.env.MUSEUM_BROWSER_EVIDENCE || 'docs/research/classic-coverflow-evidence.json',JSON.stringify({date:new Date().toISOString(),browser:browser.version(),checks,sizes,errors,fixtures:'synthetic geometry only'},null,2));console.log(JSON.stringify({checks,sizes,errors},null,2));
 }finally{await browser.close()}
