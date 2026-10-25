@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-25T05:09:46.530Z",
+  "checks": [
+    "All 10 saved original PNGs decode successfully",
+    "Existing/new filtering preserves 6 and 4 distinct concepts",
+    "Full-size dialog supports arrow navigation, Esc and trigger focus restoration",
+    "390px catalog and modal remain within viewport width",
+    "Catalog, filters and local PNG viewing work offline",
+    "No external network requests or uncaught errors"
+  ],
+  "errors": [],
+  "scope": "Concept catalog only; images generated with image_gen. Does not validate actual gallery features, model accuracy or photography facts."
+}
