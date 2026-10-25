@@ -33,3 +33,7 @@ uv run python tools/report_inventory.py
 HDR/gain-map和未知色彩会明确延期；降位深不等于tone mapping。检验方向、不放大、输出ICC与EXIF剥离，并比较小样原图的正规ICC解码与输出。统计只使用`ok_sdr`，把HDR覆盖不足单独写出。
 
 发布前运行报告生成器，仅将汇总Markdown/数值JSON加入docs。外推不是全库转码实测；视频、模型、临时文件单列预算。更新STATUS、阶段日志和验证限制，不能将P0工具声称为正式webserver。
+
+## 只读关键词词库评估
+
+已有正式刮削库可运行`PYTHONPATH=. uv run --all-extras python tools/probe_keyword_lexicon.py --database data/server/catalog.sqlite --output data/keyword-lexicon-evaluation`。它用只读SQLite和当前策展投影、禁网、不读NAS图片；具体标签/城市/照片关联及实验SQLite只能留data，公开仅复制summary汇总。分类别名恢复测试刻意选取原筛选缺失的词，不能宣传成agent或识别准确率。原型库不是生产索引；方法及边界见docs/research/keyword-lexicon-plan.md。

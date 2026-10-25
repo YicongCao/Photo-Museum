@@ -1,0 +1,82 @@
+{
+  "snapshot_utc": "2026-10-25T16:18:35.503436+00:00",
+  "schema": 9,
+  "photos": 18246,
+  "coverage": {
+    "subjects": 18246,
+    "topics": 11952,
+    "styles": 2627,
+    "place": 15291
+  },
+  "terms": {
+    "subject": 997,
+    "city": 271,
+    "topic": 19,
+    "style": 14
+  },
+  "subject_raw_id_variants": 1928,
+  "subject_resolved_synsets": 991,
+  "subject_unresolved_records": 6,
+  "unique_alias_strings": 4934,
+  "photo_term_links": 127656,
+  "facets": {
+    "subject": {
+      "distinct_labels": 989,
+      "returned": 60,
+      "omitted_after_top60": 929
+    },
+    "topic": {
+      "distinct_labels": 19,
+      "returned": 19,
+      "omitted_after_top60": 0
+    },
+    "style": {
+      "distinct_labels": 14,
+      "returned": 14,
+      "omitted_after_top60": 0
+    },
+    "city": {
+      "distinct_labels": 270,
+      "returned": 60,
+      "omitted_after_top60": 210
+    }
+  },
+  "same_label_multiple_ids": {
+    "subject": 7,
+    "city": 1,
+    "topic": 0,
+    "style": 0
+  },
+  "ambiguous_alias_strings_per_domain": {
+    "subject": 25,
+    "city": 3
+  },
+  "city_without_stable_id": 0,
+  "load_seconds": 4.207,
+  "facet_seconds_after_load": {
+    "subject": 0.0516,
+    "topic": 0.0244,
+    "style": 0.0196,
+    "city": 0.0347
+  },
+  "serialized_vocabulary_bytes_including_photo_ids": 4903333,
+  "inventory_bytes_without_photo_ids": 292105,
+  "sqlite_prototype": {
+    "bytes": 25387008,
+    "build_seconds": 0.805,
+    "lookup_trials": 200,
+    "warm_exact_lookup_median_ms": 0.0066,
+    "warm_exact_lookup_p95_ms": 0.0077,
+    "integrity_check": "ok"
+  },
+  "unique_unambiguous_subject_alias_cases": 3540,
+  "subject_alias_cases_absent_from_existing_exact_filters": 1576,
+  "sample_evaluation": {
+    "cases": 20,
+    "baseline_nonempty": 0,
+    "alias_nonempty": 20,
+    "exact_expected_set": 20
+  },
+  "network_attempts": 0,
+  "boundary": "SQLite URI mode=ro/query_only. Existing current-version/exclusion/GPS preference projection. Alias test measures dictionary exact-match recovery, not image accuracy or LLM end-to-end success."
+}
