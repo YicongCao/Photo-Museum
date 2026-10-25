@@ -1,4 +1,5 @@
 import uuid
+from .schema_helpers import drop_lexicon
 from photo_museum.db import Database
 from photo_museum.media_worker import MediaWorker
 from photo_museum.worker import Worker
@@ -59,6 +60,7 @@ def test_existing_nested_catalog_is_excluded_without_marking_nas_missing(system)
         c.execute('INSERT INTO entries('+','.join(row)+') VALUES('+','.join('?' for _ in row)+')',list(row.values()))
         c.execute('INSERT INTO media_jobs(asset_id,revision) VALUES(?,?)',(row['id'],row['revision']))
         c.execute('INSERT INTO scan_dirs(job_id,path) VALUES(?,?)',(jid,row['parent']))
+        drop_lexicon(c)
         c.execute('ALTER TABLE entries DROP COLUMN scope_excluded')
         c.execute('DROP INDEX cache_asset_revision_profile')
         # The simulated v5 catalog must not retain tables introduced by v8/v9.

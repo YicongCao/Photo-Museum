@@ -66,6 +66,10 @@ with tempfile.TemporaryDirectory(prefix='museum-p5-') as directory,fixture.fixtu
  if os.environ.get('MUSEUM_VALIDATION_SETTINGS')=='1':
   from tools.settings_fixture import start
   cleanup=start(db,directory)
+ lexicon_cleanup=lambda:None
+ if os.environ.get('MUSEUM_VALIDATION_LEXICON')=='1':
+  from tools.lexicon_fixture import start as start_lexicon
+  lexicon_cleanup=start_lexicon(db)
  print('P5/P6 synthetic ready',flush=True)
  try:uvicorn.run(app,host='127.0.0.1',port=port,access_log=False)
- finally:cleanup()
+ finally:lexicon_cleanup();cleanup()

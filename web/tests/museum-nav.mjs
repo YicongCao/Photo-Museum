@@ -1,7 +1,7 @@
 import {chromium} from '../../prototype/node_modules/@playwright/test/index.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-const base=process.env.MUSEUM_BROWSER_BASE||'http://localhost:8793',out='docs/design/previews/navigation';
+const base=process.env.MUSEUM_BROWSER_BASE||'http://localhost:8793',out=process.env.MUSEUM_BROWSER_OUTPUT||'docs/design/previews/navigation';
 await fs.mkdir(out,{recursive:true});await fs.mkdir('data/navigation-unification',{recursive:true});
 const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
 const context=await browser.newContext({viewport:{width:1500,height:940}}),page=await context.newPage(),checks=[],errors=[],requests=[];
@@ -36,5 +36,5 @@ try{
  await page.getByLabel('全屏显示',{exact:true}).click();await page.waitForFunction(()=>!!document.fullscreenElement);await page.getByRole('link',{name:'Dashboard',exact:true}).click();await page.getByLabel('退出全屏',{exact:true}).waitFor();await page.getByLabel('退出全屏',{exact:true}).click();await page.waitForFunction(()=>!document.fullscreenElement);checks.push('Fullscreen state stays accurate when changing page and exits using the same shared tool');
  await page.getByLabel('锁定',{exact:true}).click();await page.getByLabel('馆主密码',{exact:true}).waitFor();checks.push('Shared lock logs out the isolated synthetic session');
  assert.deepEqual(errors,[]);assert.equal(requests.filter(u=>!u.startsWith(base)&&!u.startsWith('blob:')&&!u.startsWith('data:')).length,0);
- await fs.writeFile('docs/research/navigation-unification-evidence.json',JSON.stringify({checks,errors,colors,fixture:'Isolated synthetic P5 catalog. No real credentials, NAS changes or LLM calls.'},null,2));console.log(JSON.stringify({checks,errors},null,2));
+ await fs.writeFile(process.env.MUSEUM_BROWSER_EVIDENCE||'docs/research/navigation-unification-evidence.json',JSON.stringify({checks,errors,colors,fixture:'Isolated synthetic P5 catalog. No real credentials, NAS changes or LLM calls.'},null,2));console.log(JSON.stringify({checks,errors},null,2));
 }catch(e){await page.screenshot({path:'data/navigation-unification/failure.png'});console.log(await page.locator('.museum-nav').evaluate(e=>({html:e.outerHTML,rect:e.getBoundingClientRect().toJSON()})).catch(()=>''));throw e}finally{await browser.close()}

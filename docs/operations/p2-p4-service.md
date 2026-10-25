@@ -93,6 +93,11 @@ uv run --all-extras python -m photo_museum.backup restore /private/backup-new /p
 
 ## SQLite竞争与worker退出（2026-10-26）
 
-服务继续使用本地WAL SQLite。四类worker遇BUSY/LOCKED会退避、重新读取持久队列，不把临时锁当作坏照片；候选/目录重查询不持有写锁。worker异常退出由supervisor按1–30秒单独重启，HTTP进程继续服务；API本身退出仍关闭整个supervisor。停止服务仍向supervisor发送SIGTERM，不要逐个强杀worker。
+服务继续使用本地WAL SQLite。各类worker遇BUSY/LOCKED会退避、重新读取持久队列，不把临时锁当作坏照片；候选/目录重查询不持有写锁。worker异常退出由supervisor按1–30秒单独重启，HTTP进程继续服务；API本身退出仍关闭整个supervisor。停止服务仍向supervisor发送SIGTERM，不要逐个强杀worker。
 
 排查先读本次服务日志，区分`Database busy; worker will retry`、`Worker N exited; restart in Ns`与实际数据库/模型异常。短暂BUSY恢复不等于文件失败；反复重启需查真正异常，不能只调高timeout掩盖。复验见[锁竞争与进程恢复](../research/sqlite-contention-recovery.md)，故障注入只运行于隔离测试库，不对真实NAS/正式库持锁。
+
+
+## 全局词库（2026-10-26）
+
+Supervisor新增独立lexicon_worker，和目录、媒体、视觉、摄影worker共用持久SQLite及锁退避；API继续独立运行。schema11增加本地词库派生表和变更队列。重建不重刮、不访问NAS/模型；构建完成前保留旧代。Settings → 关键词词库可看词条、别名、数量、来源和同步状态。迁移前做在线backup，参见[实现与验收](../research/keyword-lexicon-implementation.md)。

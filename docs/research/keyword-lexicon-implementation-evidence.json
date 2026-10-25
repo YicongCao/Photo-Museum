@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-26",
+  "schema": 11,
+  "backend": {
+    "full_suite": 156,
+    "passed": 156,
+    "keyword_specific_tests": 12,
+    "supplementary_agent_regression": 26,
+    "migration_noop_regression": 6
+  },
+  "browser": {
+    "keyword_checks": 11,
+    "navigation_checks": 8,
+    "status_unit_tests": 4,
+    "fixture": "84 generated images; synthetic metadata and a local fake streaming provider; no real provider-quality claim",
+    "viewports": [
+      "1500x940",
+      "1280x640",
+      "390x720",
+      "320x640",
+      "844x390"
+    ],
+    "keyword_evidence_date": "2026-10-25T23:29:49.310Z",
+    "errors": []
+  },
+  "formal_index": {
+    "photos": 18246,
+    "domains": {
+      "subject": 997,
+      "topic": 19,
+      "style": 14,
+      "city": 271
+    },
+    "distinct_alias_strings": 4918,
+    "ambiguous_domain_aliases": 28,
+    "asset_term_links": 127656,
+    "build_seconds": 11.463451417046599,
+    "storage_bytes_including_indexes": 121794560,
+    "metadata_only_network_or_decode_attempts": 0,
+    "torch_loaded_during_build": false,
+    "initial_integrity": "ok",
+    "pending_at_audit": 0
+  },
+  "formal_query_audit": {
+    "projection_seconds": 6.884732167003676,
+    "count_consistency": true,
+    "checked_missing_aliases": 20,
+    "all_sets_equal": true,
+    "lookup_mean_seconds": 0.09348467500240076,
+    "lookup_max_seconds": 0.11591466696700081,
+    "network_or_image_open_attempts": 0,
+    "source_analysis_curation_cache_queues_unchanged": true
+  },
+  "idle_stability": {
+    "duration_seconds": 78.2753119468689,
+    "pending": 0,
+    "heartbeat_age_seconds": 0.8444762229919434,
+    "idle_revision_stable": true,
+    "updated_unchanged": true
+  },
+  "original_fact_contents_unchanged": [
+    "metadata",
+    "analysis",
+    "curation",
+    "media_info",
+    "people",
+    "faces"
+  ],
+  "limits": [
+    "Intent-to-photo accuracy and real paid provider behavior not tested by these deterministic alias checks",
+    "Missing administrative cities are not invented from nearest towns or event titles",
+    "No automatic related-concept expansion; no image/model reruns"
+  ]
+}

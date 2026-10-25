@@ -44,6 +44,7 @@ def main():
     def stop(*_):
         nonlocal stopping
         stopping = True
+    commands.append([sys.executable,'-m','photo_museum.lexicon_worker','--data',env['MUSEUM_DATA']])
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
     return supervise(commands, env, lambda: stopping)

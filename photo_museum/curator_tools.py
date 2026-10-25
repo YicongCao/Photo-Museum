@@ -7,6 +7,7 @@ from pathlib import PurePosixPath
 from pydantic import BaseModel,ConfigDict,Field,field_validator
 from .exhibitions import period,place_label
 from .localization import localize_tags
+from .lexicon import Lexicon,photo_terms,DOMAINS
 
 ROOMS={'cover':'Cover Flow','wall':'照片墙','calendar':'日历','map':'地图','gear':'器材馆','space':'时空隧道',
        'rings':'人生年轮','constellation':'记忆星图','scroll':'记忆长卷','revisit':'故地重游'}
@@ -27,6 +28,12 @@ class Filters(Input):
     style:list[str]=Field(default_factory=list,max_length=20)
     topic:list[str]=Field(default_factory=list,max_length=20)
     subject:list[str]=Field(default_factory=list,max_length=20)
+    keyword_ids:list[str]=Field(default_factory=list,max_length=20,description='lookup_keywords返回的标准ID；同domain多个ID为OR，不同domain为AND，不自动扩展相关概念')
+    @field_validator('keyword_ids')
+    @classmethod
+    def valid_keywords(cls,values):
+        if any(len(v)>160 or ':' not in v or v.split(':',1)[0] not in DOMAINS for v in values):raise ValueError('关键词 ID 无效，请先查询词库')
+        return values
     min_score:float|None=Field(default=None,ge=0,le=100,allow_inf_nan=False)
     pinned:bool|None=None
     has_people:bool|None=None
@@ -93,6 +100,21 @@ class SearchInput(Input):
     def order_valid(cls,v):
         if v not in ('score','time','random','diverse'):raise ValueError('排序无效')
         return v
+class LookupInput(Input):
+    query:str=Field(default='',max_length=160)
+    domains:list[str]=Field(default_factory=lambda:list(DOMAINS),max_length=4)
+    context:Filters=Field(default_factory=Filters)
+    limit:int=Field(default=20,ge=1,le=60)
+    cursor:str|None=Field(default=None,max_length=256)
+    @field_validator('context',mode='before')
+    @classmethod
+    def context_object(cls,v):return SearchInput.object_filters(v)
+    @field_validator('domains')
+    @classmethod
+    def domain_valid(cls,v):
+        if any(d not in DOMAINS for d in v):raise ValueError('词库分类无效')
+        return list(dict.fromkeys(v))
+
 class DetailsInput(Input):
     photo_ids:list[str]=Field(min_length=1,max_length=12)
 class DraftInput(Input):
@@ -111,6 +133,7 @@ TOOL_SPECS=[
  ('catalog_schema','获取可用字段、精度、工具边界和展厅；先读取再筛选。',Empty),
  ('library_overview','获取本地可展成片规模、年代、模型覆盖和缺失信息。',Empty),
  ('list_facets','列出真实分类值和数量。field可用year/activity/camera/lens/country/province/city/style/topic/subject；中文标签或ID可作后续筛选。',FacetInput),
+ ('lookup_keywords','查主体subject/摄影主题topic/风格style/城市city的全局去重词库。返回标准ID、中英文别名、来源、父区域、上下文照片数和消歧候选；按返回ID检索，不猜拼写，不自动合并同名词。cursor用于下一页。',LookupInput),
  ('search_photos','在本地索引筛选成片，返回匹配总数、候选摘要与search_id。不同字段为AND，同字段多个值为OR；query按文字词段匹配。无结果不擅自放宽条件。',SearchInput),
  ('photo_details','读取本轮已检索候选的精简元数据，不读取图片或NAS。',DetailsInput),
  ('create_exhibition','根据本轮search_id/候选创建本地展览草案；photo_ids为空时使用该查询前max_photos张。只生成草案，不改原图或人工标记。',DraftInput),
@@ -140,6 +163,7 @@ def schema():
         'orientation':'landscape/portrait/square，按有效宽高','exposure':'真实ISO、光圈、快门秒数、实际/35mm等效焦距，逐文件事实不能近邻复制',
         'color':'源色域、位深、HDR标记和sRGB假定；浏览预览统一SDR/sRGB'},'rooms':ROOMS,
         'filters_schema':Filters.model_json_schema(),'privacy':'无图片、文件名、NAS路径、精确GPS、人脸特征或人物库姓名；只检索本地现有索引',
+        'keyword_lookup':'先用lookup_keywords查词，使用返回的id放入filters.keyword_ids；同域OR、跨域AND。来源标签仍是机器候选，相关概念不自动扩展。',
         'logic':'字段间AND，字段内多个值OR；未知不当命中。style/topic/subject是候选不是确定事实。'}
 
 
@@ -153,40 +177,52 @@ class LocalTools:
     def __init__(self,db,catalog,run_id,requested_room='auto'):
         self.db=db;self.catalog=catalog;self.run_id=run_id;self.requested_room=requested_room
         self.photos=None;self.searches={};self.seen=set();self.draft=None
-    def load(self):
+    def load(self,asset_ids=None):
         if self.photos is not None:return self.photos
-        photos={p['id']:dict(p,subjects=[],styles=[],topics=[],people_count=0,people_terms=[],technical={}) for p in self.catalog.photos()}
+        scope=tuple(asset_ids) if asset_ids is not None else None
+        suffix=lambda alias:(' AND '+alias+'.asset_id IN ('+','.join('?' for _ in scope)+')') if scope else ''
+        params=scope or ()
+        base=self.catalog.photos(asset_ids=scope) if scope is not None else self.catalog.photos()
+        photos={p['id']:dict(p,subjects=[],styles=[],topics=[],people_count=0,people_terms=[],technical={},lexicon_versions={}) for p in base}
+        if scope is not None and not photos:self.photos=[];return []
         with self.db.connect() as c:
+            expected_place=c.execute("SELECT value FROM settings WHERE key='geography_version'").fetchone()
+            if expected_place:
+                for p in photos.values():
+                    if p.get('place_version')!=expected_place[0]:p['place']=None
             for r in c.execute("""WITH ranked AS(SELECT m.*,row_number() OVER(PARTITION BY m.asset_id,m.field ORDER BY CASE m.layer WHEN 'manual' THEN 0 ELSE 1 END) priority
                 FROM metadata m JOIN entries e ON e.id=m.asset_id WHERE m.stale=0 AND (m.layer='manual' OR m.source_revision=e.revision)
-                AND m.layer IN ('manual','observed') AND m.field IN ('aperture','exposure','iso','focal_35mm'))
-                SELECT asset_id,field,value_json FROM ranked WHERE priority=1"""):
+                AND m.layer IN ('manual','observed') AND m.field IN ('aperture','exposure','iso','focal_35mm')"""+suffix('m')+""")
+                SELECT asset_id,field,value_json FROM ranked WHERE priority=1""",params):
                 if r['asset_id'] in photos:photos[r['asset_id']]['technical'][r['field']]=json.loads(r['value_json'])
             for r in c.execute("""SELECT m.asset_id,m.revision,json_object('hdr_source',json_extract(m.data_json,'$.hdr_source'),
                 'source_color',json_extract(m.data_json,'$.source_color'),'source_bit_depth',json_extract(m.data_json,'$.source_bit_depth'),
-                'assumed_color',json_extract(m.data_json,'$.assumed_color')) color FROM media_info m"""):
+                'assumed_color',json_extract(m.data_json,'$.assumed_color')) color FROM media_info m WHERE 1=1"""+suffix('m'),params):
                 if r['asset_id'] in photos and r['revision']==photos[r['asset_id']]['revision']:photos[r['asset_id']]['technical'].update(json.loads(r['color']))
-            for r in c.execute("""SELECT a.asset_id,json_extract(a.data_json,'$.tags') tags FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
+            for r in c.execute("""SELECT a.asset_id,a.version,json_extract(a.data_json,'$.tags') tags FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
                 JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision WHERE a.provider='visual'
                 AND a.version=(SELECT value FROM settings WHERE key='analysis_version')
                 AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version')
-                AND json_extract(a.data_json,'$.error') IS NULL"""):
+                AND json_extract(a.data_json,'$.error') IS NULL"""+suffix('a'),params):
                 if r['asset_id'] in photos:
-                    photos[r['asset_id']]['subjects']=[{'id':str(t.get('synset') or t.get('class_index') or t.get('label','')),'label':t.get('label_zh') or t.get('label','')} for t in localize_tags(json.loads(r['tags'] or '[]'))]
-            for r in c.execute("""SELECT a.asset_id,a.data_json FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
+                    photos[r['asset_id']]['subjects']=[{'id':str(t.get('synset') or (t['class_index'] if t.get('class_index') is not None else t.get('label',''))),'label':t.get('label_zh') or t.get('label',''),'raw_label':t.get('label',''),'taxonomy':t.get('taxonomy')} for t in localize_tags(json.loads(r['tags'] or '[]'))]
+                    photos[r['asset_id']]['lexicon_versions']['visual']=r['version']
+            for r in c.execute("""SELECT a.asset_id,a.version,a.data_json FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
                 JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision
                 WHERE a.provider='photography' AND a.version=(SELECT value FROM settings WHERE key='photography_version') AND q.status='ready'
                 AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version')
-                AND json_extract(a.data_json,'$.input_preview_updated') IS m.updated AND json_extract(a.data_json,'$.error') IS NULL"""):
+                AND json_extract(a.data_json,'$.input_preview_updated') IS m.updated AND json_extract(a.data_json,'$.error') IS NULL"""+suffix('a'),params):
                 if r['asset_id'] not in photos:continue
+                photos[r['asset_id']]['lexicon_versions']['photography']=r['version']
                 d=json.loads(r['data_json'])
                 for source,target in [('style','styles'),('topic','topics')]:
-                    photos[r['asset_id']][target]=[{'id':t['id'],'label':t['label'],'similarity':t.get('similarity')} for t in d.get(source,{}).get('labels',[]) if isinstance(t,dict) and t.get('id') and t.get('label')]
+                    photos[r['asset_id']][target]=[{'id':t['id'],'label':t['label'],'similarity':t.get('similarity')} for t in (d.get(source,{}).get('labels',[]) if d.get(source,{}).get('status')!='uncertain' else []) if isinstance(t,dict) and t.get('id') and t.get('label')]
             for r in c.execute("""SELECT f.asset_id,p.label,count(*) count FROM faces f JOIN entries e ON e.id=f.asset_id AND e.revision=f.revision
-                JOIN people p ON p.id=f.person_id WHERE e.missing=0 AND e.scope_excluded=0 GROUP BY f.asset_id,p.id"""):
+                JOIN people p ON p.id=f.person_id WHERE e.missing=0 AND e.scope_excluded=0"""+suffix('f')+""" GROUP BY f.asset_id,p.id""",params):
                 if r['asset_id'] in photos:
                     p=photos[r['asset_id']];p['people_count']+=r['count']
                     if r['label']:p['people_terms'].append(r['label'])
+        for p in photos.values():p['keyword_ids']=list(photo_terms(p))
         self.photos=list(photos.values());return self.photos
     def values(self,p,field):
         if field=='year':return [p['period'][:4]] if p['period'] else []
@@ -202,6 +238,9 @@ class LocalTools:
             return [str(t[k]) for t in p[{'style':'styles','topic':'topics','subject':'subjects'}[field]] for k in ('id','label')]
         raise ValueError('分类字段无效')
     def matches(self,p,f):
+        groups=defaultdict(set)
+        for identifier in f.keyword_ids:groups[identifier.split(':',1)[0]].add(identifier)
+        if any(not ids.intersection(p.get('keyword_ids') or photo_terms(p)) for ids in groups.values()):return False
         stamp=p['period']
         if f.years and (not stamp or int(stamp[:4]) not in f.years):return False
         if f.months and (not stamp or len(stamp)<7 or int(stamp[5:7]) not in f.months):return False
@@ -247,7 +286,14 @@ class LocalTools:
         body=model.model_validate(args)
         if name=='catalog_schema':return schema()
         photos=self.load()
-        if name=='library_overview':return {'photos':len(photos),'years':dict(Counter(p['period'][:4] for p in photos if p['period'])),
+        if name=='lookup_keywords':
+            Lexicon(self.db).validate_ids(body.context.keyword_ids)
+            scoped=[p for p in photos if self.matches(p,body.context)]
+            counts=Counter(identifier for p in scoped for identifier in set(p['keyword_ids']))
+            result=Lexicon(self.db).lookup(body.query,body.domains,limit=body.limit,cursor=body.cursor,counts=counts,context_key=json.dumps(body.context.model_dump(),sort_keys=True))
+            result['count_scope']='当前策展快照中的不同照片数；机器标签为候选'
+            return result
+        if name=='library_overview':return {'keyword_lexicon':Lexicon(self.db).status(),'photos':len(photos),'years':dict(Counter(p['period'][:4] for p in photos if p['period'])),
             'undated':sum(p['period'] is None for p in photos),'with_approximate_place':sum(bool(p['place']) for p in photos),
             'with_style_candidates':sum(bool(p['styles']) for p in photos),'with_topic_candidates':sum(bool(p['topics']) for p in photos),
             'unscored':sum(p['score'] is None for p in photos),'selection':'仅可展示成片，排除隐藏/缺失/越界/占位，视频仍由活动页浏览'}
@@ -266,6 +312,7 @@ class LocalTools:
                 else:counts.update(v for v in set(vals) if v and body.query.casefold() in str(v).casefold())
             return {'field':body.field,'values':[{'value':k,'count':v} for k,v in counts.most_common(body.limit)],'distinct':len(counts)}
         if name=='search_photos':
+            Lexicon(self.db).validate_ids(body.filters.keyword_ids)
             if body.filters.date_from and body.filters.date_to and span(body.filters.date_from)[0]>span(body.filters.date_to)[1]:raise ValueError('日期范围无效')
             if any(getattr(body.filters,k+'_min') is not None and getattr(body.filters,k+'_max') is not None and getattr(body.filters,k+'_min')>getattr(body.filters,k+'_max') for k in ('iso','aperture','exposure','focal')):raise ValueError('数值范围无效')
             found=[p for p in photos if self.matches(p,body.filters)]
@@ -285,7 +332,7 @@ class LocalTools:
                             if not groups[gid]:del groups[gid]
             search_id='search-'+uuid.uuid4().hex[:20];self.searches[search_id]={'photos':found,'filters':body.filters.model_dump(),'order':body.order}
             selected=found[body.offset:body.offset+body.limit];self.seen.update(p['id'] for p in selected)
-            return {'search_id':search_id,'total':len(found),'offset':body.offset,'items':[self.brief(p) for p in selected],'next_offset':body.offset+len(selected) if body.offset+len(selected)<len(found) else None}
+            return {'search_id':search_id,'total':len(found),'offset':body.offset,'items':[self.brief(p) for p in selected],'next_offset':body.offset+len(selected) if body.offset+len(selected)<len(found) else None,'resolved_keyword_ids':body.filters.keyword_ids}
         if name=='photo_details':
             if not set(body.photo_ids)<=self.seen:raise ValueError('只能读取本轮已检索候选')
             return {'items':[self.brief(p) for p in photos if p['id'] in body.photo_ids]}

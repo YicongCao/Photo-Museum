@@ -120,3 +120,10 @@ Cover Flow 在 Settings → 照片显示中可选经典镜面、金框画廊、�
 ## 界面状态系统（2026-10-26）
 
 加载、失败、空状态、后台断线和保存反馈按docs/design/system-status-language.md与.agents/skills/photo-museum-design-system执行。复用PhotoLoading/MuseumMark、StatusNotice、StatusPanel、SavedStatus和共享导航；使用api.js分类与status-text.js受控公开文案，禁止异常、HTML、路径直接进入用户提示。首次鉴权结束前不闪现密码框；后台失败保留画面/数据/位置/草稿，恢复清除对应提示；取消静默；读取重试不重发写操作或付费策展。日夜、手机、矮屏、减少动态效果与真实可点击的恢复流程均须验证。
+
+
+## 全局关键词词库（2026-10-26）
+
+词库是既有元数据的本地二次索引，独立lexicon_worker增量维护；不GET原图、不解码/识别、不调用LLM建库。主体synset、摄影topic/style和GeoNames城市保留各自标准ID/别名/出处/不同照片数，同名词需按域和父区域消歧。相关记录变更在原事务入dirty队列，UPDATE仅值确实变化时入队，不能因媒体队列重复stale写入而忙转。代际完成才发布，构建/过期/待更新不能当全库无结果。
+
+策展先用lookup_keywords查真实词条，再放入filters.keyword_ids；同域OR、跨域AND，与其他原条件AND。不把topic当主体，不由活动标题/附近镇名补地级市，不自动扩展上位概念；模型候选、推断采纳和最终缓存复验边界继续沿用。Settings提供词库检查入口。具体实现/验收见docs/research/keyword-lexicon-implementation.md，复验见media-validation skill的references/lexicon.md。

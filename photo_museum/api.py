@@ -356,6 +356,8 @@ def create_app(directory=None, dav_factory=WebDAV):
     register_curator(app, db, security, owner)
     from .settings_api import register as register_settings
     register_settings(app, db, security, owner, dav_factory)
+    from .lexicon_api import register as register_lexicon
+    register_lexicon(app, db, owner)
     from .inspection import register as register_inspection
     register_inspection(app, db, owner)
     from .intelligence_api import register as register_intelligence

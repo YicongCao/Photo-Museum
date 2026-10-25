@@ -43,11 +43,15 @@ class ExhibitionCatalog:
     def invalidate(self):
         with self.lock:self.loaded=0
 
-    def photos(self):
+    def photos(self, asset_ids=None):
         with self.lock:
-            if time.monotonic()-self.loaded<5:return self.data
+            scoped=asset_ids is not None
+            asset_ids=tuple(asset_ids or ())
+            if scoped and not asset_ids:return []
+            suffix=' AND e.id IN ('+','.join('?' for _ in asset_ids)+')' if scoped else ''
+            if not scoped and time.monotonic()-self.loaded<5:return self.data
             with self.db.connect() as c:
-                c.execute('BEGIN')
+                if not c.in_transaction:c.execute('BEGIN')
                 preferences=read_preferences(c)
                 rows=[dict(r) for r in c.execute("""SELECT e.*,
                     json_object('version',json_extract(m.data_json,'$.version'),
@@ -55,7 +59,7 @@ class ExhibitionCatalog:
                         'hdr_policy',json_extract(m.data_json,'$.hdr_policy')) data_json,u.pinned,
                     json_object('score',json_extract(a.data_json,'$.score'),'error',json_extract(a.data_json,'$.error'),
                         'input_media_version',json_extract(a.data_json,'$.input_media_version')) visual_json,
-                    a.version visual_version,p.data_json place_json,
+                    a.version visual_version,p.data_json place_json,p.version place_version,
                     (SELECT value FROM settings WHERE key='analysis_version') expected_visual,
                     s.root source_root FROM entries e JOIN sources s ON s.id=e.source_id
                     JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision
@@ -66,15 +70,15 @@ class ExhibitionCatalog:
                     AND coalesce(u.excluded,0)=0 AND coalesce(json_extract(m.data_json,'$.metadata_only'),0)=0
                     AND json_extract(m.data_json,'$.placeholder') IS NULL
                     AND EXISTS(SELECT 1 FROM cache_files f WHERE f.asset_id=e.id AND f.revision=e.revision AND f.profile='thumb')
-                    AND EXISTS(SELECT 1 FROM cache_files f WHERE f.asset_id=e.id AND f.revision=e.revision AND f.profile='display')""")]
+                    AND EXISTS(SELECT 1 FROM cache_files f WHERE f.asset_id=e.id AND f.revision=e.revision AND f.profile='display')"""+suffix,asset_ids)]
                 ids={r['id'] for r in rows};meta=defaultdict(dict)
                 for m in c.execute("""WITH ranked AS(SELECT m.*,row_number() OVER(PARTITION BY m.asset_id,m.field
                     ORDER BY CASE m.layer WHEN 'manual' THEN 0 WHEN 'observed' THEN 1 ELSE 2 END) priority
                     FROM metadata m JOIN entries e ON e.id=m.asset_id WHERE m.stale=0
                     AND (m.layer='manual' OR m.source_revision=e.revision)
                     AND (m.layer!='inferred' OR json_extract(m.info_json,'$.accepted')=1)
-                    AND m.field IN ('captured_at','gps','make','camera','lens','focal_length'))
-                    SELECT * FROM ranked WHERE priority=1"""):
+                    AND m.field IN ('captured_at','gps','make','camera','lens','focal_length')"""+suffix+""")
+                    SELECT * FROM ranked WHERE priority=1""",asset_ids):
                     if m['asset_id'] in ids:meta[m['asset_id']][m['field']]=dict(m)
             result=[]
             for r in rows:
@@ -109,9 +113,10 @@ class ExhibitionCatalog:
                    'activity_id':event_id(r['source_id'],r['path'][len(r['source_root']):].strip('/').split('/')[0]),'event':ev,
                    'camera_id':camera_id,'camera':camera.strip(),'make':make.strip(),'lens_id':lens_id,'lens':lens.strip(),
                    'focal_length':value('focal_length'),'gps':gps,'gps_layer':fields.get('gps',{}).get('layer'),
-                   'gps_precision':json.loads(fields.get('gps',{}).get('info_json','{}')).get('precision'),'place':place}
+                   'gps_precision':json.loads(fields.get('gps',{}).get('info_json','{}')).get('precision'),'place':place,'place_version':r['place_version']}
                 result.append(p)
-            self.data=result;self.loaded=time.monotonic();return result
+            if not scoped:self.data=result;self.loaded=time.monotonic()
+            return result
 
 
 def select(photos,*,day=None,month=None,year=None,undated=None,camera=None,lens=None,place=None,pinned=False,missing_gps=False,unresolved_gps=False,activity=None):

@@ -44,7 +44,7 @@ const messages = [
   '工具结果过大，请缩小筛选','工具连续3次未通过校验，已停止重复尝试；请查看工具错误中的字段提示',
   '达到本次推理轮次上限，未发布展览','本次策展超时，未自动重试','本次策展中断，未自动重试',
   '服务已重启，本次未自动重发','本地检索工具执行失败，本次未发布展览',
-  'API key未通过验证','Provider拒绝请求','Provider配额或速率限制','页面暂不可用','预览暂不可用',
+  'API key未通过验证','Provider拒绝请求','Provider配额或速率限制','页面暂不可用','预览暂不可用','词库已更新或分页条件已变化，请重新查询','词库查询参数无效','关键词 ID 无效或已过期，请先查询词库',
 ];
 const approved = new Set([...messages,...Object.values(domainFailures),...Object.values(failureCopy).map(value=>value[0])]);
 export function failureInfo(error) {

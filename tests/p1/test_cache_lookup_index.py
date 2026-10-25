@@ -1,10 +1,12 @@
 from photo_museum.db import Database
+from .schema_helpers import drop_lexicon
 
 
 def test_cache_lookup_uses_composite_index_after_upgrade(tmp_path):
     db = Database(tmp_path)
     with db.connect() as c:
         # Recreate the previous schema version, retaining a cache record across upgrade.
+        drop_lexicon(c)
         c.execute('DROP INDEX cache_asset_revision_profile')
         for table in ('creative_pairs','creative_layouts','curator_exhibitions','curator_events','curator_runs'):c.execute('DROP TABLE '+table)
         c.execute('PRAGMA user_version=6')

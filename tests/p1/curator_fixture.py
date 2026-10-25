@@ -21,11 +21,19 @@ class FakeLLM:
         if 'slow' in user:return httpx.Response(200,headers={'content-type':'text/event-stream'},stream=Events([{'choices':[{'delta':{'reasoning_content':'等待中'}}]}],2))
         if n==0:call=('catalog_schema',{})
         elif n==1:call=('library_overview',{})
+        elif '词库' in user:
+            if n==2:call=('lookup_keywords',{'query':'sport car','domains':['subject']})
+            elif n==3:
+                words=json.loads(results[-1]['content']).get('items',[])
+                call=('search_photos',{'filters':{'keyword_ids':[w['id'] for w in words]},'limit':12}) if words else None
+            elif n==4:
+                search=json.loads(results[-1]['content'])
+                call=('create_exhibition',{'title':'合成词库选片','search_id':search['search_id'],'room':'wall','max_photos':24}) if search['total'] else None
+            else:call=None
         elif n==2:call=('search_photos',{'filters':{'years':[2024]} if '2024' in user else {'years':[1901]} if '空结果' in user else {},'order':'diverse','limit':12})
         elif n==3:
             search=json.loads(results[-1]['content'])
-            if not search['total']:call=None
-            else:call=('create_exhibition',{'title':'合成策展 · 往日片段','search_id':search['search_id'],'room':'wall','max_photos':24})
+            call=('create_exhibition',{'title':'合成策展 · 往日片段','search_id':search['search_id'],'room':'wall','max_photos':24}) if search['total'] else None
         else:call=None
         chunks=[{'choices':[{'delta':{'reasoning_content':'根据本地索引核对条件，'}}]},{'choices':[{'delta':{'reasoning_content':'不扩展用户指定范围。'}}]}]
         if call:
