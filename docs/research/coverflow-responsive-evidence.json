@@ -1,0 +1,316 @@
+{
+  "date": "2026-10-25T04:49:00.518Z",
+  "errors": [],
+  "metrics": [
+    {
+      "width": 390,
+      "height": 844,
+      "current": {
+        "cover": 234,
+        "count": 5,
+        "angle": 64,
+        "scale": 0.81,
+        "offset": 0.57,
+        "spacing": 44.19999999999999,
+        "rail": 0,
+        "mode": "底部横向时间线",
+        "top": 130.08000000000004,
+        "clip": 0,
+        "caption": 756
+      },
+      "proposal": {
+        "cover": 248.73819503823904,
+        "count": 5,
+        "angle": 58,
+        "scale": 0.82,
+        "offset": 0.43,
+        "spacing": 18,
+        "rail": 0,
+        "mode": "折叠年月入口 · 点开三层导航",
+        "top": 252.9150507557048,
+        "clip": 0,
+        "caption": 756
+      }
+    },
+    {
+      "width": 700,
+      "height": 900,
+      "current": {
+        "cover": 420,
+        "count": 7,
+        "angle": 64,
+        "scale": 0.81,
+        "offset": 0.57,
+        "spacing": 47.6,
+        "rail": 0,
+        "mode": "底部横向时间线",
+        "top": 134.55999999999995,
+        "clip": 0,
+        "caption": 812
+      },
+      "proposal": {
+        "cover": 412.44780898607223,
+        "count": 7,
+        "angle": 59.1430897618563,
+        "scale": 0.8257154488092815,
+        "offset": 0.48679939894815927,
+        "spacing": 24.825908033637496,
+        "rail": 0,
+        "mode": "折叠年月入口 · 点开三层导航",
+        "top": 144,
+        "clip": 0,
+        "caption": 812
+      }
+    },
+    {
+      "width": 701,
+      "height": 900,
+      "current": {
+        "cover": 120,
+        "count": 5,
+        "angle": 64,
+        "scale": 0.81,
+        "offset": 0.57,
+        "spacing": 179.64666666666665,
+        "rail": 282,
+        "mode": "右侧三层时间线",
+        "top": 143.76,
+        "clip": 282,
+        "caption": 812
+      },
+      "proposal": {
+        "cover": 412.8937028172445,
+        "count": 7,
+        "angle": 59.149542832485245,
+        "scale": 0.8257477141624262,
+        "offset": 0.4870697809166041,
+        "spacing": 24.844569539382558,
+        "rail": 0,
+        "mode": "折叠年月入口 · 点开三层导航",
+        "top": 144,
+        "clip": 0,
+        "caption": 812
+      }
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "current": {
+        "cover": 184,
+        "count": 5,
+        "angle": 64,
+        "scale": 0.81,
+        "offset": 0.57,
+        "spacing": 179.30666666666664,
+        "rail": 282,
+        "mode": "右侧三层时间线",
+        "top": 153.68000000000006,
+        "clip": 282,
+        "caption": 936
+      },
+      "proposal": {
+        "cover": 442.6424981185715,
+        "count": 7,
+        "angle": 59.600059505800935,
+        "scale": 0.8280002975290046,
+        "offset": 0.5043967158527423,
+        "spacing": 26,
+        "rail": 0,
+        "mode": "折叠年月入口 · 点开三层导航",
+        "top": 163.84,
+        "clip": 0,
+        "caption": 936
+      }
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "current": {
+        "cover": 440,
+        "count": 7,
+        "angle": 64,
+        "scale": 0.81,
+        "offset": 0.57,
+        "spacing": 104.51199999999999,
+        "rail": 282,
+        "mode": "右侧三层时间线",
+        "top": 133.20000000000005,
+        "clip": 282,
+        "caption": 680
+      },
+      "proposal": {
+        "cover": 527.255144067413,
+        "count": 7,
+        "angle": 61.30204796743334,
+        "scale": 0.8365102398371667,
+        "offset": 0.53,
+        "spacing": 41.29814087749136,
+        "rail": 0,
+        "mode": "折叠年月入口 · 点开三层导航",
+        "top": 122.88,
+        "clip": 44.0630802962963,
+        "caption": 680
+      }
+    },
+    {
+      "width": 1280,
+      "height": 640,
+      "current": {
+        "cover": 494.56,
+        "count": 9,
+        "angle": 64,
+        "scale": 0.81,
+        "offset": 0.57,
+        "spacing": 101.23428571428569,
+        "rail": 282,
+        "mode": "右侧三层时间线",
+        "top": 122.96000000000004,
+        "clip": 282,
+        "caption": 552
+      },
+      "proposal": {
+        "cover": 427.8,
+        "count": 9,
+        "angle": 62,
+        "scale": 0.84,
+        "offset": 0.53,
+        "spacing": 63.656613742441124,
+        "rail": 185.6,
+        "mode": "右侧三层时间线",
+        "top": 100,
+        "clip": 201.6,
+        "caption": 552
+      }
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "current": {
+        "cover": 694.8,
+        "count": 10,
+        "angle": 64,
+        "scale": 0.81,
+        "offset": 0.57,
+        "spacing": 82.35,
+        "rail": 282,
+        "mode": "右侧三层时间线",
+        "top": 143.76,
+        "clip": 282,
+        "caption": 812
+      },
+      "proposal": {
+        "cover": 592.9771893179276,
+        "count": 9,
+        "angle": 62,
+        "scale": 0.84,
+        "offset": 0.53,
+        "spacing": 32,
+        "rail": 208.79999999999998,
+        "mode": "右侧三层时间线",
+        "top": 141.31092466065354,
+        "clip": 224.79999999999998,
+        "caption": 812
+      }
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "current": {
+        "cover": 881.76,
+        "count": 14,
+        "angle": 64,
+        "scale": 0.81,
+        "offset": 0.57,
+        "spacing": 76.92,
+        "rail": 282,
+        "mode": "右侧三层时间线",
+        "top": 158.16000000000008,
+        "clip": 282,
+        "caption": 992
+      },
+      "proposal": {
+        "cover": 825.107406286541,
+        "count": 11,
+        "angle": 62,
+        "scale": 0.84,
+        "offset": 0.53,
+        "spacing": 32,
+        "rail": 248,
+        "mode": "右侧三层时间线",
+        "top": 148.37995082651233,
+        "clip": 264,
+        "caption": 992
+      }
+    },
+    {
+      "width": 3440,
+      "height": 1440,
+      "current": {
+        "cover": 1198.56,
+        "count": 20,
+        "angle": 64,
+        "scale": 0.81,
+        "offset": 0.57,
+        "spacing": 113.05777777777777,
+        "rail": 282,
+        "mode": "右侧三层时间线",
+        "top": 186.96000000000004,
+        "clip": 282,
+        "caption": 1352
+      },
+      "proposal": {
+        "cover": 900,
+        "count": 19,
+        "angle": 62,
+        "scale": 0.84,
+        "offset": 0.53,
+        "spacing": 100.19246865836666,
+        "rail": 248,
+        "mode": "右侧三层时间线",
+        "top": 235.20000000000002,
+        "clip": 264,
+        "caption": 1352
+      }
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "current": {
+        "cover": 260,
+        "count": 6,
+        "angle": 64,
+        "scale": 0.81,
+        "offset": 0.57,
+        "spacing": 133.33999999999997,
+        "rail": 282,
+        "mode": "右侧三层时间线",
+        "top": 102.95999999999998,
+        "clip": 282,
+        "caption": 302
+      },
+      "proposal": {
+        "cover": 234,
+        "count": 7,
+        "angle": 60.13402829717077,
+        "scale": 0.8306701414858538,
+        "offset": 0.5202885842223892,
+        "spacing": 117.92764432989381,
+        "rail": 0,
+        "mode": "折叠年月入口 · 点开三层导航",
+        "top": 86,
+        "clip": 0,
+        "caption": 302
+      }
+    }
+  ],
+  "checks": [
+    "10 presets render without horizontal overflow",
+    "Primary and title remain within reserved zones",
+    "Current 701px formula reproduces 120px cover",
+    "Proposal primary geometry continuous across 320–3440px at 900px height",
+    "Layout/day switches work",
+    "Controls fit 390px host",
+    "Local file works offline with sibling geometry script"
+  ],
+  "scope": "Standalone synthetic design model, not production rendering/gesture/performance acceptance"
+}
