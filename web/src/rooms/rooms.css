@@ -13,3 +13,59 @@
 .map-load-error{position:absolute;top:12px;left:12px;z-index:2;background:#000;color:#d8ae72;font-size:12px;padding:6px}
 
 @media(max-width:700px){.map-credit{font-size:10px}.calendar-count,.room-footer,.room-footer button{font-size:11px}}
+
+/* Concept refinement: compact controls, photo-led cells, and actual geographic counts. */
+.calendar-room>.room-heading,.map-room>.room-heading,.gear-room>.room-heading{min-height:58px;padding:0 0 14px;gap:20px;border:0;justify-content:flex-start}
+.calendar-room>.room-heading .room-title,.gear-room>.room-heading .room-title{margin-right:12px}
+.calendar-room>.room-heading h1,.map-room>.room-heading h1,.gear-room>.room-heading h1{font-size:clamp(26px,2.6vw,40px);font-weight:300;line-height:1.15;color:#e9dfcf;letter-spacing:.035em}
+.calendar-room .calendar-navigation{margin-right:6px;gap:2px}.calendar-room .calendar-navigation select{color:#bbb0a0;border-color:#413524;min-width:72px;font-variant-numeric:tabular-nums}
+.calendar-room .room-segments,.gear-room .room-segments{border:1px solid #403525;border-radius:6px;overflow:hidden;align-self:center}
+.calendar-room .room-segments button,.gear-room .room-segments button{min-height:36px;padding:6px 20px;color:#bdb5a7;border:0}
+.calendar-room .room-segments button[aria-pressed=true],.gear-room .room-segments button[aria-pressed=true]{color:#fff4df;background:#806139;box-shadow:inset 0 0 0 1px #b88b4a80}
+.calendar-room{grid-template-rows:58px 28px minmax(0,1fr) 46px}.calendar-room.calendar-year{grid-template-rows:58px minmax(0,1fr) 46px}
+.calendar-weekdays{font-size:13px;text-align:center;align-items:center;padding:0;color:#c3b9a9}
+.calendar-grid{gap:4px}.calendar-cell{border:1px solid #51493c!important;background:#000!important;transition:border-color 180ms;outline-offset:-3px}
+.calendar-cell img{opacity:1}.calendar-cell:after{background:linear-gradient(180deg,#0005,transparent 34%,transparent 70%,#0003)}
+.calendar-cell.is-selected,.calendar-cell:hover:not(:disabled),.calendar-cell:focus-visible{border-color:#d4ac70!important}
+.calendar-cell:disabled{border-color:#2c2821!important}.calendar-cell:disabled .calendar-date{color:#8a8173}.calendar-cell.outside-month{opacity:.38!important}
+.calendar-date{font-weight:300;font-variant-numeric:tabular-nums;top:7px;left:9px;color:#f0e8da}
+.calendar-count{display:flex;gap:5px;align-items:center;bottom:6px;right:6px;padding:2px 5px;color:#e0b577;background:#000b;border-radius:3px;font-variant-numeric:tabular-nums;line-height:1.25}
+.calendar-count .icon{width:14px;height:14px;stroke-width:1.6}.calendar-year .calendar-grid{gap:7px}
+.calendar-room .room-footer{justify-content:flex-start;gap:12px;min-width:0;font-size:11px}.calendar-room .room-footer>span{margin-right:auto}
+.calendar-room .room-footer button{padding:5px 9px;border:1px solid #4b3b23;border-radius:5px;background:#b88b4a0b;min-height:28px;white-space:nowrap;color:#c5b8a3}
+.map-layout{grid-template-columns:minmax(0,1fr) clamp(270px,26vw,390px);gap:26px}.map-surface{border:0}
+.world-country{fill:#030303;stroke:#7d7160;stroke-width:.65}.marker-dot{fill:#936b35;fill-opacity:.86;stroke:#e2b77a;stroke-width:1.1}
+.map-marker text{fill:#fff2da}.map-marker:hover .marker-dot,.map-marker:focus .marker-dot{fill:#b88b4a;stroke:#fff2da}
+.map-zoom{top:auto;bottom:34px;right:12px;border-color:#6d5736;border-radius:5px;overflow:hidden}.map-zoom button+button{border-top:1px solid #403525}
+.map-credit{left:auto;right:8px;bottom:0;font-size:10px;color:#928776;padding:3px;background:#000c}
+.map-photo-preview{position:absolute;left:12px;bottom:30px;width:clamp(190px,28vw,380px);height:clamp(120px,22vh,225px);padding:0!important;overflow:hidden;border:1px solid #9b7843!important;border-radius:6px!important;text-align:left;isolation:isolate;box-shadow:0 12px 40px #000b}
+.map-photo-preview img{width:100%;height:100%;object-fit:cover;display:block;animation:map-photo-arrive 280ms ease-out}
+.map-photo-preview>span{position:absolute;inset:auto 0 0;padding:28px 14px 12px;color:#f0e8da;font-size:15px;background:linear-gradient(transparent,#000c);display:flex;align-items:baseline;gap:9px}
+.map-photo-preview small{font-size:11px;color:#d5c5ad}.map-photo-preview b{margin-left:auto;color:#dfb16c;font-weight:300}
+.map-place-panel{padding-left:24px;border-color:#5b472a}.map-panel-heading h2{font-size:28px;color:#e9dfcf}.map-panel-heading span{font-variant-numeric:tabular-nums;color:#d5af76}
+.map-precision{color:#a69a89;margin:9px 0 18px}.map-breadcrumbs button{color:#c3b49c}
+.place-list>button{min-height:88px;padding:13px 0;gap:14px;border-bottom-color:#30291e;color:#d9cebb}
+.place-list img{width:80px;height:58px;border-radius:3px;border:1px solid #56432b}.place-row-label{min-width:0;font-size:14px;overflow-wrap:anywhere}.place-list small{margin-top:6px;font-size:11px;color:#a99c86}
+.place-count-track{display:block;width:100%;height:4px;background:#25211b;margin-top:8px;overflow:hidden;border-radius:2px}.place-count-track>i{display:block;height:100%;background:linear-gradient(90deg,#b88b4a,#ddb67a)}
+.place-list .place-preview-active{color:#e9bf80;border-bottom-color:#8c6b3f}.place-list>button>span:last-child{color:#9a7849}
+@keyframes map-photo-arrive{from{opacity:.4;transform:scale(1.035)}to{opacity:1;transform:none}}
+@media(max-width:1000px) and (min-width:701px){.map-layout{grid-template-columns:minmax(0,1fr) 250px;gap:16px}.map-place-panel{padding-left:16px}.place-list img{width:58px;height:44px}.map-photo-preview{width:220px;height:145px}}
+@media(max-width:700px){
+ .calendar-room>.room-heading,.map-room>.room-heading,.gear-room>.room-heading{gap:8px;min-height:0;padding-bottom:10px;flex-wrap:wrap}
+ .calendar-room>.room-heading h1,.map-room>.room-heading h1,.gear-room>.room-heading h1{font-size:27px}
+ .calendar-room>.room-heading .room-title{margin-right:auto}.calendar-room .calendar-navigation{order:3;width:100%;justify-content:center;margin:0;height:34px}.calendar-room .calendar-navigation button{min-height:32px;padding:3px 12px}
+ .calendar-room .room-segments button,.gear-room .room-segments button{padding:6px 12px;min-height:32px}
+ .calendar-room{grid-template-rows:86px 24px minmax(0,1fr) 50px}.calendar-room.calendar-year{grid-template-rows:86px minmax(0,1fr) 50px}
+ .calendar-date{font-size:13px;left:4px;top:4px}.calendar-count{font-size:10px;gap:2px;right:2px;bottom:3px;padding:1px 3px}.calendar-count .icon{width:10px;height:10px}.calendar-room .room-footer{gap:6px;flex-wrap:wrap;align-content:center}.calendar-room .room-footer>span{width:100%;text-align:left;font-size:10px;line-height:1}.calendar-room .room-footer button{font-size:10px;padding:3px 5px;min-height:25px}.calendar-week .calendar-date{font-size:15px}
+ .map-layout{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,43%);gap:12px}.map-place-panel{border-left:0;padding:10px 0 0;border-top:1px solid #4b3b23}.map-panel-heading h2{font-size:19px}.map-precision{font-size:10px;margin:4px 0 7px}.place-list>button{min-height:64px;padding:8px 0;gap:10px}.place-list img{width:62px;height:44px}.place-row-label{font-size:13px}.place-count-track{margin-top:5px;height:3px}.place-list small{margin-top:3px}.map-photo-preview{width:140px;height:88px;left:0;bottom:22px}.map-photo-preview>span{padding:20px 7px 7px;font-size:12px;gap:5px}.map-photo-preview small{font-size:9px}.map-zoom{right:2px;bottom:24px}.map-credit{font-size:9px;right:0}.map-breadcrumbs{max-width:70%}.map-room .room-primary{min-height:30px;font-size:11px;margin:2px 0 7px;padding:4px}
+}
+@media(max-height:650px) and (min-width:701px){.calendar-room{grid-template-rows:48px 22px minmax(0,1fr) 36px}.calendar-room.calendar-year{grid-template-rows:48px minmax(0,1fr) 36px}.calendar-room>.room-heading h1,.map-room>.room-heading h1,.gear-room>.room-heading h1{font-size:28px}.calendar-room>.room-heading,.map-room>.room-heading,.gear-room>.room-heading{min-height:48px;padding-bottom:9px}.calendar-date{font-size:14px;top:4px}.calendar-count{bottom:3px;font-size:10px}.map-photo-preview{height:120px;width:200px}.place-list>button{min-height:68px;padding:8px 0}}
+@media(prefers-reduced-motion:reduce){.calendar-cell,.map-photo-preview img{animation:none;transition:none}}
+/* Override the application's generic header height; fixed room rows own sizing. */
+.calendar-room>.room-heading,.map-room>.room-heading,.gear-room>.room-heading{height:auto;min-height:0;padding-bottom:12px}
+.calendar-room>.room-heading h1,.map-room>.room-heading h1,.gear-room>.room-heading h1{line-height:1.1}
+@media(max-width:700px){.calendar-room>.room-heading{padding-bottom:6px;row-gap:4px}.map-room>.room-heading,.gear-room>.room-heading{padding-bottom:10px}}
+
+.room>.room-footer{padding:0;min-height:0;flex-direction:row;align-items:center;min-width:0}
+.calendar-room>.room-heading h1,.map-room>.room-heading h1,.gear-room>.room-heading h1{font-family:var(--gallery-display-font,Georgia,"Songti SC",serif);font-weight:400}
+.calendar-date{font-family:var(--gallery-display-font,Georgia,"Songti SC",serif)}

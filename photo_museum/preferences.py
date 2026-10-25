@@ -9,6 +9,7 @@ class Preferences(BaseModel):
  gps_use_inferred:bool=True
  gps_max_distance_km:float=Field(default=100,ge=1,le=500,allow_inf_nan=False)
  original_loading:Literal['auto','on_demand']='auto'
+ cover_style:Literal['classic','framed','depth','arc']='classic'
  hdr_display:Literal['sdr','native_if_supported']='sdr'
 class PreferenceInput(Preferences):
  revision:int=Field(default=0,ge=0)

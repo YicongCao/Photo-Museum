@@ -7,6 +7,7 @@ import React, {
   useState,
 } from "react";
 import { Icon } from "./icons";
+import {coverLayout,coverPose} from "./cover-layout";
 export function FullscreenButton({ target, className = "" }) {
   const [active, setActive] = useState(false);
   useEffect(() => {
@@ -46,7 +47,7 @@ export function FullscreenButton({ target, className = "" }) {
 }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const Tunnel = forwardRef(function Tunnel(
-  { activities, index, onIndex, onOpen },
+  { activities, index, onIndex, onOpen, style="classic" },
   ref,
 ) {
   const stage = useRef(null),
@@ -55,10 +56,12 @@ export const Tunnel = forwardRef(function Tunnel(
     stride = useRef(720),
     gesture = useRef(null),
     frame = useRef(0),
-    settleTimer = useRef(null);
+    settleTimer = useRef(null),
+    measuredWidth = useRef(null),
+    resizing = useRef(false);
   const [position, setPosition] = useState(index),
-    [width, setWidth] = useState(1000),
-    [height,setHeight] = useState(700);
+    [viewport, setViewport] = useState({width:1000,height:700});
+  const {width,height}=viewport;
   const goTo = (i) => {
     clearTimeout(settleTimer.current);
     scroll.current?.scrollTo({
@@ -80,9 +83,20 @@ export const Tunnel = forwardRef(function Tunnel(
   useLayoutEffect(() => {
     const observer = new ResizeObserver(([entry]) => {
       const w = entry.contentRect.width;
-      stride.current = Math.round(Math.max(140, w * 0.24));
-      setHeight(entry.contentRect.height);
-      setWidth(w);
+      if (w !== measuredWidth.current) {
+        // A wider viewport may clamp scrollLeft before the spacer can grow.
+        // Keep the logical position until React commits the new scroll range.
+        resizing.current = true;
+        measuredWidth.current = w;
+        cancelAnimationFrame(frame.current);
+        frame.current = 0;
+        stride.current = Math.round(Math.max(140, w * 0.24));
+        if (gesture.current) {
+          const g = gesture.current;
+          g.start = pos.current * stride.current + (g.lastX - g.x);
+        }
+      }
+      setViewport({width:w,height:entry.contentRect.height});
     });
     observer.observe(stage.current);
     return () => observer.disconnect();
@@ -109,8 +123,9 @@ export const Tunnel = forwardRef(function Tunnel(
     };
   }, [activities.length]);
   useLayoutEffect(() => {
-    scroll.current.scrollLeft = pos.current * stride.current;
-  }, [width]);
+    scroll.current.scrollTo({left:pos.current * stride.current,behavior:"instant"});
+    resizing.current = false;
+  }, [viewport]);
   const previousActivities = useRef(activities);
   useLayoutEffect(() => {
     const before = previousActivities.current,
@@ -129,6 +144,10 @@ export const Tunnel = forwardRef(function Tunnel(
     if (frame.current) return;
     frame.current = requestAnimationFrame(() => {
       frame.current = 0;
+      // Scroll events can precede ResizeObserver delivery. Never adopt a
+      // browser-clamped offset while the rendered spacer still uses old width.
+      if (resizing.current || measuredWidth.current == null ||
+        Math.abs(stage.current.clientWidth - measuredWidth.current) > .5) return;
       const p = scroll.current.scrollLeft / stride.current;
       pos.current = p;
       setPosition(p);
@@ -145,19 +164,16 @@ export const Tunnel = forwardRef(function Tunnel(
     if (e.type !== "pointercancel" && !g.moved && g.activity != null)
       onOpen(g.activity);
   };
-  const contentWidth=width>700 ? width-282 : width,
-    count=Math.min(activities.length,clamp(Math.round((contentWidth+280)/140),5,20)),
+  const layout=coverLayout(width,height,activities.length,position,style),
+    {count,cover:coverWidth,ratio,top}=layout,
     start=clamp(Math.floor(position-count/2),0,Math.max(0,activities.length-count)),
-    visible=activities.map((a,i)=>({a,i})).slice(start,start+count),
-    coverWidth=Math.min(contentWidth*.60,height*.88,width>700 ? Math.max(120,width-584) : Infinity),
-    reach=Math.max(count/2,count-1-position,position-(activities.length-count)),
-    spacing=Math.max(12,(width*.47-coverWidth*.50)/Math.max(1,reach-1));
+    visible=activities.map((a,i)=>({a,i})).slice(start,start+count);
   return (
     <section
       ref={stage}
-      className="tunnel-stage continuous-tunnel classic-coverflow"
+      className={"tunnel-stage continuous-tunnel classic-coverflow cover-style-"+style}
       data-cover-count={count}
-      style={{"--floor-y":`${Math.max(24,height*.08)+coverWidth/1.5+7}px`}}
+      style={{"--floor-y":`${top+coverWidth/ratio+7}px`}}
       aria-label="时光隧道"
       data-position={position.toFixed(3)}
       onPointerDown={(e) => {
@@ -170,6 +186,7 @@ export const Tunnel = forwardRef(function Tunnel(
         gesture.current = {
           id: e.pointerId,
           x: e.clientX,
+          lastX: e.clientX,
           start: scroll.current.scrollLeft,
           moved: false,
           activity: e.target.closest("[data-activity]")?.dataset.activity,
@@ -180,6 +197,7 @@ export const Tunnel = forwardRef(function Tunnel(
         const g = gesture.current;
         if (!g || g.id !== e.pointerId) return;
         const dx = e.clientX - g.x;
+        g.lastX = e.clientX;
         if (Math.abs(dx) > 6) g.moved = true;
         if (g.moved) scroll.current.scrollLeft = g.start - dx;
       }}
@@ -201,10 +219,7 @@ export const Tunnel = forwardRef(function Tunnel(
       </div>
       <div className="tunnel-panels">
         {visible.map(({ a, i }) => {
-          const d = i - position, distance=Math.abs(d), lean=Math.min(1,distance),
-            x=Math.sign(d)*(Math.min(distance,1)*coverWidth*.57+Math.max(0,distance-1)*spacing),
-            scale=1-.19*lean, angle=-Math.sign(d)*64*lean,
-            light=Math.max(.48,1-distance*.065);
+          const d=i-position,{x,y,scale,angle,light,origin,z}=coverPose(d,layout,style);
           return (
             <button
               key={a.id}
@@ -219,13 +234,13 @@ export const Tunnel = forwardRef(function Tunnel(
                 if (e.detail === 0) onOpen(a.id);
               }}
               style={{
-                width:coverWidth,height:coverWidth/1.5,top:Math.max(24,height*.08),
-                transform: `translateX(-50%) translateX(${x}px) perspective(${Math.max(900,coverWidth*4)}px) rotateY(${angle}deg) scale(${scale})`,
+                width:coverWidth,height:coverWidth/ratio,top,left:origin+"%",
+                transform: `translateX(-50%) translate(${x}px,${y}px) perspective(${Math.max(900,coverWidth*4)}px) rotateY(${angle}deg) scale(${scale})`,
                 opacity:1,
                 "--cover-light":light,
-                "--cover-height":`${coverWidth/1.5}px`,
-                zIndex: 1000 - Math.round(Math.abs(d) * 10),
-                "--reflection-height":`${Math.max(180,(height-coverWidth/1.5-Math.max(24,height*.08))/scale)}px`,
+                "--cover-height":`${coverWidth/ratio}px`,
+                zIndex:z,
+                "--reflection-height":`${Math.max(180,(height-coverWidth/ratio-top)/scale)}px`,
                 pointerEvents:"auto",
               }}
             >

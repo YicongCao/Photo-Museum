@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-25T10:52:01.702Z",
+  "fixture": "Synthetic local fixture only; no real photo or subjective aesthetic acceptance",
+  "checks": [
+    "Scroll mounts only nearby chapters and uses cache previews, with zero original requests",
+    "Last chapter remains selected through editor selection and End, without native scroll clamping changing the active chapter",
+    "Chapter button navigates the horizontal editorial layout",
+    "Chapter order, title and selected hero persist on server across browser reload",
+    "Scroll photo enters shared darkroom and returns to the retained chapter",
+    "City candidates remain unconfirmed and never auto-save pairs",
+    "Manual photo choice requires explicit confirmation and survives reload",
+    "Wipe and blend controls retain original aspect ratio without image stretching",
+    "Three immediate returns interrupt active photo entry animations, restore the pair and release every scene clone and Blob URL",
+    "Immediate room navigation after return waits for the inverse transition and reaches the requested room",
+    "Leaving Gallery mid-entry unmounts animations and releases cloned images and Blob URLs",
+    "Both rooms stay within mobile and short desktop viewports",
+    "Reduced-motion disables entry animations",
+    "No external requests or uncaught browser errors"
+  ],
+  "errors": []
+}

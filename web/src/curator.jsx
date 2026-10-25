@@ -2,7 +2,7 @@ import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Icon} from './icons';
 import {FullscreenButton} from './exhibition';
 import './curator.css';
-export const exhibitionRooms={cover:'Cover Flow',wall:'照片墙',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道'};
+export const exhibitionRooms={cover:'Cover Flow',wall:'照片墙',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道',rings:'人生年轮',constellation:'记忆星图',scroll:'记忆长卷',revisit:'故地重游'};
 const statuses={queued:'等待中',running:'策展中',preparing:'准备展厅',completed:'已结束',failed:'失败',cancelled:'已取消',interrupted:'已中断'};
 const terminal=s=>['completed','failed','cancelled','interrupted'].includes(s);
 const tools={catalog_schema:['metadata','读取字段'],library_overview:['server','图库概况'],list_facets:['topic','分类检索'],search_photos:['subject','筛选照片'],photo_details:['photo','候选详情'],create_exhibition:['frame','展览草案']};

@@ -60,7 +60,10 @@ def create_app(directory=None, dav_factory=WebDAV):
             if origin != expected:
                 return JSONResponse({'detail': 'Same-origin request required'}, 403)
             length = request.headers.get('content-length')
-            if not length or not length.isdigit() or int(length) > 32768:
+            limit = 262144 if request.method == 'PUT' and re.fullmatch(
+                r'/api/(?:curator/exhibitions/[^/]+/)?exhibitions/creative/scroll', request.url.path
+            ) else 32768
+            if not length or not length.isdigit() or int(length) > limit:
                 return JSONResponse({'detail': 'Request body too large or length missing'}, 413)
         result = await call_next(request)
         result.headers['Cache-Control'] = 'no-store'

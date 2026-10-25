@@ -6,7 +6,7 @@ def test_cache_lookup_uses_composite_index_after_upgrade(tmp_path):
     with db.connect() as c:
         # Recreate the previous schema version, retaining a cache record across upgrade.
         c.execute('DROP INDEX cache_asset_revision_profile')
-        for table in ('curator_exhibitions','curator_events','curator_runs'):c.execute('DROP TABLE '+table)
+        for table in ('creative_pairs','creative_layouts','curator_exhibitions','curator_events','curator_runs'):c.execute('DROP TABLE '+table)
         c.execute('PRAGMA user_version=6')
         c.execute("INSERT INTO cache_files VALUES('test','asset','revision','thumb','fixture.webp',10,0)")
     Database(tmp_path)

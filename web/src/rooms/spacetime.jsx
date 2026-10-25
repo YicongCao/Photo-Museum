@@ -28,7 +28,7 @@ export const SpacetimeRoom=forwardRef(function SpacetimeRoom({activities,index,o
  },[activities.length,reduced]);
  useEffect(()=>{const media=matchMedia('(prefers-reduced-motion: reduce)'),f=()=>setReduced(media.matches);media.addEventListener('change',f);return()=>media.removeEventListener('change',f)},[]);
  useEffect(()=>{if(Math.round(pos.current)!==index&&!gesture.current)goTo(index)},[index]);
- const boardWidth=Math.min(size.w*(size.w<700?.8:.58),size.h*.91,780),boardHeight=boardWidth/1.5;
+ const boardWidth=Math.min(size.w*(size.w<700?.75:.51),size.h*.99,820),boardHeight=boardWidth/1.5;
  const visible=activities.map((a,i)=>({a,i,d:i-position})).filter(({d,i})=>reduced?i===Math.round(position):d>=-1.35&&d<=5);
  const end=e=>{gesture.current=null;if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);goTo(Math.round(target.current))};
  return <section className="spacetime-room" aria-label="时空隧道展厅" ref={root}
@@ -37,15 +37,17 @@ export const SpacetimeRoom=forwardRef(function SpacetimeRoom({activities,index,o
   onPointerUp={end} onPointerCancel={end}>
   <small className="spacetime-room-label">时空隧道</small>
   <div className="spacetime-floor" aria-hidden="true"><svg viewBox="0 0 1200 500" preserveAspectRatio="none"><path d="M600 0L0 500M600 0L300 500M600 0L600 500M600 0L900 500M600 0L1200 500M0 140h1200M0 300h1200M0 490h1200"/></svg></div>
-  <div className="spacetime-boards" style={{perspective:Math.max(900,size.w*.95)}}>
+  <div className="spacetime-boards">
    {visible.map(({a,i,d})=>{
-    const side=i%2?1:-1,x=d>=0?side*Math.min(d,1)*boardWidth*.56+side*Math.max(0,d-1)*80:side*(-d)*boardWidth*.9;
-    const z=d>=0?-d*660:-d*420,y=d>=0?-Math.min(d,1)*30:0,angle=d>=0?-side*Math.min(d,1)*24:side*(-d)*22;
+    const scale=reduced?1:Math.pow(.71,d),origin=size.w<700?size.w*.43:size.w*.30,
+      vanish=size.w*(size.w<700?.90:.80),center=vanish-(vanish-origin)*scale-Math.max(0,-d)*size.w*.90,
+      y=size.h*.44+(1-scale)*size.h*.015,angle=reduced?0:-14;
     return <button key={a.id} data-activity={a.id} className={'spacetime-board '+(i===index?'space-current':'')} tabIndex={i===index?0:-1}
      aria-label={'展开活动 '+a.event.theme} onClick={e=>{if(suppress.current&&e.detail!==0)return;if(i!==Math.round(pos.current)){goTo(i);return}onOpen(a.id)}}
-     style={{width:boardWidth,height:boardHeight,left:'50%',top:'46%',zIndex:100-Math.round(d*10),opacity:d<-.9?Math.max(0,(1.35+d)/.45):1,
-      transform:`translate(-50%,-50%) translate3d(${reduced?0:x}px,${reduced?0:y}px,${reduced?0:z}px) rotateY(${reduced?0:angle}deg)`,filter:`brightness(${Math.max(.3,1-Math.max(0,d)*.13)})`}}>
+     style={{width:boardWidth,height:boardHeight,left:reduced?'50%':center,top:y,zIndex:1000-i,
+      transform:`translate(-50%,-50%) perspective(1800px) rotateY(${angle}deg) scale(${scale})`,'--space-light':Math.max(.3,1-Math.max(0,d)*.13),'--space-height':boardHeight+'px'}}>
      <div className={'photo-mosaic count-'+a.selected.length}>{a.selected.length?a.selected.map((p,j)=><div key={p.id} className={'mosaic-cell cell-'+j}><img src={p.thumbnail} alt="" draggable="false" decoding="async"/></div>):<span className="cover-pending">评分中</span>}</div>
+     <div className="space-reflection" aria-hidden="true"><div className={'photo-mosaic count-'+a.selected.length}>{a.selected.map((p,j)=><div key={p.id} className={'mosaic-cell cell-'+j}><img src={p.thumbnail} alt="" draggable="false" decoding="async"/></div>)}</div></div>
     </button>
    })}
   </div>

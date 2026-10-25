@@ -11,15 +11,23 @@ import { CalendarRoom } from './rooms/calendar';
 import { MapRoom } from './rooms/map';
 import { GearRoom } from './rooms/gear';
 import { SpacetimeRoom } from './rooms/spacetime';
+import { RingsRoom } from './rooms/rings';
+import { ConstellationRoom } from './rooms/constellation';
+import { MemoryScrollRoom } from './rooms/memory-scroll';
+import { RevisitRoom } from './rooms/revisit';
 import { RoomRefreshContext } from './rooms/common';
 import './rooms/rooms.css';
 import {usePreferences} from './preferences';
 import './cover-theme.css';
+import './gallery-refinement.css';
 
-const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道'};
+const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道',revisit:'故地重游',scroll:'记忆长卷',rings:'人生年轮',constellation:'记忆星图'};
+const creativeRooms={rings:RingsRoom,constellation:ConstellationRoom,scroll:MemoryScrollRoom,revisit:RevisitRoom};
 function savedRooms(key='museum.rooms'){try{return JSON.parse(sessionStorage.getItem(key) || '{}')}catch{return {}}}
 
 export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }) {
+  const {values:preferences}=usePreferences();
+  const coverStyle=preferences.cover_style || 'classic';
   const storageKey=exhibitionId?'museum.rooms.'+exhibitionId:'museum.rooms';
   const api=useMemo(()=>exhibitionId?((path,...args)=>baseApi((path==='/gallery'||path.startsWith('/gallery/')||path.startsWith('/exhibitions/'))?'/curator/exhibitions/'+encodeURIComponent(exhibitionId)+path:path,...args)):baseApi,[baseApi,exhibitionId]);
   const [scopeMeta,setScopeMeta]=useState(null);
@@ -54,6 +62,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
   const shell=useRef(null), warm=useRef(null), openingRef=useRef(false);
   const animate=useSceneMotion(shell);
   const current = activities[index];
+  const CreativeRoom=creativeRooms[room];
   const wallActivity=activities.find(a=>a.id===wallId);
   useEffect(()=>{
     if (!current || view!=='tunnel' || !['cover','space'].includes(room) || openingRef.current) return;
@@ -65,9 +74,12 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
   },[current?.id,view,room]);
   useEffect(()=>()=>warm.current?.dispose(),[]);
   const displayedActivity=collection && view==='wall' ? {event:{theme:collection.title}} : view==="wall" && wallActivity ? wallActivity : current;
-  const changeRoom=next=>{
-    setRoomMenu(false);warm.current?.dispose();warm.current=null;setPhoto(null);setView('tunnel');setRoom(next);
-    roomMenuRef.current?.querySelector('button')?.focus();
+  const changeRoom=async next=>{
+    setRoomMenu(false);if(next===room&&view==='tunnel')return;
+    if(openingRef.current)return;openingRef.current=true;setOpening(true);
+    warm.current?.dispose();warm.current=null;
+    try {await animate('.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room,.wall-scene:not(.scene-inactive),.gallery-caption,.activity-timeline',()=>{setPhoto(null);setView('tunnel');setRoom(next)},'.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room','room')}
+    finally{openingRef.current=false;setOpening(false);roomMenuRef.current?.querySelector('button')?.focus()}
   };
   const openCollection=async descriptor=>{
     if(openingRef.current)return;
@@ -112,10 +124,10 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
     else setIndex(i);
   };
   const move = (n) => tunnel.current?.move(n);
-  const backGallery=()=>{
-    if(openingRef.current || !['cover','space'].includes(room)){warm.current?.dispose();warm.current=null;}
-    setPhoto(null);setView('tunnel');
-
+  const backGallery=async()=>{
+    if(openingRef.current)return;openingRef.current=true;setOpening(true);
+    try {await animate('.wall-scene:not(.scene-inactive),.gallery-caption',()=>{setPhoto(null);setView('tunnel')},'.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room','back')}
+    finally{if(!['cover','space'].includes(room)){warm.current?.dispose();warm.current=null}openingRef.current=false;setOpening(false)}
   };
   const openActivity = async (id) => {
     if(openingRef.current)return;
@@ -152,15 +164,16 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
     lastFocus.current = document.activeElement;
     animate(selector,()=>setPhoto({...p,preview:warm.current?.urls.get(p.id) || p.preview}),".viewer-image-area,.photo-viewer .metadata-panel");
   };
-  const close = () => {
-    setPhoto(null);
+  const close = async () => {
+    if(openingRef.current)return;openingRef.current=true;setOpening(true);
     const focus=lastFocus.current;lastFocus.current=null;
+    try{await animate('.photo-viewer',()=>setPhoto(null),view==='wall'?'.wall-scene':'.gallery-room-host','back')}finally{openingRef.current=false;setOpening(false)}
     requestAnimationFrame(() => {if(focus?.isConnected)focus.focus({preventScroll:true})});
   };
   const displayTheme=room==='cover'&&view==='tunnel'&&!photo?coverTheme:'dark';
   return (
-    <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening} data-theme={displayTheme}>
-      <nav className="gallery-nav" inert={!!photo}>
+    <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening} data-theme={displayTheme} data-cover-style={coverStyle}>
+      <nav className="gallery-nav" inert={!!photo || opening}>
         {view === "wall" && <button className="gallery-back" onClick={rootWall?returnCurator:backGallery} aria-label={rootWall?'返回策展助理':room==='cover'?'返回 Gallery':'返回 '+roomNames[room]}>← {rootWall?'策展助理':room==='cover'?'Gallery':roomNames[room]}</button>}
         {exhibitionId&&view==='tunnel'&&<><button className="gallery-curated-back" onClick={returnCurator}>← 策展助理</button><span className="gallery-curated-context">{scopeMeta?.title}</span></>}
         <div>
@@ -191,6 +204,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
       {view==='tunnel'&&room==='calendar'&&<div className="gallery-room-host"><CalendarRoom api={api} anchor={anchor} setAnchor={setAnchor} state={roomStates.calendar || {}} onState={s=>setRoomStates(p=>({...p,calendar:s}))} onCollection={openCollection}/></div>}
       {view==='tunnel'&&room==='map'&&<div className="gallery-room-host"><MapRoom api={api} state={roomStates.map || {}} onState={s=>setRoomStates(p=>({...p,map:s}))} onCollection={openCollection}/></div>}
       {view==='tunnel'&&room==='gear'&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><GearRoom api={api} anchor={anchor} state={roomStates.gear || {}} onState={s=>setRoomStates(p=>({...p,gear:s}))} onCollection={openCollection} onPhoto={p=>open(p,'.room img')}/></div>}
+      {view==='tunnel'&&CreativeRoom&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><CreativeRoom api={api} state={roomStates[room] || {}} onState={s=>setRoomStates(p=>({...p,[room]:s}))} onCollection={openCollection} onPhoto={p=>open(p,'.room img')}/></div>}
       {!current && ['cover','space'].includes(room) ? (
         <div className="gallery-empty">
           <Icon name="photo" />
@@ -202,6 +216,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
           {room==='cover'&&<div className={"cover-scene scene-layer " + (view!=="tunnel" || photo ? "scene-inactive" : "")} inert={view!=="tunnel" || !!photo}>
             <Tunnel
               ref={tunnel}
+              style={coverStyle}
               activities={activities}
               index={index}
               onIndex={setIndex}
@@ -209,7 +224,7 @@ export function Gallery({ api:baseApi, onAdmin,exhibitionId=null,roomHint=null }
             />
           </div>}
           {room==='space'&&view==='tunnel'&&!photo&&<SpacetimeRoom ref={tunnel} activities={activities} index={index} onIndex={setIndex} onOpen={openActivity} state={roomStates.space || {}} onState={s=>setRoomStates(p=>({...p,space:s}))}/>}
-          {(wallActivity || collection) && view==='wall' && <div className={"wall-scene scene-layer " + (photo ? "scene-inactive" : "")} inert={!!photo}>
+          {(wallActivity || collection) && view==='wall' && <div className={"wall-scene scene-layer " + (photo ? "scene-inactive" : "")} inert={!!photo || opening}>
             <PhotoWall
               key={collection?.id || wallActivity.id}
               activity={collection ? {id:collection.id,photos:counts?.photos,videos:0} : wallActivity}

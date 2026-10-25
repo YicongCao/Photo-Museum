@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-25T11:05:10.599Z",
+  "checks": [
+    "经典镜面: Settings保存、主封面转正、5种屏幕尺寸无页面溢出",
+    "金框画廊: Settings保存、主封面转正、5种屏幕尺寸无页面溢出",
+    "纵深展廊: Settings保存、主封面转正、5种屏幕尺寸无页面溢出",
+    "全景弧幕: Settings保存、主封面转正、5种屏幕尺寸无页面溢出",
+    "样式随服务端偏好重载恢复",
+    "新样式仍复用活动墙并返回保位，日夜不反色",
+    "八展厅切换过渡完成后无残留飞散克隆",
+    "时空隧道透明重叠修复，前一画板完全退场，手机标题避让按钮",
+    "全程只浏览展厅与墙：零原图请求",
+    "横向触控板停止后仍平滑归位转正",
+    "减少动态效果时可直接切换且无残留",
+    "零外部图片/地图/字体请求与未捕获错误"
+  ],
+  "errors": [],
+  "fixture": "synthetic photos; no private NAS data; screenshot layout evidence, not photo quality acceptance",
+  "additional_check": "Settings style radio controls remain16×16px at1586px and390px; selected preview card is full hit target"
+}

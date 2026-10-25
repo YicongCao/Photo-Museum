@@ -1,5 +1,6 @@
 import React,{useEffect} from 'react';
 import {useRoomData,RoomStatus,collection,stepPeriod} from './common';
+import {Icon} from '../icons';
 
 export function CalendarRoom({api,anchor,setAnchor,state,onState,onCollection}) {
  const wanted=state.scale || (anchor?.length===4?'year':'month');
@@ -16,7 +17,7 @@ export function CalendarRoom({api,anchor,setAnchor,state,onState,onCollection}) 
  };
  return <section className={'room calendar-room calendar-'+scale} aria-label="日历展厅">
   <header className="room-heading">
-   <div className="room-title"><small>日历</small><h1>{(data?.anchor || current || '—').slice(0,scale==='year'?4:7).replace('-',' · ')}</h1></div>
+   <div className="room-title"><h1>{(data?.anchor || current || '—').slice(0,scale==='year'?4:7).replace('-',' · ')}</h1></div>
    <div className="calendar-navigation">
     <button aria-label="上一时段" disabled={!current} onClick={()=>setAnchor(stepPeriod(current,scale,-1))}>〈</button>
     <select aria-label="年份" value={(current || '').slice(0,4)} onChange={e=>{setAnchor(e.target.value);onState({...state,scale:'year'})}}>
@@ -28,11 +29,11 @@ export function CalendarRoom({api,anchor,setAnchor,state,onState,onCollection}) 
   </header>
   {scale!=='year'&&<div className="calendar-weekdays" aria-hidden="true">{'一二三四五六日'.split('').map(d=><span key={d}>{d}</span>)}</div>}
   <div className="calendar-grid" aria-busy={result.loading} inert={result.loading || undefined}>
-   {data?.cells.map(c=><button className={'calendar-cell '+(!c.period.startsWith(data.anchor.slice(0,7))&&scale==='month'?'outside-month':'')}
+   {data?.cells.map(c=><button className={'calendar-cell '+(c.period===current?'is-selected ':'')+(!c.period.startsWith(data.anchor.slice(0,7))&&scale==='month'?'outside-month':'')}
      key={c.period} aria-label={c.period+' · '+c.count+' 张照片'} disabled={!c.count} onClick={()=>open(c)}>
      {c.cover&&<img src={c.cover.thumbnail} alt="" decoding="async"/>}
      <span className="calendar-date">{scale==='year'?Number(c.period.slice(5,7))+' 月':Number(c.period.slice(8,10))}</span>
-     {c.count>0&&<span className="calendar-count">{c.count}{c.estimated>0&&<span title="包含接受的推断日期"> ◇</span>}</span>}
+     {c.count>0&&<span className="calendar-count"><Icon name="photo"/>{c.count}{c.estimated>0&&<span title="包含接受的推断日期"> ◇</span>}</span>}
    </button>)}
   </div>
   <footer className="room-footer">

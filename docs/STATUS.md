@@ -71,3 +71,11 @@ TokenHub/hy4-preview、高强度深度思考与temperature1.1已通过真实合�
 ## Cover Flow 日夜模式
 
 Cover Flow首页新增太阳/月亮SVG切换，支持当前浏览器记忆；白底标题、时间线、预览气泡、按钮和不透明倒影均已适配，照片不反色。照片墙/暗房及其他展厅仍为黑底。12项专项与26项P5回归通过，正式前端已更新，后台刮削保持运行。见[验证](research/coverflow-light-validation.md)。
+
+## Gallery 概念复审与四款样式（本轮）
+
+四款 Cover Flow 已加入 Settings → 照片显示：经典镜面、金框画廊、纵深展廊、全景弧幕。各自调整透视、比例、描边、十图布局和倒影；日夜模式保留。手机/矮屏/超宽屏保持浏览位置，时间线跟随当前活动，修复尺寸突跳与离场画板透明叠加。
+
+人生年轮、记忆星图、记忆长卷、故地重游已实现，带共享暗房、可打断过渡、集合约束及本地持久化；P6可Show至新增四厅。故地重游仍为同城候选＋人工同地点确认，不包含自动同机位配准。横向记忆长卷不等同于原计划B的纵向主题/横向照片双轴体验，F高级屏保仍未交付。
+
+[概念与实装对照](design/gallery-refinement-review.html) · [细节、动画与验收记录](research/gallery-concept-refinement.md) · [数据接口与边界](research/creative-gallery-data.md)。正式SQLite已备份并迁移到schema9，服务已启动。真实图库聚合首次约6–8秒，界面有读取状态；用户主观视觉验收仍待确认。

@@ -61,8 +61,8 @@ def test_existing_nested_catalog_is_excluded_without_marking_nas_missing(system)
         c.execute('INSERT INTO scan_dirs(job_id,path) VALUES(?,?)',(jid,row['parent']))
         c.execute('ALTER TABLE entries DROP COLUMN scope_excluded')
         c.execute('DROP INDEX cache_asset_revision_profile')
-        # The simulated v5 catalog must not retain tables introduced by v8.
-        for table in ('curator_exhibitions','curator_events','curator_runs'):c.execute('DROP TABLE '+table)
+        # The simulated v5 catalog must not retain tables introduced by v8/v9.
+        for table in ('creative_pairs','creative_layouts','curator_exhibitions','curator_events','curator_runs'):c.execute('DROP TABLE '+table)
         c.execute('PRAGMA user_version=5')
     Database(db.directory)
     with db.connect() as c:

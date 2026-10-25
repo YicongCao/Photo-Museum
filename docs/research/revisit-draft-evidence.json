@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-25T10:51:31.604Z",
+  "fixture": "Synthetic fixture; hidden-photo API mutation restored. Empty scoped result is injected; backend scope behavior has separate Python coverage.",
+  "checks": [
+    "Valid draft identities restore from the scoped resolver; session preview URLs and metadata are discarded and storage contains only id/revision per photo",
+    "A currently displayed draft revalidates on Gallery refresh and clears a newly hidden photo while preserving the valid side",
+    "A draft with an old source revision cannot reuse the current photo or its old preview URL",
+    "Resolver failure hides unvalidated previews but preserves identities for a successful retry",
+    "An empty scoped catalog and resolver response cannot resurrect either photo from session storage",
+    "No poisoned preview request, NAS original request or uncaught browser error"
+  ],
+  "errors": []
+}

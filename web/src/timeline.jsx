@@ -6,21 +6,25 @@ import {TimelinePreview} from "./timeline-preview";
 export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) {
   const root = useRef(null), frame = useRef(0), pointer = useRef(null);
   const [preview,setPreview]=useState(null);
-  const showTimer=useRef(null),closeTimer=useRef(null),removeTimer=useRef(null);
+  const showTimer=useRef(null),closeTimer=useRef(null),removeTimer=useRef(null),pendingFocus=useRef(null);
   const closePreview=()=>{
+    pendingFocus.current=null;
     clearTimeout(showTimer.current);clearTimeout(closeTimer.current);clearTimeout(removeTimer.current);
     setPreview(p=>p ? {...p,closing:true} : null);
     removeTimer.current=setTimeout(()=>setPreview(null),matchMedia('(prefers-reduced-motion:reduce)').matches ? 0 : 160);
   };
   const leavePreview=()=>{
+    pendingFocus.current=null;
     clearTimeout(showTimer.current);clearTimeout(closeTimer.current);
     closeTimer.current=setTimeout(closePreview,70);
   };
-  const showPreview=(activity,element)=>{
+  const showPreview=(activity,element,keyboard=false)=>{
+    pendingFocus.current=keyboard ? {activity,element} : null;
     clearTimeout(showTimer.current);clearTimeout(closeTimer.current);clearTimeout(removeTimer.current);
     const switching=preview && preview.activity.id!==activity.id;
     if(switching)setPreview(p=>p ? {...p,closing:true} : null);
     showTimer.current=setTimeout(()=>{
+      pendingFocus.current=null;
       if(!element.isConnected)return;
       const r=element.getBoundingClientRect(),rail=root.current.getBoundingClientRect();
       setPreview({activity,anchor:{x:r.x,y:r.y,width:r.width,height:r.height,railLeft:rail.left},closing:false});
@@ -48,6 +52,24 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) 
     window.addEventListener('keydown',dismiss);window.addEventListener('resize',resize);
     return ()=>{window.removeEventListener('keydown',dismiss);window.removeEventListener('resize',resize);};
   },[]);
+  useEffect(()=>{
+    const node=root.current;let timer;
+    const reveal=()=>{
+      if(node?.contains(document.activeElement) && document.activeElement.matches(':focus-visible'))return;
+      const item=node?.querySelector('button[aria-current="true"]');if(!item)return;
+      // The narrow layout has two independent scrollers: month items and the year rail.
+      for(const container of [item.closest('.timeline-month-group'),node]){
+        const r=item.getBoundingClientRect(),b=container.getBoundingClientRect(),style=getComputedStyle(container);
+        const horizontal=/(auto|scroll)/.test(style.overflowX),vertical=/(auto|scroll)/.test(style.overflowY);
+        const left=horizontal?(r.left<b.left?r.left-b.left:r.right>b.right?r.right-b.right:0):0;
+        const top=vertical?(r.top<b.top?r.top-b.top:r.bottom>b.bottom?r.bottom-b.bottom:0):0;
+        if(left||top)container.scrollBy({left,top,behavior:'instant'});
+      }
+    };
+    const schedule=()=>{clearTimeout(timer);timer=setTimeout(reveal,180)};
+    const observer=new ResizeObserver(schedule);observer.observe(node);schedule();
+    return()=>{clearTimeout(timer);observer.disconnect()};
+  },[index,activities[index]?.id,activities.length]);
   const magnify = (e) => {
     if (e.pointerType === "touch" || !matchMedia("(hover: hover)").matches) return;
     pointer.current = e.clientY;
@@ -66,7 +88,12 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) 
     });
   };
   return <><aside ref={root} className="activity-timeline dock-timeline" aria-label="活动时间线"
-    onPointerMove={magnify} onPointerLeave={()=>{reset();leavePreview();}} onScroll={()=>{reset();closePreview();}}>
+    onPointerMove={magnify} onPointerLeave={()=>{reset();leavePreview();}} onScroll={()=>{
+      // Native focus can scroll both narrow-layout rails before its preview opens.
+      const focused=pendingFocus.current;
+      reset();closePreview();
+      if(focused && document.activeElement===focused.element)showPreview(focused.activity,focused.element,true);
+    }}>
     {groups.map((year) => <section className="timeline-year-group" key={year.year} aria-label={String(year.year)}>
       <h2 data-dock className={"timeline-year " + (activities[index]?.event.year === year.year ? "selected" : "")}><span className="dock-label">{year.year}</span></h2>
       {year.months.map((month) => <section className="timeline-month-group" key={month.month} aria-label={month.month === "年度" ? "年度" : `${month.month}月`}>
@@ -75,7 +102,7 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark" }) 
           <button aria-current={i === index ? "true" : undefined} className={i === index ? "selected" : ""}
             aria-describedby={preview?.activity.id===activity.id && !preview.closing ? 'timeline-photo-preview' : undefined}
             onPointerEnter={e=>{if(e.pointerType!=='touch')showPreview(activity,e.currentTarget);}}
-            onPointerLeave={leavePreview} onFocus={e=>showPreview(activity,e.currentTarget)} onBlur={leavePreview}
+            onPointerLeave={leavePreview} onFocus={e=>showPreview(activity,e.currentTarget,true)} onBlur={leavePreview}
             onClick={()=>{closePreview();onSelect(i);}}>
             <span className="dock-label"><span className="timeline-dot"/>{activity.event.theme}</span>
           </button>

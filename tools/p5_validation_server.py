@@ -53,6 +53,9 @@ with tempfile.TemporaryDirectory(prefix='museum-p5-') as directory,fixture.fixtu
    with db.connect() as c:c.execute('INSERT OR REPLACE INTO analysis VALUES(?,?,?,?,?,?)',(row['id'],row['revision'],'places','p5-places',json.dumps(place),time.time()))
   if n%9==0:
    with db.connect() as c:c.execute('INSERT OR REPLACE INTO curation VALUES(?,?,?,?)',(row['id'],1,0,time.time()))
+ if os.environ.get('MUSEUM_VALIDATION_CREATIVE')=='1':
+  from tools.creative_fixture import enrich
+  enrich(db)
  if os.environ.get('MUSEUM_VALIDATION_CURATOR')=='1':
   import httpx
   from photo_museum.curator_provider import ProviderInput,save_config

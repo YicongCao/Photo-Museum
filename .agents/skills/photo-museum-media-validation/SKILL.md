@@ -5,6 +5,8 @@ description: 复验 photo-museum 媒体缓存、Gallery/P5展厅、P6策展助�
 
 # 正式媒体与馆务复验
 
+四款Cover Flow、概念截图对照及四个创意展厅见[创意展厅复验](references/creative-gallery.md)。
+
 统一文件源、LLM、GPS、原图/HDR和缓存偏好的隔离验证见[Settings复验](references/settings.md)。
 
 P5日历、离线地图、器材馆与独立时空隧道的隔离构建、fixture及回归见[四展厅复验](references/p5.md)。真实用户密码由用户输入；公开证据仅合成图库。

@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-25T11:30:24.396Z",
+  "checks": [
+    "Loads only leading score-ranked photos and selects 3–5 images",
+    "Uniform 336×236 speech bubble opens left outside timeline scroll clipping",
+    "Year, month and activity fonts enlarged for 720px screens",
+    "Collapse animation releases every thumbnail Blob URL",
+    "Activities retain the same bubble size",
+    "Rapid activity changes cannot display stale previews",
+    "Keyboard focus previews and Escape dismisses",
+    "Timeline scroll dismisses anchored preview",
+    "Reduced motion disables bubble animations",
+    "Narrow viewport keeps preview on screen above timeline",
+    "Offscreen keyboard focus survives native reveal; later manual scroll still dismisses preview",
+    "Three, four and five photo layouts fill the same rectangle without clipping",
+    "Preview never fetches NAS originals",
+    "No uncaught browser errors"
+  ],
+  "errors": [],
+  "typography": [
+    "26px",
+    "17px",
+    "14px"
+  ],
+  "bubble": {
+    "width": 336,
+    "height": 236
+  },
+  "fixtures": "synthetic geometry only"
+}

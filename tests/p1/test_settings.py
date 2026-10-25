@@ -15,12 +15,15 @@ def test_preferences_guard_and_no_source_or_media_side_effects(system):
     app,client,remote,sid=system
     before=list(remote.calls);s=source(app,sid)
     p=client.get('/api/preferences').json()
-    assert p['original_loading']=='auto' and p['hdr_display']=='sdr' and p['revision']==0
+    assert p['original_loading']=='auto' and p['hdr_display']=='sdr' and p['cover_style']=='classic' and p['revision']==0
     r=save(client,original_loading='on_demand',hdr_display='native_if_supported')
     assert r.status_code==200 and r.json()['revision']==1
     assert client.put('/api/preferences',json=p).status_code==409
-    for change in ({'gps_max_distance_km':0},{'hdr_display':'fake'},{'api_key':'secret'},{'gps_mode':'online'}):
+    for change in ({'gps_max_distance_km':0},{'hdr_display':'fake'},{'cover_style':'random-css'},{'api_key':'secret'},{'gps_mode':'online'}):
         assert save(client,**change).status_code==422
+    for style in ('classic','framed','depth','arc'):
+        assert save(client,cover_style=style).status_code==200
+        assert client.get('/api/preferences').json()['cover_style']==style
     assert source(app,sid)==s and remote.calls==before
     with app.state.db.connect() as c:assert c.execute('SELECT count(*) FROM media_jobs').fetchone()[0]==0
     client.post('/api/logout',json={})

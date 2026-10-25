@@ -8,7 +8,8 @@ from pydantic import BaseModel,ConfigDict,Field,field_validator
 from .exhibitions import period,place_label
 from .localization import localize_tags
 
-ROOMS={'cover':'Cover Flow','wall':'照片墙','calendar':'日历','map':'地图','gear':'器材馆','space':'时空隧道'}
+ROOMS={'cover':'Cover Flow','wall':'照片墙','calendar':'日历','map':'地图','gear':'器材馆','space':'时空隧道',
+       'rings':'人生年轮','constellation':'记忆星图','scroll':'记忆长卷','revisit':'故地重游'}
 class Input(BaseModel):
     model_config=ConfigDict(extra='forbid')
 class Filters(Input):

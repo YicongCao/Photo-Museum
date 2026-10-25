@@ -184,6 +184,9 @@ def register(app,db,owner,prefix='/api',catalog_factory=None):
         catalog=ExhibitionCatalog(db);app.state.exhibitions=catalog
         def get_catalog():return catalog
 
+    from .creative import register as register_creative
+    register_creative(app,db,owner,get_catalog,prefix=prefix,scoped=catalog_factory is not None)
+
     @app.get(prefix+'/exhibitions/calendar',dependencies=[Depends(owner)])
     def calendar_view(anchor:str|None=None,scale:str='month',catalog=Depends(get_catalog)):
         photos=catalog.photos();years=sorted({int(p['period'][:4]) for p in photos if p['period']},reverse=True)

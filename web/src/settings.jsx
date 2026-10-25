@@ -3,6 +3,8 @@ import {Icon} from './icons';
 import {ProviderForm} from './settings-provider';
 import {usePreferences} from './preferences';
 import './settings.css';
+import {coverStyles} from './cover-layout';
+import './cover-settings.css';
 const tabs={sources:['folder','文件源'],llm:['server','LLM Provider'],gps:['pin','GPS 地址'],display:['display','照片显示'],cache:['thumbnail','缓存']};
 const gib=n=>(n/1024**3).toFixed(2);
 function SourceCard({source:s,api,reload}){
@@ -39,6 +41,7 @@ function PreferenceForm({kind,api,reload,geography,paused}){
   <label>最近城市距离上限（km）<input type="number" min="1" max="500" step="1" required value={form.gps_max_distance_km} onChange={e=>set('gps_max_distance_km',Number(e.target.value))}/></label>
   <p className="settings-note">离线解析，不上传 GPS；地址为最近城市，不制造街道。保存后在本地增量更新已有地址，不读取 NAS。</p>
  </>:<>
+  <fieldset className="cover-style-options"><legend>Cover Flow 样式</legend><div role="radiogroup" aria-label="Cover Flow 样式">{Object.entries(coverStyles).map(([id,label])=><label key={id} className={'cover-style-choice '+(form.cover_style===id?'chosen':'')}><input type="radio" name="cover_style" value={id} checked={(form.cover_style || 'classic')===id} onChange={()=>set('cover_style',id)}/><span className={'cover-style-sketch sketch-'+id} aria-hidden="true">{[-2,-1,0,1,2].map(n=><i key={n} style={{'--n':n,'--a':Math.abs(n)}}><b/><em/><em/><em/></i>)}</span><span>{label}</span></label>)}</div></fieldset>
   <label>原图读取<select aria-label="原图读取" value={form.original_loading} onChange={e=>set('original_loading',e.target.value)}><option value="auto">4K 后自动读取原图</option><option value="on_demand">点按后读取原图</option></select></label>
   <label>HDR / 原文件显示<select aria-label="HDR / 原文件显示" value={form.hdr_display} onChange={e=>set('hdr_display',e.target.value)}><option value="sdr">准确 SDR 优先</option><option value="native_if_supported">设备支持时尝试原生 HDR（实验）</option></select></label>
   <p className="settings-note">缩略图与 4K 始终为 sRGB / SDR。原生模式按设备能力尝试，解码失败回退 SDR；不改变缓存、不重刮。</p>

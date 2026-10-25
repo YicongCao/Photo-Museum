@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-25T10:45:53.173Z",
+  "checks": [
+    "Rings render bounded actual year sectors using only local thumbnails and 4K previews",
+    "Year navigation changes selection without inventing month or day",
+    "Rings opens shared darkroom and returns to the same year",
+    "A year activity opens the filtered collection and returns to its ring",
+    "Constellation is bounded to three label groups with no source downloads",
+    "Zoom/reset work and explanatory label provenance is inspectable",
+    "Constellation photo returns from shared viewer to selected label",
+    "A structured list is available as an alternate to spatial navigation",
+    "Both rooms and their controls fit 390×720 and 844×390 without page scrolling",
+    "Reduced motion disables sector-detail and star-photo entrance animation",
+    "A clipped ring activity fetches its own bounded year-filtered preview and never borrows a different activity",
+    "Tag type filters retain independent groups and display visible versus total counts when capped",
+    "Unknown dates and missing current tags stay explicit rather than fabricated",
+    "No external requests or uncaught browser errors"
+  ],
+  "errors": [],
+  "fixture": "Synthetic media, explicitly injected metadata and local candidate tags; not real semantic quality acceptance"
+}
