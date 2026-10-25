@@ -1,0 +1,45 @@
+{
+  "checks": [
+    {
+      "theme": "dark",
+      "worstUniformUnderlay": [
+        255,
+        255,
+        255
+      ],
+      "background": [
+        72,
+        70,
+        64
+      ],
+      "contrast": {
+        "ink": 6.53,
+        "year-ink": 7.47,
+        "month-ink": 5.01,
+        "active": 5.09
+      },
+      "backdrop": "blur(20px) saturate(1.15)"
+    },
+    {
+      "theme": "light",
+      "worstUniformUnderlay": [
+        0,
+        0,
+        0
+      ],
+      "background": [
+        218,
+        215,
+        211
+      ],
+      "contrast": {
+        "ink": 6.18,
+        "year-ink": 10.61,
+        "month-ink": 4.67,
+        "active": 4.95
+      },
+      "backdrop": "blur(20px) saturate(1.15)"
+    }
+  ],
+  "method": "Conservative alpha composition, including maximum spine tint: pure white behind dark glass, pure black behind light glass. Text stays opaque; no photo or private data."
+}

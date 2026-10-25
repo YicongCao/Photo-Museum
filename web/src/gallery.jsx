@@ -24,6 +24,7 @@ import './cover-theme.css';
 import './gallery-refinement.css';
 import './gallery-navigation.css';
 import './gallery-cover-polish.css';
+import './gallery-timeline-glass.css';
 
 const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道',revisit:'故地重游',scroll:'记忆长卷',rings:'人生年轮',constellation:'记忆星图'};
 const creativeRooms={rings:RingsRoom,constellation:ConstellationRoom,scroll:MemoryScrollRoom,revisit:RevisitRoom};

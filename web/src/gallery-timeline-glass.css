@@ -1,0 +1,38 @@
+/* Frosted rail: a quiet surface for text, with light falling inward from its spine. */
+.gallery-shell.gallery-room-cover{
+ --timeline-glass:#161715d1;--timeline-ink:#ded6c9;--timeline-year-ink:#eee4d3;
+ --timeline-month-ink:#cdbb9d;--timeline-active:#e5b773;--timeline-spine:#b88b4ac4;
+ --timeline-glow:#d4a66099;--timeline-sheen:#ffffff0a;--timeline-tint:#b88b4a12;
+}
+.gallery-shell.gallery-room-cover[data-theme=light]{
+ --timeline-glass:#ffffffdc;--timeline-ink:#51493e;--timeline-year-ink:#2a251e;
+ --timeline-month-ink:#76562c;--timeline-active:#78501e;--timeline-spine:#a97b3eb8;
+ --timeline-glow:#b88b4a66;--timeline-sheen:#ffffffc7;--timeline-tint:#b88b4a0f;
+}
+.gallery-shell.gallery-room-cover .dock-timeline{
+ background:linear-gradient(100deg,var(--timeline-tint),transparent 24%),var(--timeline-glass);
+ -webkit-backdrop-filter:blur(20px) saturate(115%);backdrop-filter:blur(20px) saturate(115%);
+ border-left-color:var(--timeline-spine);border-radius:0 6px 6px 0;padding-top:12px;padding-bottom:20px;
+ box-shadow:inset 8px 0 10px -8px var(--timeline-glow),inset 1px 0 0 var(--timeline-sheen),inset 0 1px 0 var(--timeline-sheen),0 10px 28px #00000018;
+}
+.gallery-shell.gallery-room-cover .dock-timeline :is(button,.timeline-year){color:var(--timeline-ink)}
+.gallery-shell.gallery-room-cover .dock-timeline .timeline-year{color:var(--timeline-year-ink)}
+.gallery-shell.gallery-room-cover .dock-timeline .timeline-month{color:var(--timeline-month-ink)}
+.gallery-shell.gallery-room-cover .dock-timeline :is(button.selected,button:hover,button:focus-visible,.timeline-year.selected){color:var(--timeline-active)}
+@media(max-width:1100px){
+ .gallery-shell.gallery-room-cover .dock-timeline{
+  border-top-color:var(--timeline-spine);border-radius:0 0 6px 6px;padding:8px 10px;
+  box-shadow:inset 0 8px 10px -8px var(--timeline-glow),inset 0 1px 0 var(--timeline-sheen),0 10px 28px #00000018;
+ }
+}
+@media(max-height:540px) and (min-width:700px){
+ .gallery-shell.gallery-room-cover .dock-timeline{
+  border-radius:0 6px 6px 0;padding:8px 10px 16px 12px;
+  box-shadow:inset 8px 0 10px -8px var(--timeline-glow),inset 1px 0 0 var(--timeline-sheen),inset 0 1px 0 var(--timeline-sheen),0 10px 28px #00000018;
+ }
+}
+/* Without backdrop support the same tint remains opaque enough for legible text. */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+ .gallery-shell.gallery-room-cover{--timeline-glass:#181916f5}
+ .gallery-shell.gallery-room-cover[data-theme=light]{--timeline-glass:#fffffffa}
+}
