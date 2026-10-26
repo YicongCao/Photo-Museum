@@ -1,3 +1,4 @@
+import {adaptivePoll} from './adaptive-poll.mjs';
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
 import {StatusNotice} from "./system-status";
@@ -21,11 +22,12 @@ export function CurrentInspection({ file, media, onClose }) {
   const [data, setData] = useState(null),
     [image, setImage] = useState(null),
     [error, setError] = useState("");
-  const imageElement = useRef(null);
+  const imageElement = useRef(null),activeFile=useRef(false);
+  activeFile.current=!media?.paused&&!!media?.active?.some(a=>a.asset_id===file?.asset_id&&a.revision===file?.revision);
   useEffect(() => {
     if (!file?.asset_id || !file?.revision) return;
     let stopped = false,
-      timer,
+      scheduler, signature,
       infoRequest,
       imageRequest,
       objectURL = null,
@@ -68,18 +70,20 @@ export function CurrentInspection({ file, media, onClose }) {
         if (!response.ok) throw new Error("当前文件数据暂不可用");
         const value = await response.json();
         if (stopped) return;
-        setData(value);
+        const next=JSON.stringify(value),changed=next!==signature;signature=next;
+        if(changed)setData(value);
         setError("");
         loadImage(value.image, value.image_label);
+        return changed||activeFile.current;
       } catch (e) {
         if (!stopped) setError(e.message);
       }
-      if (!stopped) timer = setTimeout(poll, 1000);
+
     };
-    poll();
+    scheduler=adaptivePoll(poll,{base:1000,max:30000});
     return () => {
       stopped = true;
-      clearTimeout(timer);
+      scheduler.stop();
       infoRequest?.abort();
       imageRequest?.abort();
       release();

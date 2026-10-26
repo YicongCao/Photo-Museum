@@ -32,7 +32,7 @@ def supervise(commands, env, stopping, *, popen=subprocess.Popen,
                 elif child is None and now >= deadlines[index] and not stopping():
                     processes[index] = popen(commands[index], env=env)
                     started[index] = now
-            sleep(.25)
+            sleep(1)  # process supervision needs no 4 Hz idle polling
         return 0
     finally:
         for child in processes:

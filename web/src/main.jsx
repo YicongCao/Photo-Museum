@@ -1,3 +1,4 @@
+import {adaptivePoll} from './adaptive-poll.mjs';
 import {previews} from './preview-queue';
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -25,7 +26,7 @@ function App() {
     [busy, setBusy] = useState(false),
     [autoUnlockAllowed, setAutoUnlockAllowed] = useState(true),
     [route, setRoute] = useState(location.hash);
-  const passwordInput = useRef(null), loginPending = useRef(false), polling=useRef(false), stateRequest=useRef(null), sessionKnown=useRef(false);
+  const passwordInput = useRef(null), loginPending = useRef(false), polling=useRef(false), stateRequest=useRef(null), sessionKnown=useRef(false), stateSignature=useRef(null);
   useEffect(() => {
     if (initialized !== true || state || !autoUnlockAllowed || !passwordInput.current) return;
     return watchAutoUnlock(passwordInput.current, () => !loginPending.current);
@@ -34,21 +35,24 @@ function App() {
     light=light===true&&sessionKnown.current;
     if(polling.current)return;
     polling.current=true;const c=new AbortController();stateRequest.current=c;
-    try {const value=await api(light?'/session':'/state','GET',undefined,{signal:c.signal});if(!light){setState(value);sessionKnown.current=true;}setInitialized(true);setPollError(null)}
-    catch(e){if(e.name!=='AbortError'){if(e.status===401){previews.clear();sessionKnown.current=false;setState(null);setPollError(null)}else setPollError(e)}}
+    try {const value=await api(light?'/session':'/state','GET',undefined,{signal:c.signal});const signature=JSON.stringify(value),changed=!light&&signature!==stateSignature.current;if(!light){if(changed)setState(value);stateSignature.current=signature;sessionKnown.current=true;}setInitialized(true);setPollError(null);return changed||(!light&&value.jobs?.some(j=>['queued','running'].includes(j.status)))}
+    catch(e){if(e.name!=='AbortError'){if(e.status===401){previews.clear();sessionKnown.current=false;stateSignature.current=null;setState(null);setPollError(null)}else setPollError(e)}return false}
     finally{if(!c.signal.aborted){setChecked(true);polling.current=false}}
   }
   const bootstrap=signal=>api('/bootstrap','GET',undefined,{signal}).then(v=>{setInitialized(v.initialized);setBootstrapError(null)}).catch(e=>{if(e.name!=='AbortError')setBootstrapError(e)});
   useEffect(() => {
-    const c=new AbortController();bootstrap(c.signal);refresh();
-    const t=setInterval(()=>{if(!document.hidden)refresh(!location.hash.startsWith('#manage')&&!location.hash.startsWith('#settings'))},2500), f=()=>{setRoute(location.hash);if(location.hash.startsWith('#manage')||location.hash.startsWith('#settings'))refresh()};
+    const c=new AbortController();bootstrap(c.signal);
+    const poll=adaptivePoll(()=>refresh(!location.hash.startsWith('#manage')),{base:2500,max:30000});
+    const f=()=>{setRoute(location.hash);poll.wake()};
+    const visibility=()=>{document.documentElement.classList.toggle('museum-page-hidden',document.hidden)};
+    visibility();document.addEventListener('visibilitychange',visibility);
     window.addEventListener('hashchange',f);
-    return()=>{c.abort();stateRequest.current?.abort();clearInterval(t);window.removeEventListener('hashchange',f)};
+    return()=>{c.abort();stateRequest.current?.abort();poll.stop();document.removeEventListener('visibilitychange',visibility);document.documentElement.classList.remove('museum-page-hidden');window.removeEventListener('hashchange',f)};
   },[]);
   async function logout() {
     try {
       await api("/logout", "POST", {});
-      previews.clear();sessionKnown.current=false;
+      previews.clear();sessionKnown.current=false;stateSignature.current=null;
       setAutoUnlockAllowed(false);
       setState(null);setError('');
     } catch (e) {

@@ -1,3 +1,4 @@
+import {adaptivePoll} from './adaptive-poll.mjs';
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "./icons";
 import {MuseumNav} from "./museum-nav";
@@ -189,23 +190,24 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   const returnCurator=()=>{location.hash='curator'+(scopeMeta?.run_id?'?run='+scopeMeta.run_id:'')};
   const rootWall=exhibitionId&&collection?.id==='curated-'+exhibitionId&&roomHint==='wall';
   selectedId.current = current?.id || savedRooms(storageKey).activityId;
-  const catalogueRequest=useRef(null),catalogueRevision=useRef(null);
+  const catalogueRequest=useRef(null),catalogueRevision=useRef(null),cataloguePoll=useRef(null);
   const reload = async () => {
     if(catalogueRequest.current)return;
     const c=new AbortController();catalogueRequest.current=c;
     try{
-      const d=await api('/gallery','GET',undefined,{signal:c.signal});
+      const d=await api('/gallery'+(!exhibitionId&&catalogueRevision.current!=null?'?since='+catalogueRevision.current:''),'GET',undefined,{signal:c.signal});
       if(c.signal.aborted)return;
-      if(d.revision!=null&&catalogueRevision.current===d.revision){setLoadError(null);setLoaded(true);return}
+      if(d.revision!=null&&catalogueRevision.current===d.revision){setLoadError(null);setLoaded(true);return false}
       catalogueRevision.current=d.revision;
       if(warm.current&&!openingRef.current&&sceneRef.current?.view==='tunnel'&&!sceneRef.current?.photo){warm.current.dispose();warm.current=null}
       setLoadError(null);setRoomRevision(n=>n+1);setLoaded(true);
       const next=d.activities.findIndex(a=>a.id===selectedId.current);
-      setActivities(d.activities);setIndex(i=>next<0?Math.min(i,Math.max(0,d.activities.length-1)):next);
+      setActivities(d.activities);setIndex(i=>next<0?Math.min(i,Math.max(0,d.activities.length-1)):next);return true;
     }catch(e){if(!c.signal.aborted)setLoadError(e)}
     finally{if(catalogueRequest.current===c)catalogueRequest.current=null}
   };
-  useEffect(()=>{reload();const timer=setInterval(()=>{if(!document.hidden&&sceneRef.current.view==='tunnel'&&!sceneRef.current.photo)reload()},15000);return()=>{clearInterval(timer);catalogueRequest.current?.abort()}},[]);
+  useEffect(()=>{const poll=adaptivePoll(reload,{base:15000,max:120000,enabled:()=>catalogueRevision.current===null||(sceneRef.current.view==='tunnel'&&!sceneRef.current.photo)});cataloguePoll.current=poll;return()=>{poll.stop();catalogueRequest.current?.abort()}},[]);
+  useEffect(()=>{if(view==='tunnel'&&!photo)cataloguePoll.current?.wake()},[view,!!photo,room]);
   const goTo = (i) => {
     cancelRandom();
     if (view === "tunnel") tunnel.current?.goTo(i);
@@ -540,7 +542,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
               <img
                 key={original}
                 className="original-layer darkroom-reveal"
-                onAnimationEnd={e=>{e.currentTarget.style.willChange="auto"}}
+                onAnimationEnd={e=>{e.currentTarget.classList.remove("darkroom-reveal");e.currentTarget.style.willChange="auto"}}
                 src={original}
                 alt=""
               />

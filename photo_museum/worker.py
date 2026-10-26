@@ -8,6 +8,7 @@ import uuid
 from .auth import Security
 from .db import Database, invalidate
 from .webdav import WebDAV, DAVError
+from .runtime_revision import revision, heartbeat
 from .worker_runtime import is_database_busy, run_loop
 from tools.inventory import classify, excluded_directory, parse_event
 
@@ -152,7 +153,7 @@ def main():
     args = parser.parse_args()
     worker = Worker(Database(args.data))
     try:
-        run_loop(worker.tick)
+        run_loop(worker.tick, revision=lambda: revision(worker.db), heartbeat=lambda: heartbeat(worker.db, worker.id))
     except KeyboardInterrupt:
         pass
 

@@ -1,4 +1,5 @@
 """P1 local service. Run with uvicorn photo_museum.api:create_app --factory --host 127.0.0.1 --port 8790."""
+from .read_snapshot import cached_read
 import json
 import os
 from pathlib import Path
@@ -148,8 +149,8 @@ def create_app(directory=None, dav_factory=WebDAV):
     def session_state():
         return {'authenticated': True}
 
-    @app.get('/api/state', dependencies=[Depends(owner)])
-    def state():
+    @cached_read(db)
+    def state_catalogue():
         with db.connect() as conn:
             sources = [dict(r) for r in conn.execute('SELECT id,name,url,root,allow_http FROM sources ORDER BY created')]
             jobs = [dict(r) for r in conn.execute('''SELECT j.*, (SELECT count(*) FROM scan_dirs WHERE job_id=j.id AND state!='excluded') AS total_dirs,
@@ -159,8 +160,15 @@ def create_app(directory=None, dav_factory=WebDAV):
                 cover=conn.execute("SELECT e.id,e.revision FROM entries e JOIN derivatives d ON d.asset_id=e.id AND d.revision=e.revision AND d.profile='thumb' AND d.status='ready' WHERE e.source_id=? AND e.missing=0 AND e.scope_excluded=0 AND (e.parent=? OR substr(e.path,1,?)=?) ORDER BY e.path LIMIT 1",(job['source_id'],job['root'],len(job['root'])+1,job['root']+'/')).fetchone()
                 job['cover']=f"/api/assets/{cover['id']}/media/thumb?revision={cover['revision']}" if cover else None
             count = conn.execute('SELECT count(*) FROM entries WHERE is_dir=0 AND missing=0 AND scope_excluded=0').fetchone()[0]
+        return {'sources': sources, 'jobs': jobs, 'asset_count': count}
+
+    @app.get('/api/state', dependencies=[Depends(owner)])
+    def state():
+        # Share expensive projections across clients; liveness and auth stay fresh.
+        catalogue = state_catalogue()
+        with db.connect() as conn:
             heartbeat = conn.execute('SELECT max(heartbeat) FROM workers').fetchone()[0]
-        return {'sources': sources, 'jobs': jobs, 'asset_count': count, 'worker_online': bool(heartbeat and heartbeat > time.time() - 15)}
+        return {**catalogue, 'worker_online': bool(heartbeat and heartbeat > time.time() - 15)}
 
     @app.post('/api/sources', dependencies=[Depends(owner)])
     def add_source(body: SourceInput):

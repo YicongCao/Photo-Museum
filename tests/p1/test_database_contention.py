@@ -209,7 +209,7 @@ def test_real_supervisor_survives_worker_kill_and_lock_timeout(tmp_path):
             with db.connect() as locker:
                 locker.execute('BEGIN IMMEDIATE')
                 # Exceed the real production 10-second busy timeout.
-                _eventually(lambda:'Database busy; worker will retry' in log.read_text(),seconds=14)
+                _eventually(lambda:'Database busy; worker will retry' in log.read_text(),seconds=18)  # five-second heartbeat + ten-second SQLite busy timeout
                 assert ready() and process.poll() is None
                 assert api in [pid for pid,_ in _children(process.pid)]
             released=time.time()

@@ -251,11 +251,13 @@ def register(app,database,owner):
         return event_id(r['source_id'],first)
 
     @app.get('/api/gallery',dependencies=[Depends(owner)])
-    def gallery():
+    def gallery(since: int | None = None):
         # Single flight per process; never invalidate on preview LRU touches.
         # Authentication still runs for every request before this function.
         with catalog_lock:
             version = runtime_revision(database, 'catalog')
+            if since is not None and since == version:
+                return {'revision': version, 'unchanged': True}
             if catalog_snapshot[0] == version:
                 return catalog_snapshot[1]
             result = {**build_gallery(), 'revision': version}

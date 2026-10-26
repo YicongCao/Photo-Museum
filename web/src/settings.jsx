@@ -1,3 +1,4 @@
+import {adaptivePoll} from './adaptive-poll.mjs';
 import React,{useEffect,useState} from 'react';
 import {Icon} from './icons';
 import {StatusNotice,StatusPanel,SavedStatus} from './system-status';
@@ -65,7 +66,10 @@ export function Settings({api,onLogout}){
  const [tab,setTab]=useState(tabs[wanted]?wanted:'sources'),[data,setData]=useState(null),[error,setError]=useState('');
  const preferences=usePreferences();
  const reload=async()=>{const value=await api('/settings');setData(value);setError('');return value};
- useEffect(()=>{let stopped=false;const fetch=()=>api('/settings').then(d=>{if(!stopped){setData(d);setError('')}}).catch(e=>{if(!stopped)setError(e.message)});fetch();const timer=setInterval(()=>{if(!document.hidden)fetch()},5000);return()=>{stopped=true;clearInterval(timer)}},[]);
+ useEffect(()=>{let stopped=false,signature=null;const controller=new AbortController();
+  const poll=adaptivePoll(async()=>{try{const d=await api('/settings','GET',undefined,{signal:controller.signal});if(stopped)return false;const next=JSON.stringify(d),changed=next!==signature;signature=next;if(changed)setData(d);setError('');return changed}catch(e){if(!stopped)setError(e.message);return false}},{base:5000,max:60000});
+  return()=>{stopped=true;controller.abort();poll.stop()};
+ },[]);
  const navigate=id=>{setTab(id);window.history.replaceState(null,'','#settings?tab='+id+(from?'&from='+encodeURIComponent(from):''))};
  const back=()=>{location.hash=from&&/^(manage|gallery|curator)(\?|$)/.test(from)?from:'manage'};
  return <div className="settings-shell"><header className="settings-header"><div><button className="settings-back" onClick={back}>← 返回</button><h1>Settings</h1></div><MuseumNav current="settings" onLogout={onLogout}/></header><div className="settings-layout"><nav className="settings-tabs" aria-label="设置分类">{Object.entries(tabs).map(([id,[icon,label]])=><button key={id} aria-current={tab===id?'page':undefined} onClick={()=>navigate(id)}><Icon name={icon}/>{label}</button>)}</nav><main className="settings-content">

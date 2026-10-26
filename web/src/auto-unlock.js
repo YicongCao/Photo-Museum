@@ -2,11 +2,12 @@
 export function watchAutoUnlock(input, canSubmit, { delay = 750, interval = 120 } = {}) {
   const form = input.form;
   let observed = '', attempted = '', changedAt = Date.now(), manual = false, stopped = false;
-  let lastKey = -Infinity;
+  let lastKey = -Infinity, timer=null, wait=interval;
   const remember = (isManual) => {
     observed = input.value;
     changedAt = Date.now();
     manual = isManual;
+    wait=interval;
   };
   const autofilled = () => {
     for (const selector of [':autofill', ':-webkit-autofill']) {
@@ -29,6 +30,7 @@ export function watchAutoUnlock(input, canSubmit, { delay = 750, interval = 120 
        (event.inputType === 'insertText' &&
         (event.data?.length === 1 || (!event.data && Math.abs(input.value.length-observed.length) <= 1))));
     remember(Boolean(typing));
+    clearTimeout(timer);schedule();
   };
   const submitted = () => { attempted = input.value; };
   const check = () => {
@@ -45,10 +47,15 @@ export function watchAutoUnlock(input, canSubmit, { delay = 750, interval = 120 
   input.addEventListener('input',edited);
   input.addEventListener('change',edited);
   form.addEventListener('submit',submitted);
-  check();
-  const timer = setInterval(check,interval);
+  function schedule(){
+    if(stopped||document.hidden)return;
+    timer=setTimeout(()=>{check();wait=!manual&&observed&&observed!==attempted?interval:Math.min(1000,wait*2);schedule()},wait);
+  }
+  const visibility=()=>{clearTimeout(timer);wait=interval;if(!document.hidden){check();schedule()}};
+  document.addEventListener('visibilitychange',visibility);check();schedule();
   return () => {
-    stopped = true;clearInterval(timer);
+    stopped = true;clearTimeout(timer);
+    document.removeEventListener('visibilitychange',visibility);
     input.removeEventListener('keydown',keydown);
     input.removeEventListener('input',edited);
     input.removeEventListener('change',edited);

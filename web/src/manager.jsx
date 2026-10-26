@@ -1,3 +1,4 @@
+import {adaptivePoll} from './adaptive-poll.mjs';
 import {PreviewImage} from './preview-image';
 import React, { useEffect, useRef, useState } from "react";
 import { Icon, statusIcon } from "./icons";
@@ -57,7 +58,7 @@ export function Manager({ api, state, refresh, onLogout }) {
   const cursor = useRef(null),
     polling = useRef(false),
     request = useRef(null),
-    mounted = useRef(true);
+    mounted = useRef(true), signatures=useRef({});
   const [directories, setDirectories] = useState([]),
     [currentDirectory, setCurrentDirectory] = useState(null),
     [recent, setRecent] = useState(null);
@@ -68,22 +69,28 @@ export function Manager({ api, state, refresh, onLogout }) {
     request.current = controller;
     const timeout = setTimeout(() => controller.abort(), 15000);
     const message = (e) => controller.signal.aborted ? "请求超时" : e.message;
+    let changed=false,active=false;
     try {
       await Promise.allSettled([
         api("/media/state" + (cursor.current === null ? "" : "?after=" + cursor.current), "GET", undefined, { signal: controller.signal })
           .then((m) => {
             if (!mounted.current) return;
             cursor.current = m.completion_cursor;
-            setMedia(m); setPollError(""); setUpdatedAt(new Date());
+            const signature=JSON.stringify(m);changed ||= signature!==signatures.current.media;
+            if(signature!==signatures.current.media)setMedia(m);signatures.current.media=signature;
+            active=!!m.active?.length||!!m.completion_events?.length;
+            setPollError(""); setUpdatedAt(new Date());
             setRecent((r) => r === null ? m.recent : r);
           }).catch((e) => { if (mounted.current) setPollError(message(e)); }),
         api("/media/directories", "GET", undefined, { signal: controller.signal })
           .then((d) => {
             if (!mounted.current) return;
-            setDirectories(d.items); setCurrentDirectory(d.current);
+            const signature=JSON.stringify(d);changed ||= signature!==signatures.current.directories;
+            if(signature!==signatures.current.directories){setDirectories(d.items);setCurrentDirectory(d.current)}signatures.current.directories=signature;
             setDirectoryLoaded(true); setDirectoryError("");
           }).catch((e) => { if (mounted.current) setDirectoryError(message(e)); }),
       ]);
+      return changed||active;
     } finally {
       clearTimeout(timeout); polling.current = false;
     }
@@ -95,9 +102,8 @@ export function Manager({ api, state, refresh, onLogout }) {
     );
   useEffect(() => {
     mounted.current = true;
-    poll();
-    const timer = setInterval(()=>{if(!document.hidden)poll()}, 2500);
-    return () => { mounted.current = false; clearInterval(timer); request.current?.abort(); };
+    const scheduler = adaptivePoll(poll,{base:2500,max:30000});
+    return () => { mounted.current = false; scheduler.stop(); request.current?.abort(); };
   }, []);
   useEffect(() => {
     if (tab === "assets")

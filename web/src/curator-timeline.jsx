@@ -17,7 +17,7 @@ export function CuratorWorkingMark({working}){
 export function CuratorActivity({events,run,connection}){
  const [now,setNow]=useState(Date.now());
  const work=curatorWorkState(events,run?.status),active=!!work;
- useEffect(()=>{if(!active)return;setNow(Date.now());const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[active,run?.id]);
+ useEffect(()=>{if(!active)return;let timer;const sync=()=>{clearInterval(timer);if(!document.hidden){setNow(Date.now());timer=setInterval(()=>setNow(Date.now()),1000)}};sync();document.addEventListener('visibilitychange',sync);return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',sync)}},[active,run?.id]);
  const connected=connection==='已连接';
  const last=events.at(-1)?.created || run?.updated || run?.created;
  const age=last?Math.max(0,Math.floor((now-last*1000)/1000)):0;

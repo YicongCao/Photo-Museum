@@ -1,3 +1,4 @@
+import {adaptivePoll} from './adaptive-poll.mjs';
 import React,{useEffect,useState} from 'react';
 import {Icon} from './icons';
 import {PhotoLoading} from './loading-mark';
@@ -11,9 +12,10 @@ export function LexiconSettings({api}){
  const cursor=pages.at(-1);
  useEffect(()=>{const timer=setTimeout(()=>setQuery(text.trim()),280);return()=>clearTimeout(timer)},[text]);
  useEffect(()=>{
-  const c=new AbortController();let first=true;
-  async function read(){if(first)setLoading(true);try{const value=await api('/lexicon?'+new URLSearchParams({query,domain,limit:'20',...(cursor?{cursor}:{})}),'GET',undefined,{signal:c.signal});if(!c.signal.aborted){setData(value);setLastStatus(value.status);setError('')}}catch(e){if(!c.signal.aborted)setError(e.message)}finally{if(!c.signal.aborted)setLoading(false);first=false}}
-  read();const timer=setInterval(()=>{if(!cursor)read()},5000);return()=>{c.abort();clearInterval(timer)};
+  const c=new AbortController();let first=true,signature=null;
+  async function read(){if(first)setLoading(true);try{const value=await api('/lexicon?'+new URLSearchParams({query,domain,limit:'20',...(cursor?{cursor}:{})}),'GET',undefined,{signal:c.signal});if(!c.signal.aborted){const next=JSON.stringify({...value,status:{...value.status,heartbeat:undefined}}),changed=next!==signature;signature=next;if(changed){setData(value);setLastStatus(value.status)}setError('');return changed||value.status?.building}}catch(e){if(!c.signal.aborted)setError(e.message)}finally{if(!c.signal.aborted)setLoading(false);first=false}}
+  if(cursor){read();return()=>c.abort()}
+  const poll=adaptivePoll(read,{base:5000,max:60000});return()=>{c.abort();poll.stop()};
  },[api,domain,query,cursor,revision]);
  const reset=()=>{setPages([null]);setRevision(n=>n+1)};
  async function rebuild(){setRebuilding(true);setError('');try{await api('/lexicon/rebuild','POST',{});reset()}catch(e){setError(e.message)}finally{setRebuilding(false)}}

@@ -112,7 +112,7 @@ export function FileProcessing({
     let timer,
       stopped = false;
     const tick = () => {
-      if (stopped) return;
+      if (stopped || document.hidden) return;
       const m = machine.current;
       if (!m.current) {
         m.current = m.queue.shift() || null;
@@ -153,14 +153,17 @@ export function FileProcessing({
           }
         }
       }
-      timer = setTimeout(tick, m.queue.length > 2 ? 4 : 8);
+      // No frame timer while settled/empty; incoming metadata restarts it.
+      if((!m.current && (m.queue.length || m.active.some(a=>!m.finished.has(a.asset_id+':'+a.revision)))) || (m.current && (m.current.value < m.current.target || m.current.completed || m.current.failed)))
+        timer = setTimeout(tick, m.queue.length > 2 ? 4 : 8);
     };
-    tick();
+    const visible=()=>{clearTimeout(timer);if(!document.hidden)tick()};
+    document.addEventListener('visibilitychange',visible);tick();
     return () => {
-      stopped = true;
+      document.removeEventListener('visibilitychange',visible);stopped = true;
       clearTimeout(timer);
     };
-  }, []);
+  }, [media]);
   useEffect(() => {
     onCurrent?.(frame);
   }, [frame?.asset_id, frame?.revision, media]);

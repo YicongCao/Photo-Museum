@@ -1,4 +1,4 @@
-"""Retry transient SQLite contention without replaying a transaction body."""
+"""Bound idle probes and retry SQLite contention without replaying transactions."""
 import random
 import sqlite3
 import time
@@ -15,6 +15,8 @@ def is_database_busy(error):
 
 def run_loop(tick, *, idle=1, once=False, sleep=time.sleep, log=print, revision=None, max_idle=30, heartbeat=None):
     failures = 0
+    delay = idle
+    probe_delay = min(idle, 5)
     while True:
         try:
             before = revision() if revision else None
@@ -30,30 +32,39 @@ def run_loop(tick, *, idle=1, once=False, sleep=time.sleep, log=print, revision=
             continue
         if once:
             return worked
-        if not worked:
-            if revision is None:
-                sleep(idle)
-                continue
-            # Recheck only the cheap transactional change token while idle.
-            # A change during tick must also wake us; timed leases/retries still
-            # get a bounded periodic check even without a database write.
-            remaining = max_idle if revision else idle
-            while remaining > 0:
-                step = min(idle, 1, remaining)
-                sleep(step)
-                remaining -= step
-                if heartbeat and int(max_idle-remaining) % 5 == 0:
-                    try:
-                        heartbeat()
-                    except sqlite3.OperationalError as error:
-                        if not is_database_busy(error):
-                            raise
+        if worked:
+            delay = idle
+            probe_delay = min(idle, 5)
+            continue
+        if revision is None:
+            # No revision source: bounded full checks (including timed retries).
+            sleep(delay)
+            delay = min(max_idle, delay * 2)
+            continue
+        # Read the transactional token at 1/2/4/5 second intervals; keep the
+        # five-second liveness heartbeat independent of backoff. Time-based
+        # leases/retries still get a full tick at least every max_idle seconds.
+        elapsed = 0
+        next_probe = probe_delay
+        next_heartbeat = 5
+        while elapsed < max_idle:
+            due = min(next_probe, next_heartbeat if heartbeat else max_idle, max_idle)
+            sleep(max(0, due - elapsed))
+            elapsed = due
+            try:
+                if heartbeat and elapsed >= next_heartbeat:
+                    heartbeat()
+                    next_heartbeat += 5
+                if elapsed >= next_probe:
+                    if revision() != before:
+                        probe_delay = min(idle, 5)
                         break
-                if revision:
-                    try:
-                        if revision() != before:
-                            break
-                    except sqlite3.OperationalError as error:
-                        if not is_database_busy(error):
-                            raise
-                        break
+                    probe_delay = min(5, probe_delay * 2)
+                    next_probe = elapsed + probe_delay
+            except sqlite3.OperationalError as error:
+                if not is_database_busy(error):
+                    raise
+                failures += 1
+                if failures == 1 or failures & (failures - 1) == 0:
+                    log('Database busy; worker will retry', flush=True)
+                break

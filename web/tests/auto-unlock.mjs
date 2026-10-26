@@ -1,8 +1,8 @@
 import {chromium} from '../../prototype/node_modules/@playwright/test/index.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-const base='http://127.0.0.1:8791',password='synthetic-owner-password';
-const output='docs/design/previews/auto-unlock';await fs.mkdir(output,{recursive:true});
+const base=process.env.MUSEUM_BROWSER_BASE||'http://127.0.0.1:8791',password='synthetic-owner-password';
+const output=process.env.MUSEUM_BROWSER_OUTPUT||'docs/design/previews/auto-unlock';await fs.mkdir(output,{recursive:true});
 const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
 const checks=[],errors=[];
 async function scenario(name,run) {
@@ -73,6 +73,6 @@ try {
   await page.getByRole('button',{name:'创建并进入'}).click();await page.getByRole('alert').waitFor();assert.equal(setups,1);
  });
  assert.deepEqual(errors,[]);checks.push('No uncaught browser errors');
- await fs.writeFile('docs/research/auto-unlock-browser-evidence.json',JSON.stringify({date:new Date().toISOString(),checks,errors,fixture:'isolated synthetic credentials; silent DOM fill and input events simulate password managers; no real saved passwords read'},null,2));
+ await fs.writeFile(process.env.MUSEUM_BROWSER_EVIDENCE||'docs/research/auto-unlock-browser-evidence.json',JSON.stringify({date:new Date().toISOString(),checks,errors,fixture:'isolated synthetic credentials; silent DOM fill and input events simulate password managers; no real saved passwords read'},null,2));
  console.log(JSON.stringify({checks,errors},null,2));
 }finally{await browser.close()}
