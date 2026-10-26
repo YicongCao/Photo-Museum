@@ -24,8 +24,8 @@ await page.route('**/api/gallery/*?**',async route=>{
 const stable=async p=>{await p.waitForFunction(()=>document.querySelector('.gallery-shell')?.getAttribute('aria-busy')==='false')};
 async function loaderFits(p){
  const r=await p.locator('.gallery-photo-loading:visible').boundingBox(),size=p.viewportSize();assert.ok(r);
- assert.ok(r.x>size.width*.5&&r.y>size.height*.75&&r.x+r.width<=size.width-8&&r.y+r.height<=size.height-8,JSON.stringify(r));
- const bar=await p.locator('.wall-scroll-control').boundingBox();if(bar)assert.ok(r.x>=bar.x+bar.width||r.y>=bar.y+bar.height,'Loading indicator must clear the horizontal scrollbar');
+ assert.ok(Math.abs(r.x+r.width/2-size.width/2)<1&&Math.abs(r.y+r.height/2-size.height/2)<1,JSON.stringify(r));
+ const bar=await p.locator('.wall-scroll-control').boundingBox();if(bar)assert.ok(r.y+r.height<=bar.y||r.y>=bar.y+bar.height,'Loading indicator must clear the horizontal scrollbar');
  const caption=await p.locator('.gallery-caption').boundingBox();if(caption)assert.ok(r.x>=caption.x+caption.width||r.y+r.height<=caption.y,'Loading indicator must clear the activity caption');
 }
 try{
@@ -50,7 +50,7 @@ try{
  releaseWarm();await page.waitForFunction(()=>window.warmBlobs.length>=4);await page.setViewportSize({width:1500,height:944});await page.waitForTimeout(120);
  assert.equal(await tile.locator('.wall-display').getAttribute('src'),source);checks.push('Late warm-up Blob aliases plus parent reflow do not replace an already displayed image src');
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);await loaderFits(page);await page.screenshot({path:out+'/mobile-loading.png'});
- checks.push('Loading indicator stays bottom-right on desktop and phone, clear of the centered scrollbar');
+ checks.push('Loading indicator stays centered on desktop and phone, clear of the centered scrollbar');
  releasePage();await page.locator('.wall-photo-loading').waitFor({state:'detached'});
  const storage=await context.storageState();
  const brokenContext=await browser.newContext({storageState:storage,reducedMotion:'reduce'}),broken=await brokenContext.newPage();broken.on('pageerror',e=>errors.push(e.message));broken.on('request',r=>requests.push(r.url()));

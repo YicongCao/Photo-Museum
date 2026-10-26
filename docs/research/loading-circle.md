@@ -27,3 +27,7 @@
 [检查明细](loading-circle-evidence.json) · [Gallery读取](../design/previews/loading-circle/gallery-loading.png) · [单图读取](../design/previews/loading-circle/viewer-loading.png) · [原图读取](../design/previews/loading-circle/original-loading.png) · [Dashboard小窗](../design/previews/loading-circle/dashboard-preview-loading.png) · [日间](../design/previews/loading-circle/component-light.png) · [320px](../design/previews/loading-circle/component-320.png)。公开截图均为合成内容。
 
 发布时发现原8790服务已停止：以原data/server启动API及独立worker，静态资源按hash文件先行、index原子替换，并核对首页和组件预览HTTP内容。应用内浏览器已核对实际圆环/折叠动画、日夜与尺寸切换，保留预览页供馆主验收；截图留data/loading-circle/actual-component.png。未重设密码、重入刮削或修改NAS配置。
+
+2026-10-26 位置修订：按馆主最新要求，Gallery转场与照片流加载提示由右下改为视口中心（fixed、50%/50%、自身半宽高偏移），保持small圆环尺寸和原有动效。底部展签不再因加载而收窄，预览页照片流示例同步居中；单图原图读取的行内状态保持原样。覆盖旧右下角约定。
+
+本次复验：隔离P5图库，`MUSEUM_BROWSER_BASE=http://localhost:8798 MUSEUM_BROWSER_OUTPUT=data/loading-center/browser node web/tests/loading-circle.mjs`，10组通过、零脚本异常。实际活动读取等待时圆环中心为1500×940视口的(750,470)，完成后移除；320/390/844窗口与日夜/减少动态效果沿用组件检查。正式仅更新前端资源。

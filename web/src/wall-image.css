@@ -2,8 +2,6 @@
 .wall-photo .wall-display{opacity:0;transition:opacity 280ms ease-out}
 .wall-photo .wall-display.ready{opacity:1;will-change:opacity}
 .wall-photo .wall-display.settled{will-change:auto}
-.gallery-shell .gallery-photo-loading{position:absolute;right:max(24px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));z-index:35;pointer-events:none;white-space:nowrap}
+.gallery-shell .gallery-photo-loading{position:fixed;left:50%;top:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);z-index:35;pointer-events:none;white-space:nowrap}
 .gallery-shell[aria-busy=true] .wall-photo-loading{display:none}
-.gallery-shell.gallery-view-wall:has(.gallery-photo-loading) .gallery-caption{max-width:calc(100vw - 180px)}
-@media(max-width:700px){.gallery-shell .gallery-photo-loading{right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));font-size:11px}.gallery-shell.gallery-view-wall:has(.gallery-photo-loading) .gallery-caption{max-width:calc(100vw - 142px)}}
 @media(prefers-reduced-motion:reduce){.wall-photo .wall-display{transition:none}}
