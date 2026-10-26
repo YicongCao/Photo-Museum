@@ -11,6 +11,7 @@ import { PreferencesProvider } from './preferences';
 import { watchAutoUnlock } from "./auto-unlock";
 import './title-typography.css';
 import './museum-nav.css';
+import './room-menu.css';
 import {api} from './api';
 import {StatusNotice,StatusPanel,ServiceHealthContext,MuseumBoundary} from './system-status';
 import {failureInfo} from './status-text';

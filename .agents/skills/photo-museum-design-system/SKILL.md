@@ -28,3 +28,5 @@ description: 修改 photo-museum 页面视觉或加载、错误、空状态、�
 抽屉时间线复验：隔离P5 fixture（84张生成图）运行web/tests/timeline-drawer.mjs及cover-layout.test.mjs；再跑timeline-preview.mjs、coverflow-resize.mjs和coverflow-light.mjs。输出用MUSEUM_BROWSER_OUTPUT/MUSEUM_BROWSER_EVIDENCE指向data/<本轮>，不覆盖历史。关闭后需把鼠标移出最终面板矩形再进入才能重触发；键盘按.timeline-toggle的Enter可固定展开。旧timeline-material脚本依赖已移除的复制缩略图层，只适用于历史版本。检查玻璃像素响应真实后方封面、无色块、关闭释放预览、隐藏inert、触屏选中收起及开合不重排，不能只查blur属性。
 
 导航渐隐专项：隔离fixture运行`node web/tests/gallery-chrome.mjs`，验证30%边界、面板最终矩形（用offset排除自身离屏动画）、导航/翻页区排除、菜单开启时已展开面板收起及关闭后重入、日夜、Tab、触屏、快速点击、照片墙返回与跨页常显。隐藏控件pointer-events:none；Playwright locator.click会在移动前检查命中，测试快速靠近应先取boundingBox再用mouse.click坐标，不能force绕过命中检查。截图只用合成图库。
+
+展厅宫格：先查看docs/design/gallery-menu-grid-concept.html与docs/research/gallery-menu-grid.md。图标由room-menu-icons.mjs统一路径、RoomMenuIcon渲染，保持馆徽64单位/1.35细线；不另加图标库。隔离fixture运行web/tests/room-menu.mjs（十图标、二维键盘、日夜、320/390/矮屏、九展厅切换和策展入口），再回归gallery-chrome.mjs。菜单开时隐藏时间线入口以免遮挡宫格；源码CSS在museum-nav之后引入以覆盖旧列表布局。

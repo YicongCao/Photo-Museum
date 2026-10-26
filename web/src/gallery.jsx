@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "./icons";
 import {MuseumNav} from "./museum-nav";
+import {RoomMenuIcon} from './room-menu-icon';
 import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
 import "./gallery.css";
 import { useSceneMotion, createActivityWarmup } from "./scene-motion";
@@ -212,12 +213,13 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
           >
             Gallery <svg className="nav-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
           </button>{roomMenu&&<div className="gallery-room-menu" role="menu" aria-label="展厅" onKeyDown={e=>{
-            if(!['ArrowDown','ArrowUp','Home','End'].includes(e.key))return;
+            if(!['ArrowDown','ArrowUp','ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
             e.preventDefault();const items=[...e.currentTarget.querySelectorAll('[role^="menuitem"]')],i=items.indexOf(document.activeElement);
-            items[e.key==='Home'?0:e.key==='End'?items.length-1:(i+(e.key==='ArrowDown'?1:-1)+items.length)%items.length]?.focus();
+            const next=e.key==='Home'?0:e.key==='End'?items.length-1:e.key==='ArrowDown'?Math.min(i+3,items.length-1):e.key==='ArrowUp'?Math.max(i-3,0):(i+(e.key==='ArrowRight'?1:-1)+items.length)%items.length;
+            items[next]?.focus();
           }}>
-            {Object.entries(roomNames).map(([id,name])=><button role="menuitemradio" key={id} aria-checked={room===id} onClick={()=>changeRoom(id)}>{name}</button>)}
-            <button role="menuitem" className="curator-menu-entry" onClick={()=>{location.hash='curator'}}>策展助理</button>
+            {Object.entries(roomNames).map(([id,name])=><button className="room-menu-tile" role="menuitemradio" key={id} aria-checked={room===id} onClick={()=>changeRoom(id)}><RoomMenuIcon room={id}/><span>{name}</span></button>)}
+            <button role="menuitem" className="room-menu-tile curator-menu-entry" onClick={()=>{location.hash='curator'}}><RoomMenuIcon room="curator"/><span>策展助理</span></button>
           </div>}</div>
           }/>
       </header>

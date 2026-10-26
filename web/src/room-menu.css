@@ -1,0 +1,38 @@
+/* A compact exhibition directory, sharing MuseumMark's fine outline language. */
+.gallery-shell:has(.gallery-room-menu) .timeline-toggle{visibility:hidden}
+.gallery-shell .museum-nav .gallery-room-menu{
+ position:fixed;inset:70px 24px auto auto;width:min(368px,calc(100vw - 24px));min-width:0;
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px;
+ max-height:calc(100dvh - 86px);overflow:auto;overscroll-behavior:contain;
+ border:1px solid var(--nav-line);border-radius:12px;background:rgba(15,17,14,.96);
+ backdrop-filter:blur(24px);box-shadow:0 24px 64px #0009;
+ animation:room-menu-arrive 180ms ease-out both;transform-origin:top right;
+}
+.gallery-shell .museum-nav .gallery-room-menu .room-menu-tile{
+ position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+ width:100%;min-width:0;min-height:98px;height:auto;margin:0;padding:10px 4px;
+ border:1px solid var(--nav-line);border-radius:7px;background:transparent;color:var(--nav-text);
+ font:400 13px/1.3 var(--museum-ui-font);white-space:nowrap;text-align:center;cursor:pointer;
+ transition:background-color 160ms,border-color 160ms,color 160ms;
+}
+.gallery-shell .museum-nav .gallery-room-menu .room-menu-icon{
+ width:42px;height:42px;flex:none;color:var(--nav-active);transition:transform 180ms ease;
+}
+.gallery-shell .museum-nav .gallery-room-menu .room-menu-tile:is(:hover,:focus-visible){background:var(--nav-hover);border-color:var(--nav-active);color:var(--nav-active)}
+.gallery-shell .museum-nav .gallery-room-menu .room-menu-tile:hover .room-menu-icon{transform:translateY(-2px)}
+.gallery-shell .museum-nav .gallery-room-menu .room-menu-tile[aria-checked=true]{border-color:var(--nav-active);background:var(--nav-hover);color:var(--nav-active)}
+.gallery-shell .museum-nav .gallery-room-menu .curator-menu-entry{grid-column:1/-1;min-height:62px;flex-direction:row;gap:12px}
+.gallery-shell .museum-nav .gallery-room-menu .curator-menu-entry .room-menu-icon{width:34px;height:34px}
+.gallery-shell[data-theme=light] .museum-nav .gallery-room-menu{background:rgba(255,255,255,.96);box-shadow:0 20px 56px #49371925}
+@keyframes room-menu-arrive{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+@media(max-width:760px){
+ .gallery-shell .museum-nav .gallery-room-menu{top:62px;right:12px;max-height:calc(100dvh - 78px);padding:8px}
+ .gallery-shell .museum-nav .gallery-room-menu .room-menu-tile{min-height:86px;font-size:12px}
+ .gallery-shell .museum-nav .gallery-room-menu .room-menu-icon{width:38px;height:38px}
+}
+@media(max-height:500px){.gallery-shell .museum-nav .gallery-room-menu .room-menu-tile{min-height:78px}}
+@media(prefers-reduced-motion:reduce){
+ .gallery-shell .museum-nav .gallery-room-menu{animation:none}
+ .gallery-shell .museum-nav .gallery-room-menu :is(.room-menu-tile,.room-menu-icon){transition:none}
+ .gallery-shell .museum-nav .gallery-room-menu .room-menu-tile:hover .room-menu-icon{transform:none}
+}

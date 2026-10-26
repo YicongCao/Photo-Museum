@@ -1,0 +1,32 @@
+{
+  "menu": {
+    "checks": [
+      "Nine room tiles in three columns plus a full-width curator tile; ten distinct 64-unit logo-style outline SVGs, all labelled and at least 44px",
+      "Arrow keys follow the grid, Home/End work and Escape restores Gallery focus",
+      "Day palette uses its own text, icon, selected outline and glass colors",
+      "390px, 320px and short landscape stay within the viewport; only the menu scrolls and every tile remains reachable",
+      "All nine room tiles select the correct scene, close the menu and retain the selected state",
+      "Reduced motion disables entry animation and the curator tile opens the assistant without starting a model request",
+      "No uncaught browser errors, NAS original downloads or curation-run creation requests"
+    ],
+    "errors": [],
+    "fixture": "84 synthetic photos; local fake provider; Chromium viewport emulation"
+  },
+  "chrome": {
+    "checks": [
+      "Mouse-rest state hides navigation and timeline entry without reserving space or catching clicks",
+      "30% viewport boundary reveals both controls while the panel rectangle remains a distinct reveal region",
+      "Timeline uses only its final rectangle; nav and next-arrow areas never open it and moving up to navigation closes the panel",
+      "Room menu suspends the timeline even in overlapping pixels; closing requires a fresh leave/reenter, with navigation still accessible",
+      "Tab reveals keyboard navigation even when mouse controls were hidden",
+      "Both palettes fade correctly and a native fast approach-and-click from the hidden state is not lost",
+      "Photo wall keeps its left return action visible while right navigation follows the reveal policy",
+      "Reduced-motion setting disables fade without hiding actions",
+      "Touch-only screens keep both entries visible and usable without hover",
+      "Dashboard and Settings navigation stay permanently visible",
+      "No original downloads or uncaught browser errors"
+    ],
+    "errors": [],
+    "fixture": "84 synthetic images, Chromium mouse/touch emulation"
+  }
+}
