@@ -1,6 +1,6 @@
 import {chromium,expect} from '../../prototype/node_modules/@playwright/test/index.mjs';
 import assert from 'node:assert/strict';import fs from 'node:fs/promises';
-const base=process.env.MUSEUM_BROWSER_BASE||'http://127.0.0.1:8798',out='data/original-progress';
+const base=process.env.MUSEUM_BROWSER_BASE||'http://127.0.0.1:8798',out=process.env.MUSEUM_BROWSER_OUTPUT||'data/original-progress';
 await fs.mkdir(out,{recursive:true});const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
 const checks=[],errors=[];
 async function scene({unknown=false,fail=false,compatible=false,reduced=false}={}){

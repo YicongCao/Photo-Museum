@@ -9,6 +9,7 @@ import "./gallery.css";
 import { useSceneMotion, createActivityWarmup } from "./scene-motion";
 import {prepareCover,coverPreviewSources,randomCoverIndex} from './random-cover';
 import {PhotoLoading} from "./loading-mark";
+import {ViewerFilmstrip,ViewerPageButtons} from './viewer-filmstrip';
 import {OriginalProgress} from './original-progress';
 import {receiveOriginal} from './original-transfer.mjs';
 import {StatusNotice,StatusPanel,MediaStatus} from "./system-status";
@@ -34,6 +35,7 @@ import './gallery-cover-polish.css';
 import './gallery-timeline-glass.css';
 import {useGalleryChrome} from './gallery-chrome';
 import './gallery-chrome.css';
+import './viewer-filmstrip.css';
 
 const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道',revisit:'故地重游',scroll:'记忆长卷',rings:'人生年轮',constellation:'记忆星图'};
 const creativeRooms={rings:RingsRoom,constellation:ConstellationRoom,scroll:MemoryScrollRoom,revisit:RevisitRoom};
@@ -62,6 +64,9 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
     [anchor,setAnchor]=useState(()=>savedRooms(storageKey).anchor || null),[roomStates,setRoomStates]=useState(()=>savedRooms(storageKey).states || {}),
     [collection,setCollection]=useState(null);
   const roomMenuRef=useRef(null),wallPositions=useRef({});
+  const [wallSequence,setWallSequence]=useState(null),[directSequence,setDirectSequence]=useState([]);
+  const sequence=view==='wall'&&wallSequence?.key===(collection?.id||wallId)?wallSequence:{items:directSequence,total:directSequence.length};
+  useEffect(()=>{if(photo&&view==='wall'&&sequence.items.length&&!sequence.items.some(p=>p.id===photo.id)&&sequence.items.length<sequence.total&&!sequence.busy&&!sequence.error)sequence.loadMore?.()},[photo?.id,sequence.items,sequence.busy,sequence.total,sequence.error,view]);
   const [roomRevision,setRoomRevision]=useState(0);
   useEffect(()=>{try{sessionStorage.setItem(storageKey,JSON.stringify({room,anchor,states:roomStates,activityId:activities[index]?.id || savedRooms(storageKey).activityId}))}catch{}},[room,anchor,roomStates,activities[index]?.id]);
   useEffect(()=>{
@@ -110,7 +115,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   useEffect(()=>{
     if(opening||photo||!pendingFocus.current)return;
     const pending=pendingFocus.current;pendingFocus.current=null;
-    const frame=requestAnimationFrame(()=>{const focus=pending.element?.isConnected?pending.element:[...shell.current.querySelectorAll('[data-photo]')].find(e=>e.dataset.photo===pending.id);focus?.focus({preventScroll:true})});
+    const frame=requestAnimationFrame(()=>{const focus=pending.element?.isConnected?pending.element:[...shell.current.querySelectorAll('[data-photo]')].find(e=>e.dataset.photo===pending.id);(focus||shell.current.querySelector('.horizontal-wall'))?.focus({preventScroll:true})});
     return()=>cancelAnimationFrame(frame);
   },[opening,photo]);
   const displayedActivity=collection && view==='wall' ? {event:{theme:collection.title}} : view==="wall" && wallActivity ? wallActivity : current;
@@ -121,12 +126,15 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   const navigation=useGalleryHistory(storageKey,loaded,scene,(target,options)=>restoreScene(target,{...options,record:false}));
   useEffect(()=>{if(loaded&&!openingRef.current)navigation.sync(capture())},[loaded,room,view,wallId,collection,photo?.id,immersive,current?.id,anchor,opening]);
   useEffect(()=>()=>{transition.current++;navigationRequest.current?.abort();warm.current?.dispose()},[]);
-  async function restoreScene(target,{record=true,initial=false,photoRecord=null,selector='.wall-scene .wall-photo img'}={}){
+  async function restoreScene(target,{record=true,initial=false,photoRecord=null,replace=false,direction=1,selector='.wall-scene .wall-photo img'}={}){
     cancelRandom();
     const finishSample=beginTransitionSample();
     const origin=capture(),token=++transition.current;
+    if(!record&&origin.immersive&&!target.immersive&&origin.photo&&target.photo&&origin.view===target.view&&origin.wallId===target.wallId&&origin.collection?.id===target.collection?.id){
+      target={...target,photo:origin.photo};photoRecord=photo;navigation.replace(target);
+    }
     animate.cancel();navigationRequest.current?.abort();const request=new AbortController();navigationRequest.current=request;openingRef.current=true;setOpening(true);setSceneLoading(true);setError('');
-    if(record){navigation.sync(origin);navigation.push(target)}
+    if(record){navigation.sync(origin);if(replace)navigation.replace(target);else navigation.push(target)}
     try{
       let nextPhoto=photoRecord;
       if(target.view==='tunnel'&&!['cover','space'].includes(target.room)){warm.current?.dispose();warm.current=null}
@@ -153,6 +161,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
       if(initial){commit();return}
       let before='.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room,.wall-scene:not(.scene-inactive)',incoming='.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room',mode='room';
       if(origin.photo&&target.photo?.id===origin.photo.id){before='.viewer-image-area';incoming=before;mode='fit'}
+      else if(origin.photo&&target.photo){before='.image-stack';incoming=before;mode=direction>0?'photo-next':'photo-previous'}
       else if(target.photo){before=selector;incoming='.viewer-image-area,.photo-viewer .metadata-panel';mode='scatter'}
       else if(origin.photo){before='.viewer-image-area,.photo-viewer .metadata-panel';incoming=target.view==='wall'?'.wall-scene .wall-photo':'.gallery-room-host,.cover-scene .activity-panel,.spacetime-board';mode='photo-close'}
       else if(origin.view==='tunnel'&&target.view==='wall'){
@@ -221,10 +230,12 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
     window.addEventListener("keydown", f);
     return () => window.removeEventListener("keydown", f);
   }, [photo, view,room,roomMenu]);
-  const open=(p,selector='.wall-scene .wall-photo img')=>{
+  const open=(p,selector='.wall-scene .wall-photo img',neighbors=[p])=>{
+    if(view!=='wall')setDirectSequence([...new Map(neighbors.filter(Boolean).map(p=>[p.id,p])).values()]);
     lastFocus.current=document.activeElement;
     return restoreScene(capture({photo:{id:p.id,revision:p.revision},immersive:false,anchor:p.period || anchor}),{photoRecord:p,selector});
   };
+  const selectPhoto=p=>{if(openingRef.current||p.id===photo?.id)return;lastFocus.current=null;const items=sequence.items;return restoreScene(capture({photo:{id:p.id,revision:p.revision}}),{photoRecord:p,replace:true,direction:items.findIndex(x=>x.id===p.id)>items.findIndex(x=>x.id===photo?.id)?1:-1})};
   const close=()=>navigation.back(capture({photo:null,immersive:false}));
   const toggleImmersive=()=>immersive?navigation.back(capture({immersive:false})):restoreScene(capture({immersive:true}));
   const displayTheme=room==='cover'&&view==='tunnel'&&!photo?coverTheme:'dark';
@@ -256,8 +267,8 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
       {(error||(loadError&&current))&&<div className="gallery-status-banner"><StatusNotice error={error||loadError} scope={error?'浏览操作':'图库更新'} detail={!error&&current?'保留当前画面':undefined} onRetry={!error?reload:undefined} onDismiss={error?()=>setError(''):undefined}/></div>}
       {view==='tunnel'&&room==='calendar'&&<div className="gallery-room-host"><CalendarRoom api={api} anchor={anchor} setAnchor={setAnchor} state={roomStates.calendar || {}} onState={s=>setRoomStates(p=>({...p,calendar:s}))} onCollection={openCollection}/></div>}
       {view==='tunnel'&&room==='map'&&<div className="gallery-room-host"><MapRoom api={api} state={roomStates.map || {}} onState={s=>setRoomStates(p=>({...p,map:s}))} onCollection={openCollection}/></div>}
-      {view==='tunnel'&&room==='gear'&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><GearRoom api={api} anchor={anchor} state={roomStates.gear || {}} onState={s=>setRoomStates(p=>({...p,gear:s}))} onCollection={openCollection} onPhoto={p=>open(p,'.room img')}/></div>}
-      {view==='tunnel'&&CreativeRoom&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><CreativeRoom api={api} state={roomStates[room] || {}} onState={s=>setRoomStates(p=>({...p,[room]:s}))} onCollection={openCollection} onPhoto={p=>open(p,'.room img')}/></div>}
+      {view==='tunnel'&&room==='gear'&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><GearRoom api={api} anchor={anchor} state={roomStates.gear || {}} onState={s=>setRoomStates(p=>({...p,gear:s}))} onCollection={openCollection} onPhoto={(p,neighbors)=>open(p,'.room img',neighbors)}/></div>}
+      {view==='tunnel'&&CreativeRoom&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><CreativeRoom api={api} state={roomStates[room] || {}} onState={s=>setRoomStates(p=>({...p,[room]:s}))} onCollection={openCollection} onPhoto={(p,neighbors)=>open(p,'.room img',neighbors)}/></div>}
       {!current && ['cover','space'].includes(room) ? (
         <div className={'gallery-empty'+(!loaded?' gallery-initial-loading':'')}>
           <StatusPanel loading={!loaded&&!loadError} error={loadError} onRetry={reload} empty="尚无可展示照片" action={<button onClick={onAdmin}>查看刮削进度 →</button>}/>
@@ -278,6 +289,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
           {(wallActivity || collection) && view==='wall' && <div className={"wall-scene scene-layer " + (photo ? "scene-inactive" : "")} inert={!!photo || opening}>
             <PhotoWall
               moving={opening}
+              onSequence={setWallSequence}
               key={collection?.id || wallActivity.id}
               activity={collection ? {id:collection.id,photos:counts?.photos,videos:0} : wallActivity}
               endpoint={collection?.endpoint}
@@ -329,6 +341,9 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
       {photo && (
         <Viewer
           key={photo.id}
+          sequence={sequence}
+          onSelect={selectPhoto}
+          changing={opening}
           photo={photo}
           api={api}
           onClose={close}
@@ -342,7 +357,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   );
 }
 
-function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChange,returnLabel='返回照片墙' }) {
+function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChange,returnLabel='返回照片墙',sequence,onSelect,changing }) {
   const preferences=usePreferences();
   const [requested,setRequested]=useState(false),[retryOriginal,setRetryOriginal]=useState(0),[nativeFallback,setNativeFallback]=useState(false);
   const [transfer,setTransfer]=useState(null);
@@ -363,7 +378,11 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
   zoomRef.current=zoom;
   const toggleImmersive=()=>{if(zoom)setInfo(true);onImmersiveChange();};
   useEffect(()=>{if(!zoom)setInfo(true)},[zoom]);
-  const callbacks=useRef({onClose,onImmersiveChange});callbacks.current={onClose,onImmersiveChange};
+  const callbacks=useRef({});
+  const photoIndex=sequence.items.findIndex(p=>p.id===photo.id);
+  const turn=delta=>{const next=sequence.items[photoIndex+delta];if(next&&!changing)onSelect(next)};
+  callbacks.current={onClose,onImmersiveChange,turn};
+  useEffect(()=>{if(photoIndex>=0&&photoIndex>=sequence.items.length-4&&sequence.items.length<sequence.total&&!sequence.busy&&!sequence.error)sequence.loadMore?.()},[photoIndex,sequence.items.length,sequence.total,sequence.busy,sequence.error]);
   const closeRef = useRef(null),
     previewRef = useRef(null);
   useEffect(() => {
@@ -376,6 +395,9 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
           document.exitFullscreen();
         else if(zoomRef.current){callbacks.current.onImmersiveChange();setInfo(true);}
         else callbacks.current.onClose();
+      }
+      if (!e.altKey&&!e.ctrlKey&&!e.metaKey&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.target.closest('input,textarea,select,video,[contenteditable="true"]')) {
+        e.preventDefault();e.stopPropagation();callbacks.current.turn(e.key==='ArrowRight'?1:-1);
       }
       if (e.key === "Tab") {
         const buttons = [
@@ -448,7 +470,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
   return (
     <div
       ref={viewerRef}
-      className={"photo-viewer " + (zoom ? "immersive " : "") + (info ? "with-metadata" : "image-only")}
+      className={"photo-viewer has-filmstrip " + (zoom ? "immersive " : "") + (info ? "with-metadata" : "image-only")}
       style={{"--photo-ratio":photo.info?.width && photo.info?.height ? photo.info.width/photo.info.height : 1.5}}
       role="dialog"
       aria-modal="true"
@@ -488,9 +510,6 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
       </div>
       <div
         className="viewer-image-area"
-        role="button" tabIndex={0} aria-label={zoom ? "返回照片档案" : "铺满浏览器"}
-        onKeyDown={e=>{if(e.key==="Enter" || e.key===" "){e.preventDefault();toggleImmersive();}}}
-        onClick={() => !play && toggleImmersive()}
       >
         {play ? (
           <video
@@ -500,7 +519,9 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
             playsInline
           />
         ) : (
-          <div className="image-stack">
+          <div className="image-stack" role="button" tabIndex={0} aria-label={zoom ? "返回照片档案" : "铺满浏览器"}
+            onKeyDown={e=>{if(e.target===e.currentTarget&&(e.key==='Enter'||e.key===' ')){e.preventDefault();toggleImmersive()}}}
+            onClick={toggleImmersive}>
             {!previewReady&&<PhotoLoading className="viewer-photo-loading"/>}
             {previewFailed&&!original&&<StatusPanel error="预览暂不可用" onRetry={()=>{setPreviewFailed(false);setPreviewReady(false);setSource(photo.preview)}}/>}
             {source&&<PreviewImage priority={0}
@@ -525,7 +546,9 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
             )}
           </div>
         )}
+        <ViewerPageButtons onTurn={turn} previous={photoIndex>0} next={photoIndex>=0&&photoIndex+1<sequence.items.length} busy={changing}/>
       </div>
+      <ViewerFilmstrip photo={photo} sequence={sequence} onSelect={onSelect} busy={changing}/>
       <div className="viewer-bottom">
         {transfer?<OriginalProgress key={transfer.id} state={transfer} label={visiblePhase}/>:<span aria-live="polite">{visiblePhase.includes("读取中")?<PhotoLoading compact label={visiblePhase}/>:<MediaStatus failed={/暂不可用|失败|无法/.test(visiblePhase)}>{visiblePhase}</MediaStatus>}</span>}
         <span>

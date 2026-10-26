@@ -292,7 +292,7 @@ export const Tunnel = forwardRef(function Tunnel(
   );
 });
 
-export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, initialLeft=0, onPosition, moving=false }) {
+export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, initialLeft=0, onPosition, moving=false, onSequence }) {
   const container = useRef(null),
     request=useRef(null),restoreTarget=useRef(initialLeft),
     drag = useRef(null),
@@ -308,6 +308,9 @@ export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, ini
     loading: false,
     stopped: false,
   });
+  const itemsRef=useRef(items);itemsRef.current=items;
+  const sequenceCallback=useRef(onSequence);sequenceCallback.current=onSequence;
+  useEffect(()=>{sequenceCallback.current?.({key:activity.id,items,total,busy,error:loadError,loadMore:load})},[items,total,busy,loadError]);
   const load = async () => {
     const s = state.current;
     if (s.loading || s.stopped || s.offset >= s.total) return;
@@ -324,7 +327,9 @@ export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, ini
       s.total = d.total;
       setTotal(d.total);
       onCounts?.({photos:d.photos,videos:d.videos});
-      setItems((p) => [...p, ...d.items]);
+      itemsRef.current=[...itemsRef.current,...d.items];
+      setItems(itemsRef.current);
+      return itemsRef.current;
     } catch (e) {
       if (!s.stopped && e.name!=='AbortError') setLoadError(e);
     } finally {

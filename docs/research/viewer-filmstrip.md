@@ -1,0 +1,35 @@
+# 单图横条与中轴翻页
+
+2026-10-26。概念先行，生成 [imagegen 概念](../design/concepts/viewer-filmstrip-turn.png)，再实现共享单图查看器。公开实现截图使用合成图库：[桌面](../design/previews/viewer-filmstrip/desktop.png)、[手机](../design/previews/viewer-filmstrip/mobile.png)、[矮窗口](../design/previews/viewer-filmstrip/short-landscape.png)。
+
+## 设计还原
+
+保留概念的黑底、古铜细线、图片区两侧细线箭头、底部相邻照片横条和细框选中态。横条最多呈现当前照片前后各五张；靠集合边缘保留真实数量，不循环拼接。数字表示当前项/当前集合总项数，包含索引视频。桌面横条116px，手机87px、矮横屏84px；手机横向内部滚动，尺寸变化后自动定位选中项。主照片保留原比例，档案继续独立滚动，整页不滚动。
+
+概念里的“翻页示意”属于设计说明，不放入产品；生成的相机/RAW等文字不当成真实档案。原图进度继续留在原底栏，保持已有真实字节计算、逐根点亮和就绪退出，不采用概念里的示意进度。
+
+翻页只让照片绕中轴旋转：下一张 0→−90°（150ms），替换后 +90→0°（180ms），上一张方向相反。没有主图横移、透明度渐变、常驻滤镜或空闲循环；档案在中点更新，横条和箭头不翻转。减少动态效果直接换图。箭头44px宽，支持键盘左右键、点击横条，首尾不可继续，Alt/Ctrl/Meta组合键不截获。铺满模式隐藏横条、保留翻页，返回档案仍保持选中的照片。
+
+## 数据与资源
+
+照片流与单图共用 PhotoWall 的有序分页数据，接近已加载末尾时自动补页；读取失败保留当前图并给后续照片重试。刷新落在后续页时补齐到当前项。策展集合继续使用已有带范围的endpoint，不另查整库。直接从器材/年轮/长卷/星图/重游预览进入时，横条只使用该处实际展示的选片，不冒充完整照片流。
+
+横条使用本地thumb；只预载左右相邻两张本地display，通过共享队列持有/释放引用。没有邻图NAS原图预取。换图仍卸载旧Viewer并中止原图下载、兼容进度轮询及释放Blob；单图自己的原图加载偏好不变。没有改变媒体缓存或worker策略。
+
+单图内翻页替换当前History条目，不把每张图堆成Back步骤。Back仍回照片流、Forward/刷新恢复选中项；铺满层退出保留当前选片。返回时若选片已经不在墙的虚拟可见区域，键盘焦点落回照片流容器。
+
+## 验证
+
+隔离P5合成服务8798，正式库未注入故障。构建至 `data/viewer-filmstrip/web-dist`。
+
+- `node web/tests/viewer-filmstrip.mjs`：10组，通过。真实WAAPI帧断言两段rotateY、不含opacity/translate；强制每页4项跨到14/14，首尾、键盘/横条、Back/Forward/刷新、铺满、320/390/844×390、减少动态效果、翻页中Back清理。
+- 同专项在原图按需模式检查零原图请求；模拟未结束原图读取，切图后确认abort，下一张不额外读取原图。
+- `gallery-navigation.mjs`：12组，通过，原有Cover Flow/隧道/照片墙/原生返回及焦点回归。
+- `original-progress.mjs`：6组，通过，保留真实字节、未知长度、取消、失败、兼容原图和完成退出行为。
+- `npm --prefix web run build` 与 `git diff --check` 通过。
+
+自审修正：第一轮手机resize后选中缩略图可能不可见，补ResizeObserver定位；扩大桌面缩略图，保持与概念相近的视觉权重；修正铺满状态翻页后退出会回到旧照片；图片区切换与翻页按钮分为独立语义控件。
+
+正式只更新带hash静态资源，最后原子替换index，API及6个worker不重启。真实截图留在 `data/viewer-filmstrip/`，不提交真实照片。概念先行、动画规则拆解、运行截图对照及主动审查流程已写入 `.agents/skills/photo-museum-design-system/SKILL.md`。
+
+正式只读复核：在已有登录会话中，688项活动的第237张JPEG→第238张HEIF→返回第237张，横条、计数、档案与原图状态均正确更新。恢复原查看位置并保留页面；截图 `data/viewer-filmstrip/real-viewer.png`。supervisor仍为43682，API和6个worker子进程保持运行；本轮8798合成fixture已停止。

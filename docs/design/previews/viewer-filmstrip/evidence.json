@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "Ordered filmstrip and disabled previous control at collection start",
+    "Two-phase 330ms central-axis turn without opacity or slide; single-photo History depth unchanged",
+    "Keyboard/thumbnail navigation and paged continuation reach final 14/14 without wrapping",
+    "Back returns directly to wall; Forward and refresh restore selection beyond first page",
+    "320/390 mobile and 844x390 short landscape retain controls without page overflow",
+    "Reduced motion turns directly, without animation",
+    "Immersive mode keeps arrows/keyboard, hides strip and returns via native Back",
+    "Browsing and neighboring preloads use local previews only; on-demand mode sends zero original requests",
+    "Changing photograph cancels pending original and does not request the next NAS original in on-demand mode",
+    "Back during a turn cancels the animation and leaves no stale viewer or clones"
+  ],
+  "errors": [],
+  "requests": 244
+}

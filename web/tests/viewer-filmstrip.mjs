@@ -1,0 +1,42 @@
+import {chromium} from '../../prototype/node_modules/@playwright/test/index.mjs';
+import assert from 'node:assert/strict';import fs from 'node:fs/promises';
+const base=process.env.MUSEUM_BROWSER_BASE||'http://localhost:8798',out=process.env.MUSEUM_BROWSER_OUTPUT||'data/viewer-filmstrip/screens';await fs.mkdir(out,{recursive:true});
+const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
+const context=await browser.newContext({viewport:{width:1440,height:900}}),page=await context.newPage(),errors=[],requests=[],checks=[];
+page.on('pageerror',e=>errors.push(String(e)));page.on('request',r=>requests.push(r.url()));
+const settle=()=>page.waitForFunction(()=>document.querySelector('.gallery-shell')?.getAttribute('aria-busy')==='false');
+const photoId=()=>page.locator('.viewer-filmstrip [aria-current=true]').getAttribute('aria-label');
+try{
+ await page.route('**/api/preferences',async r=>{const response=await r.fetch();await r.fulfill({response,json:{...await response.json(),original_loading:'on_demand'}})});
+ // Force multiple pages without needing hundreds of costly fixture images.
+ await page.route('**/api/gallery/*?*',async route=>{const url=new URL(route.request().url());if(url.searchParams.has('limit'))url.searchParams.set('limit','4');const r=await route.fetch({url:url.href});await route.fulfill({response:r})});
+ await page.goto(base+'/#gallery');await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.locator('.depth-0').waitFor();await settle();
+ await page.locator('.depth-0').click({position:{x:20,y:50}});await page.locator('.wall-photo').first().waitFor();await settle();
+ await page.locator('.wall-photo').first().click();await page.locator('.viewer-filmstrip').waitFor();await settle();
+ await page.waitForFunction(()=>document.querySelector('.viewer-filmstrip img')?.naturalWidth>0);
+ const first=await photoId();assert.ok(await page.getByRole('button',{name:'上一张照片',exact:true}).isDisabled());
+ await page.screenshot({path:out+'/desktop.png'});checks.push('Ordered filmstrip and disabled previous control at collection start');
+ // Capture actual WAAPI frames, including both halves.
+ await page.evaluate(()=>{window.turnFrames=[];const animate=Element.prototype.animate;Element.prototype.animate=function(frames,opts){if(this.classList.contains('image-stack'))window.turnFrames.push({frames,opts});return animate.call(this,frames,opts)}});
+ const depth=await page.evaluate(()=>history.state.museumGallery.depth);
+ await page.getByRole('button',{name:'下一张照片',exact:true}).click();await settle();assert.notEqual(await photoId(),first);
+ assert.equal(await page.evaluate(()=>history.state.museumGallery.depth),depth);
+ const frames=await page.evaluate(()=>window.turnFrames);assert.equal(frames.length,2);assert.ok(frames.every(m=>m.frames.every(f=>f.transform.includes('rotateY')&&!('opacity'in f)&&!f.transform.includes('translate'))));checks.push('Two-phase 330ms central-axis turn without opacity or slide; single-photo History depth unchanged');
+ await page.keyboard.press('ArrowLeft');await settle();assert.equal(await photoId(),first);
+ await page.keyboard.press('ArrowRight');await settle();await page.getByRole('button',{name:'下一张照片',exact:true}).click();await settle();
+ await page.waitForTimeout(250);await page.screenshot({path:out+'/desktop-middle.png'});
+ await page.locator('.viewer-filmstrip-track button').last().click();await settle();
+ for(let i=0;i<16;i++){await page.waitForTimeout(80);const next=page.getByRole('button',{name:'下一张照片',exact:true});if(await next.isDisabled())break;await next.click();await settle()}
+ assert.ok((await page.locator('.filmstrip-counter').innerText()).startsWith('14 / 14'));assert.ok(await page.getByRole('button',{name:'下一张照片',exact:true}).isDisabled());checks.push('Keyboard/thumbnail navigation and paged continuation reach final 14/14 without wrapping');
+ await page.goBack();await settle();assert.equal(await page.locator('.photo-viewer').count(),0);await page.goForward();await settle();assert.ok((await page.locator('.filmstrip-counter').innerText()).startsWith('14 / 14'));
+ await page.reload();await page.locator('.viewer-filmstrip [aria-current=true]').waitFor();await settle();assert.ok((await page.locator('.filmstrip-counter').innerText()).startsWith('14 / 14'));checks.push('Back returns directly to wall; Forward and refresh restore selection beyond first page');
+ for(const [width,height] of [[390,720],[320,568],[844,390]]){await page.setViewportSize({width,height});await page.waitForTimeout(150);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight));assert.ok(await page.locator('.viewer-filmstrip [aria-current=true]').evaluate(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth}),'Selected thumbnail stays visible after resize');for(const css of ['.viewer-filmstrip','.viewer-page.previous','.viewer-page.next'])assert.ok(await page.locator(css).evaluate(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth}),css);await page.screenshot({path:`${out}/${width}x${height}.png`})}
+ checks.push('320/390 mobile and 844x390 short landscape retain controls without page overflow');
+ await page.setViewportSize({width:1440,height:900});await page.emulateMedia({reducedMotion:'reduce'});await page.getByRole('button',{name:'上一张照片',exact:true}).click();await settle();assert.equal(await page.locator('.image-stack').evaluate(e=>e.getAnimations().length),0);checks.push('Reduced motion turns directly, without animation');
+ await page.getByRole('button',{name:'铺满浏览器',exact:true}).first().click();await settle();assert.ok(await page.locator('.viewer-filmstrip').isHidden());await page.keyboard.press('ArrowLeft');await settle();assert.ok(await page.locator('.photo-viewer.immersive').isVisible());const immersivePhoto=await photoId();await page.goBack();await settle();assert.equal(await photoId(),immersivePhoto);assert.equal(await page.locator('.photo-viewer.immersive').count(),0);checks.push('Immersive mode keeps arrows/keyboard, hides strip and returns via native Back');
+ assert.equal(requests.filter(u=>/\/original(?:-compatible)?\?/.test(u)).length,0);checks.push('Browsing and neighboring preloads use local previews only; on-demand mode sends zero original requests');
+ await page.evaluate(()=>{const real=window.fetch.bind(window);window.originalCancelled=false;window.originalStarted=0;window.fetch=(url,opts)=>{if(/\/original(?:-compatible)?\?/.test(String(url))){window.originalStarted++;return new Promise((resolve,reject)=>opts.signal.addEventListener('abort',()=>{window.originalCancelled=true;reject(new DOMException('cancelled','AbortError'))},{once:true}))}return real(url,opts)}});
+ await page.getByRole('button',{name:'加载原图',exact:true}).click();await page.waitForFunction(()=>window.originalStarted===1);await page.getByRole('button',{name:'上一张照片',exact:true}).click();await settle();assert.equal(await page.evaluate(()=>window.originalCancelled),true);assert.equal(await page.evaluate(()=>window.originalStarted),1);checks.push('Changing photograph cancels pending original and does not request the next NAS original in on-demand mode');
+ await page.emulateMedia({reducedMotion:'no-preference'});await page.getByRole('button',{name:'上一张照片',exact:true}).click();await page.goBack();await settle();assert.equal(await page.locator('.photo-viewer').count(),0);assert.equal(await page.locator('[data-scene-clone]').count(),0);checks.push('Back during a turn cancels the animation and leaves no stale viewer or clones');
+ assert.deepEqual(errors,[]);await fs.writeFile(out+'/evidence.json',JSON.stringify({checks,errors,requests:requests.length},null,2));console.log(JSON.stringify({checks,errors},null,2));
+}catch(e){await page.screenshot({path:out+'/failure.png'});throw e}finally{await browser.close()}

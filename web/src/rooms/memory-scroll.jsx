@@ -73,8 +73,8 @@ export function MemoryScrollRoom({api,state={},onState,onCollection,onPhoto}){
      return <article key={chapter.id} className={'memory-chapter '+(portrait?'chapter-portrait':'')+(chapter.id===active?.chapter.id?' chapter-active':'')} style={{left:x,width,'--scroll-hero-height':heroHeight+'px'}} data-chapter={chapter.id}>
       <header><span>{dateLabel(chapter.period?.slice(0,4))}</span><button onClick={()=>onCollection({id:'scroll-'+chapter.id,title:chapter.customTitle||chapter.label,dateLabel:dateLabel(chapter.period),endpoint:endpoint(chapter.id)})} aria-label={'展开章节 '+(chapter.customTitle||chapter.label)}>{chapter.customTitle||chapter.label}<span aria-hidden="true">↗</span></button></header>
       <div className={'memory-chapter-photos '+(!detail.length?'chapter-single':'')}>
-       {hero&&<button className="memory-chapter-hero" aria-label={'查看 '+hero.name} onClick={e=>{if(!suppress.current||e.detail===0)onPhoto(hero)}}><PreviewImage src={hero.preview||hero.thumbnail} alt="" decoding="async" draggable="false"/></button>}
-       {detail.map(p=><button key={p.id} className="memory-chapter-detail" aria-label={'查看 '+p.name} onClick={e=>{if(!suppress.current||e.detail===0)onPhoto(p)}}><PreviewImage src={p.preview||p.thumbnail} alt="" decoding="async" draggable="false"/></button>)}
+       {hero&&<button className="memory-chapter-hero" aria-label={'查看 '+hero.name} onClick={e=>{if(!suppress.current||e.detail===0)onPhoto(hero,[hero,...detail])}}><PreviewImage src={hero.preview||hero.thumbnail} alt="" decoding="async" draggable="false"/></button>}
+       {detail.map(p=><button key={p.id} className="memory-chapter-detail" aria-label={'查看 '+p.name} onClick={e=>{if(!suppress.current||e.detail===0)onPhoto(p,[hero,...detail])}}><PreviewImage src={p.preview||p.thumbnail} alt="" decoding="async" draggable="false"/></button>)}
       </div>
      </article>
     })}

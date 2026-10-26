@@ -13,7 +13,7 @@ function ActivityPictures({api,activity,year,onPhoto}){
  const result=useRoomData(api,selected.length?null:'/exhibitions/creative/photos?'+new URLSearchParams({kind:'chapter',key:activity.id,year:String(year),sort:'score',limit:'3'}));
  const photos=selected.length?selected:(result.data?.items || []).filter(matches);
  return <div className="rings-detail-images" data-preview-activity={activity.id} aria-busy={!selected.length&&result.loading}>
-  {photos.slice(0,3).map(p=><button key={p.id} data-asset={p.id} aria-label={'查看 '+p.name} onClick={()=>onPhoto(p)}><PreviewImage src={p.preview || p.thumbnail} alt="" decoding="async"/></button>)}
+  {photos.slice(0,3).map(p=><button key={p.id} data-asset={p.id} aria-label={'查看 '+p.name} onClick={()=>onPhoto(p,photos.slice(0,3))}><PreviewImage src={p.preview || p.thumbnail} alt="" decoding="async"/></button>)}
   {!selected.length&&<RoomStatus {...result} empty={!result.loading&&!photos.length}/>}
  </div>;
 }
