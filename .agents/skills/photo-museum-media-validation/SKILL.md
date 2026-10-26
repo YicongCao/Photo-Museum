@@ -60,3 +60,5 @@ HDR/gain-map SDR 修复见 docs/research/gainmap-sdr-validation.md，运行 test
 Cover Flow日夜模式专项：先隔离构建至data/cover-light-validation/web-dist，以MUSEUM_FIXTURE_PORT=8798、MUSEUM_WEB_DIST指向该目录及PYTHONPATH=.运行tools/p5_validation_server.py，ready后执行node web/tests/coverflow-light.mjs。核对白底文字≥4.5:1、照片裁片像素不变、倒影不透后图、Portal气泡主题、重载/墙返回保位、390px和矮窗口、禁用storage及键盘操作。范围仅Cover Flow首页，暗房等仍黑底。公开截图仅合成源，结束停止8798，保留正式8790 Gallery；记录见docs/research/coverflow-light-validation.md。
 
 SQLite竞争及进程稳定性复验：运行tests/p1/test_database_contention.py，见docs/research/sqlite-contention-recovery.md。隔离supervisor测试以空库、无模型、动态端口启动，验证worker被杀后HTTP PID不变、持写锁超过10秒后退避且解锁恢复；不得在正式库持锁或强杀worker来做故障注入。判断临时锁用worker_runtime.is_database_busy，不把任意OperationalError都当可重试，也不在connect上下文自动重放含外部操作的事务。目录焦点使用choose_directory，重投影与短CAS写入分开；空闲/版本不变不反复写。真实发布沿用原数据和暂停状态，核对worker进程、API和队列快照，不能把重启成功冒充长期无故障。
+
+面孔姓名复验：见docs/research/people-settings.md。后端tests/p1/test_people_settings.py与test_curation.py验证命名/清空/模型升级人工保护、隐藏/过期范围、头像鉴权/缺缓存零GET。隔离P5 fixture用MUSEUM_VALIDATION_PEOPLE=1，再运行web/tests/people-settings.mjs；脚本会命名/拆组，重新运行须重启临时fixture恢复55组初态。真实库只读汇总与本地缓存禁网模型抽样，不能给真实人物写测试姓名或上传embedding。正式UI从Settings → 面孔与姓名进入。

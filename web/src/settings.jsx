@@ -3,12 +3,13 @@ import {Icon} from './icons';
 import {StatusNotice,StatusPanel,SavedStatus} from './system-status';
 import {ProviderForm} from './settings-provider';
 import {LexiconSettings} from './lexicon-settings';
+import {PeopleSettings} from './people-settings';
 import {usePreferences} from './preferences';
 import './settings.css';
 import {MuseumNav} from './museum-nav';
 import {coverStyles} from './cover-layout';
 import './cover-settings.css';
-const tabs={sources:['folder','文件源'],llm:['server','LLM Provider'],gps:['pin','GPS 地址'],display:['display','照片显示'],cache:['thumbnail','缓存'],lexicon:['topic','关键词词库']};
+const tabs={sources:['folder','文件源'],llm:['server','LLM Provider'],gps:['pin','GPS 地址'],display:['display','照片显示'],cache:['thumbnail','缓存'],people:['face','面孔与姓名'],lexicon:['topic','关键词词库']};
 const gib=n=>(n/1024**3).toFixed(2);
 function SourceCard({source:s,api,reload}){
  const [form,setForm]=useState({name:s.name,username:s.username,password:'',ca_pem:s.ca_pem || ''}),[editing,setEditing]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState(false),[browse,setBrowse]=useState(null);
@@ -69,7 +70,7 @@ export function Settings({api,onLogout}){
  const back=()=>{location.hash=from&&/^(manage|gallery|curator)(\?|$)/.test(from)?from:'manage'};
  return <div className="settings-shell"><header className="settings-header"><div><button className="settings-back" onClick={back}>← 返回</button><h1>Settings</h1></div><MuseumNav current="settings" onLogout={onLogout}/></header><div className="settings-layout"><nav className="settings-tabs" aria-label="设置分类">{Object.entries(tabs).map(([id,[icon,label]])=><button key={id} aria-current={tab===id?'page':undefined} onClick={()=>navigate(id)}><Icon name={icon}/>{label}</button>)}</nav><main className="settings-content">
  {error&&data&&<StatusNotice error={error} scope="设置更新" detail="保留当前设置" onRetry={()=>reload().catch(e=>setError(e.message))}/>}
- {tab==='lexicon'?<LexiconSettings api={api}/>:!data?<StatusPanel loading={!error} label="读取设置" error={error} onRetry={()=>reload().catch(e=>setError(e.message))}/>:tab==='sources'?<Sources sources={data.sources} api={api} reload={reload}/>:tab==='llm'?<><div className="settings-section-title"><h2>LLM Provider</h2><span>{data.provider.configured?data.provider.enabled?'已配置':'已停用':'待配置'}</span></div><ProviderForm api={api} initial={data.provider} onSaved={()=>reload().catch(e=>setError(e.message))}/></>:tab==='cache'?<CacheSettings api={api} data={data.cache} reload={reload}/>:<PreferenceForm key={tab} kind={tab} api={api} reload={reload} geography={data.geography} paused={data.cache.paused}/>}
+ {tab==='people'?<PeopleSettings api={api}/>:tab==='lexicon'?<LexiconSettings api={api}/>:!data?<StatusPanel loading={!error} label="读取设置" error={error} onRetry={()=>reload().catch(e=>setError(e.message))}/>:tab==='sources'?<Sources sources={data.sources} api={api} reload={reload}/>:tab==='llm'?<><div className="settings-section-title"><h2>LLM Provider</h2><span>{data.provider.configured?data.provider.enabled?'已配置':'已停用':'待配置'}</span></div><ProviderForm api={api} initial={data.provider} onSaved={()=>reload().catch(e=>setError(e.message))}/></>:tab==='cache'?<CacheSettings api={api} data={data.cache} reload={reload}/>:<PreferenceForm key={tab} kind={tab} api={api} reload={reload} geography={data.geography} paused={data.cache.paused}/>}
  {preferences.error&&<StatusNotice error={preferences.error} scope="显示偏好" onRetry={()=>preferences.refresh().catch(()=>{})}/>}
  </main></div></div>
 }

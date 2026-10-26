@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "Settings exposes paginated local people; portraits are decoded 160px crops rather than full-photo boxes",
+    "Existing face groups can be named and searched, with a real saved state",
+    "Names persist across reload and can be renamed without rerunning recognition",
+    "Failed save preserves the draft and original saved name, without a false success indicator",
+    "Search emptiness retains the editor, and pagination reaches groups beyond the first page",
+    "Unlabelled filtering and manual split update the correct group without dropping its saved name",
+    "Fast group switching ignores cancelled older face responses",
+    "Mobile and short landscape keep the page fixed; lists/settings scroll internally and name input is reachable"
+  ],
+  "errors": [],
+  "fixture": "55 synthetic groups/57 synthetic boxes on generated landscapes; no identity-recognition quality claim, no NAS/provider calls"
+}
