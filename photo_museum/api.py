@@ -51,6 +51,7 @@ def create_app(directory=None, dav_factory=WebDAV):
 
     @app.middleware('http')
     async def boundary(request, call_next):
+        started = time.perf_counter()
         host = request.headers.get('host', '')
         if host not in allowed:
             return JSONResponse({'detail': 'Host refused'}, 403)
@@ -66,6 +67,11 @@ def create_app(directory=None, dav_factory=WebDAV):
             if not length or not length.isdigit() or int(length) > limit:
                 return JSONResponse({'detail': 'Request body too large or length missing'}, 413)
         result = await call_next(request)
+        if os.environ.get('MUSEUM_TIMINGS') == '1':
+            route = request.scope.get('route')
+            # Template only: never log cookies, query values, IDs or file paths.
+            print('request_timing', getattr(route, 'path', 'static'), result.status_code,
+                  round((time.perf_counter()-started)*1000, 1), flush=True)
         if not getattr(request.state, 'validated_preview', False):
             result.headers['Cache-Control'] = 'no-store'
         result.headers['X-Content-Type-Options'] = 'nosniff'
@@ -135,6 +141,10 @@ def create_app(directory=None, dav_factory=WebDAV):
             conn.execute('DELETE FROM sessions WHERE token_hash=?', (security.digest(request.cookies['museum_session']),))
         response.delete_cookie('museum_session')
         return {'ok': True}
+
+    @app.get('/api/session', dependencies=[Depends(owner)])
+    def session_state():
+        return {'authenticated': True}
 
     @app.get('/api/state', dependencies=[Depends(owner)])
     def state():

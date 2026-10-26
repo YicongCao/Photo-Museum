@@ -3,6 +3,8 @@ import { Icon } from "./icons";
 import {MuseumNav} from "./museum-nav";
 import {RoomMenuIcon} from './room-menu-icon';
 import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
+import {PreviewImage} from './preview-image';
+import {beginTransitionSample} from './transition-diagnostics';
 import "./gallery.css";
 import { useSceneMotion, createActivityWarmup } from "./scene-motion";
 import {prepareCover,coverPreviewSources,randomCoverIndex} from './random-cover';
@@ -119,6 +121,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   useEffect(()=>()=>{transition.current++;navigationRequest.current?.abort();warm.current?.dispose()},[]);
   async function restoreScene(target,{record=true,initial=false,photoRecord=null,selector='.wall-scene .wall-photo img'}={}){
     cancelRandom();
+    const finishSample=beginTransitionSample();
     const origin=capture(),token=++transition.current;
     animate.cancel();navigationRequest.current?.abort();const request=new AbortController();navigationRequest.current=request;openingRef.current=true;setOpening(true);setSceneLoading(true);setError('');
     if(record){navigation.sync(origin);navigation.push(target)}
@@ -131,6 +134,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
         if(!target.collection&&!activities.some(a=>a.id===id))throw Error('活动已不可用');
         if(warm.current?.id!==id){warm.current?.dispose();warm.current=createActivityWarmup(api,id,target.collection?target.collection.endpoint+'&limit=15':undefined)}
         const staged=warm.current,data=await staged.promise;if(token!==transition.current)return;
+        if(!target.photo)staged.promote();
         setCounts({photos:data.photos,videos:data.videos});
       }
       if(target.photo){
@@ -159,7 +163,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
         pendingFocus.current={element:lastFocus.current,id:origin.photo.id};lastFocus.current=null;
       }
     }catch(e){if(token===transition.current&&e.name!=='AbortError'){setError(e.message);navigation.replace(origin)}}
-    finally{if(token===transition.current){openingRef.current=false;setOpening(false);setSceneLoading(false)}}
+    finally{finishSample();if(token===transition.current){openingRef.current=false;setOpening(false);setSceneLoading(false)}}
   }
   const changeRoom=next=>{setRoomMenu(false);if(next===room&&view==='tunnel')return;return restoreScene(capture({room:next,view:'tunnel',photo:null,immersive:false}))};
   const openCollection=(descriptor,options)=>restoreScene(capture({view:'wall',wallId:null,collection:descriptor,photo:null,immersive:false,wallLeft:wallPositions.current[descriptor.id] || 0}),options);
@@ -174,20 +178,22 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   const returnCurator=()=>{location.hash='curator'+(scopeMeta?.run_id?'?run='+scopeMeta.run_id:'')};
   const rootWall=exhibitionId&&collection?.id==='curated-'+exhibitionId&&roomHint==='wall';
   selectedId.current = current?.id || savedRooms(storageKey).activityId;
-  const catalogueRequest=useRef(null);
+  const catalogueRequest=useRef(null),catalogueRevision=useRef(null);
   const reload = async () => {
     if(catalogueRequest.current)return;
     const c=new AbortController();catalogueRequest.current=c;
     try{
       const d=await api('/gallery','GET',undefined,{signal:c.signal});
       if(c.signal.aborted)return;
+      if(d.revision!=null&&catalogueRevision.current===d.revision){setLoadError(null);setLoaded(true);return}
+      catalogueRevision.current=d.revision;
       setLoadError(null);setRoomRevision(n=>n+1);setLoaded(true);
       const next=d.activities.findIndex(a=>a.id===selectedId.current);
       setActivities(d.activities);setIndex(i=>next<0?Math.min(i,Math.max(0,d.activities.length-1)):next);
     }catch(e){if(!c.signal.aborted)setLoadError(e)}
     finally{if(catalogueRequest.current===c)catalogueRequest.current=null}
   };
-  useEffect(()=>{reload();const timer=setInterval(()=>{if(sceneRef.current.view==='tunnel'&&!sceneRef.current.photo)reload()},15000);return()=>{clearInterval(timer);catalogueRequest.current?.abort()}},[]);
+  useEffect(()=>{reload();const timer=setInterval(()=>{if(!document.hidden&&sceneRef.current.view==='tunnel'&&!sceneRef.current.photo)reload()},15000);return()=>{clearInterval(timer);catalogueRequest.current?.abort()}},[]);
   const goTo = (i) => {
     cancelRandom();
     if (view === "tunnel") tunnel.current?.goTo(i);
@@ -269,6 +275,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
           {room==='space'&&view==='tunnel'&&!photo&&<SpacetimeRoom ref={tunnel} activities={activities} index={index} onIndex={setIndex} onOpen={openActivity} state={roomStates.space || {}} onState={s=>setRoomStates(p=>({...p,space:s}))}/>}
           {(wallActivity || collection) && view==='wall' && <div className={"wall-scene scene-layer " + (photo ? "scene-inactive" : "")} inert={!!photo || opening}>
             <PhotoWall
+              moving={opening}
               key={collection?.id || wallActivity.id}
               activity={collection ? {id:collection.id,photos:counts?.photos,videos:0} : wallActivity}
               endpoint={collection?.endpoint}
@@ -479,14 +486,14 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
           <div className="image-stack">
             {!previewReady&&<PhotoLoading className="viewer-photo-loading"/>}
             {previewFailed&&!original&&<StatusPanel error="预览暂不可用" onRetry={()=>{setPreviewFailed(false);setPreviewReady(false);setSource(photo.preview)}}/>}
-            {source&&<img
+            {source&&<PreviewImage priority={0}
               ref={previewRef}
               className="preview-layer"
               src={source}
               alt={photo.name}
               onLoad={() => {setPreviewReady(true);setPhase((p) => (p === "4K 读取中" ? "4K · 原图读取中" : p))}}
               onError={() => {
-                if(photo.thumbnail&&source!==photo.thumbnail){setSource(photo.thumbnail);setPhase("保留缩略图 · 4K 暂不可用")}
+                if(photo.thumbnail&&source!==photo.thumbnail){setSource(photo.thumbnail);setPhase("缩略图读取中")}
                 else{setSource(null);setPreviewReady(true);setPreviewFailed(true);setPhase('预览暂不可用')}
               }}
             />}

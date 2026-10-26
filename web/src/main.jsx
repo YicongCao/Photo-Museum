@@ -25,29 +25,30 @@ function App() {
     [busy, setBusy] = useState(false),
     [autoUnlockAllowed, setAutoUnlockAllowed] = useState(true),
     [route, setRoute] = useState(location.hash);
-  const passwordInput = useRef(null), loginPending = useRef(false), polling=useRef(false), stateRequest=useRef(null);
+  const passwordInput = useRef(null), loginPending = useRef(false), polling=useRef(false), stateRequest=useRef(null), sessionKnown=useRef(false);
   useEffect(() => {
     if (initialized !== true || state || !autoUnlockAllowed || !passwordInput.current) return;
     return watchAutoUnlock(passwordInput.current, () => !loginPending.current);
   }, [initialized, Boolean(state), autoUnlockAllowed, checked, Boolean(pollError)]);
-  async function refresh() {
+  async function refresh(light=false) {
+    light=light===true&&sessionKnown.current;
     if(polling.current)return;
     polling.current=true;const c=new AbortController();stateRequest.current=c;
-    try {setState(await api('/state','GET',undefined,{signal:c.signal}));setInitialized(true);setPollError(null)}
-    catch(e){if(e.name!=='AbortError'){if(e.status===401){previews.clear();setState(null);setPollError(null)}else setPollError(e)}}
+    try {const value=await api(light?'/session':'/state','GET',undefined,{signal:c.signal});if(!light){setState(value);sessionKnown.current=true;}setInitialized(true);setPollError(null)}
+    catch(e){if(e.name!=='AbortError'){if(e.status===401){previews.clear();sessionKnown.current=false;setState(null);setPollError(null)}else setPollError(e)}}
     finally{if(!c.signal.aborted){setChecked(true);polling.current=false}}
   }
   const bootstrap=signal=>api('/bootstrap','GET',undefined,{signal}).then(v=>{setInitialized(v.initialized);setBootstrapError(null)}).catch(e=>{if(e.name!=='AbortError')setBootstrapError(e)});
   useEffect(() => {
     const c=new AbortController();bootstrap(c.signal);refresh();
-    const t=setInterval(refresh,2500), f=()=>setRoute(location.hash);
+    const t=setInterval(()=>{if(!document.hidden)refresh(!location.hash.startsWith('#manage')&&!location.hash.startsWith('#settings'))},2500), f=()=>{setRoute(location.hash);if(location.hash.startsWith('#manage')||location.hash.startsWith('#settings'))refresh()};
     window.addEventListener('hashchange',f);
     return()=>{c.abort();stateRequest.current?.abort();clearInterval(t);window.removeEventListener('hashchange',f)};
   },[]);
   async function logout() {
     try {
       await api("/logout", "POST", {});
-      previews.clear();
+      previews.clear();sessionKnown.current=false;
       setAutoUnlockAllowed(false);
       setState(null);setError('');
     } catch (e) {

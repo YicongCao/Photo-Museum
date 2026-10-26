@@ -576,8 +576,10 @@
   text-align: left;
   color: inherit;
   cursor: inherit;
-  will-change: transform;
+  will-change: auto;
 }
+.continuous-tunnel[data-moving=true] .activity-panel {will-change:transform;}
+.scene-inactive * {animation-play-state:paused!important;will-change:auto!important;}
 .continuous-tunnel .activity-panel:focus-visible {
   outline: 1px solid #d8ae72;
   outline-offset: 6px;

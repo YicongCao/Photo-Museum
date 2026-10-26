@@ -96,7 +96,7 @@ export function Manager({ api, state, refresh, onLogout }) {
   useEffect(() => {
     mounted.current = true;
     poll();
-    const timer = setInterval(poll, 2500);
+    const timer = setInterval(()=>{if(!document.hidden)poll()}, 2500);
     return () => { mounted.current = false; clearInterval(timer); request.current?.abort(); };
   }, []);
   useEffect(() => {

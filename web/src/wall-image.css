@@ -2,6 +2,12 @@
 .wall-photo .wall-display{opacity:0;transition:opacity 280ms ease-out}
 .wall-photo .wall-display.ready{opacity:1;will-change:opacity}
 .wall-photo .wall-display.settled{will-change:auto}
+.wall-photo .wall-thumb.retired{visibility:hidden}
+/* Virtual tiles retain one small decoded thumbnail for transforms; all leases
+   still retire on virtual unmount. Never animate dozens of 4K textures. */
+.gallery-shell[aria-busy=true] .wall-photo:has(.wall-thumb:not([data-preview-pending])) .wall-display{visibility:hidden}
+.gallery-shell[aria-busy=true] .original-layer{visibility:hidden;animation-play-state:paused!important}
+.gallery-shell[aria-busy=true] .metadata-panel,.gallery-shell[aria-busy=true] .classic-coverflow::after{backdrop-filter:none;-webkit-backdrop-filter:none}
 .gallery-shell .gallery-photo-loading{position:fixed;left:50%;top:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);z-index:35;pointer-events:none;white-space:nowrap}
 .gallery-shell[aria-busy=true] .wall-photo-loading{display:none}
 @media(prefers-reduced-motion:reduce){.wall-photo .wall-display{transition:none}}

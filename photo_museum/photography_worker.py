@@ -1,4 +1,5 @@
 """Resumable local-only enrichment of cached previews; never constructs a NAS client."""
+from .runtime_revision import revision as work_revision
 import argparse
 import json
 import time
@@ -25,14 +26,14 @@ class PhotographyWorker:
         focus=choose_directory(self.db)
         with self.db.connect() as c:
             r=c.execute("""SELECT e.id,e.revision,e.kind,m.updated media_updated,m.data_json FROM entries e
-                JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision
+                JOIN media_info m INDEXED BY media_readiness ON m.asset_id=e.id AND m.revision=e.revision
                 JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision
                 JOIN jobs j ON j.id=e.seen_job
                 WHERE q.status='ready' AND e.missing=0 AND e.scope_excluded=0
                 AND j.status NOT IN ('paused','cancelled','blocked')
                 AND coalesce(json_extract(m.data_json,'$.metadata_only'),0)=0
                 AND (? IS NULL OR (e.source_id=? AND e.parent=?))
-                AND NOT EXISTS(SELECT 1 FROM analysis a WHERE a.asset_id=e.id AND a.revision=e.revision
+                AND NOT EXISTS(SELECT 1 FROM analysis a INDEXED BY analysis_readiness WHERE a.asset_id=e.id AND a.revision=e.revision
                     AND a.provider=? AND a.version=?
                     AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version')
                     AND json_extract(a.data_json,'$.input_preview_updated') IS m.updated)
@@ -78,7 +79,7 @@ def main():
     p.add_argument('--models',default='data/models');p.add_argument('--once',action='store_true');a=p.parse_args()
     from .photography import LocalPhotography
     worker=PhotographyWorker(Database(a.data),LocalPhotography(a.models))
-    run_loop(worker.tick,idle=2,once=a.once)
+    run_loop(worker.tick, revision=lambda: work_revision(worker.db),idle=2,once=a.once)
 
 
 if __name__=='__main__':main()

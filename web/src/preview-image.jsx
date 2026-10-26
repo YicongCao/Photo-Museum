@@ -1,7 +1,7 @@
 import React,{forwardRef,useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {previews} from './preview-queue';
 // Observe the real transformed tile, so a long wall cannot flood the network.
-export const PreviewImage=forwardRef(function PreviewImage({src,priority=1,onError,loading,as:Tag='img',native=false,...props},forwarded){
+export const PreviewImage=forwardRef(function PreviewImage({src,priority=1,onError,onLoad,loading,as:Tag='img',native=false,...props},forwarded){
  const node=useRef(null),lease=useRef(null),error=useRef(onError),rank=useRef(priority),[loaded,setLoaded]=useState(null);
  error.current=onError;rank.current=priority;
  const bind=useCallback(el=>{node.current=el;if(typeof forwarded==='function')forwarded(el);else if(forwarded)forwarded.current=el},[forwarded]);
@@ -31,7 +31,15 @@ export const PreviewImage=forwardRef(function PreviewImage({src,priority=1,onErr
  },[src,direct]);
  useEffect(()=>{lease.current?.promote(priority)},[priority]);
  const value=direct?src:loaded?.src===src?loaded.url:undefined;
- return <Tag fetchPriority={priority===0?'high':'auto'} {...props} ref={bind} data-preview-source={direct?undefined:src} {...(Tag==='image'?{href:value}:{src:value,decoding:'async'})} onError={onError}/>;
+ // A queued <img> without src otherwise paints the browser's broken-image
+ // icon/alt text even though no network request has failed. Keep its geometry
+ // for IntersectionObserver; only hide the unpainted image surface.
+ const [painted,setPainted]=useState(null);
+ const pending=!direct&&painted!==value;
+ return <Tag fetchPriority={priority===0?'high':'auto'} {...props} ref={bind} data-preview-source={direct?undefined:src} data-preview-pending={!direct&&(!value||pending)?'true':undefined}
+  style={{...props.style,...(!direct&&(!value||pending)?{visibility:'hidden'}:{})}}
+  {...(Tag==='image'?{href:value}:{src:value,decoding:'async'})}
+  onLoad={e=>{setPainted(value);onLoad?.(e)}} onError={e=>{setPainted(null);onError?.(e)}}/>;
 });
 
 export function PreviewSVG({href,...props}){return <PreviewImage {...props} as="image" src={href}/>;}

@@ -1,4 +1,5 @@
 """Resumable aesthetics-only backfill. No NAS client and no face/technical rewrites."""
+from .runtime_revision import revision as work_revision
 import argparse
 from .db import Database
 from .photography_worker import PhotographyWorker
@@ -19,7 +20,7 @@ def main():
     args = parser.parse_args()
     from .aesthetics import LocalAesthetics
     worker = AestheticsWorker(Database(args.data), LocalAesthetics(args.models))
-    run_loop(worker.tick, idle=2, once=args.once)
+    run_loop(worker.tick, revision=lambda: work_revision(worker.db), idle=2, once=args.once)
 
 
 if __name__ == '__main__':

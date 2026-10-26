@@ -5,6 +5,7 @@ from fastapi import Depends,HTTPException
 from pydantic import BaseModel,ConfigDict,Field
 from .preferences import PreferenceInput,read_preferences,geocode_query,geography_stamp
 from .curator_provider import load_config
+from .read_snapshot import cached_read
 
 class SourceEdit(BaseModel):
  model_config=ConfigDict(extra='forbid')
@@ -38,6 +39,7 @@ def register(app,db,security,owner,dav_factory):
   app.state.exhibitions.invalidate()
   return values|{'revision':revision}
  @app.get('/api/settings',dependencies=[Depends(owner)])
+ @cached_read(db)
  def overview():
   with db.connect() as c:
    p=read_preferences(c)

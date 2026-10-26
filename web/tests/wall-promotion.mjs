@@ -13,7 +13,7 @@ await page.addInitScript(()=>{
  HTMLImageElement.prototype.decode=async function(){await original.call(this);if(this.classList.contains('wall-display')){window.decodePending.push(this);await window.decodeGate}};
  const create=URL.createObjectURL.bind(URL);window.warmBlobs=[];URL.createObjectURL=b=>{const u=create(b);window.warmBlobs.push(u);return u};
 });
-await page.route('**/media/display?**',async route=>{await (route.request().resourceType()==='fetch'?warmGate:imageGate);await route.continue().catch(()=>{})});
+await page.route('**/media/display?**',async route=>{await imageGate;await route.continue().catch(()=>{})});
 await page.route('**/api/gallery/*?**',async route=>{
  const limit=new URL(route.request().url()).searchParams.get('limit');
  // This fixture has only fourteen photos per activity; shorten its first page
@@ -44,11 +44,12 @@ try{
  const samples=await page.evaluate(()=>window.wallSamples);
  assert.ok(samples.length>=8);assert.ok(samples.every(s=>s.covered),'A frame lost its opaque thumbnail before the display was opaque');
  assert.ok(samples.filter(s=>s.opacity>0&&s.opacity<.999&&s.thumb).length>=2,'The test must observe the actual crossfade');
- assert.equal(await tile.locator('.wall-thumb').count(),0);assert.equal(await tile.locator('.wall-display').evaluate(e=>getComputedStyle(e).willChange),'auto');
- checks.push('Frame samples preserve opaque image coverage throughout the real crossfade; thumbnail and compositor hint retire only after full opacity');
- const source=await tile.locator('.wall-display').getAttribute('src');assert.ok(source.includes('/media/display?'));
+ assert.equal(await tile.locator('.wall-thumb').evaluate(e=>getComputedStyle(e).visibility),'hidden');assert.equal(await tile.locator('.wall-display').evaluate(e=>getComputedStyle(e).willChange),'auto');
+ checks.push('Frame samples preserve opaque image coverage throughout the real crossfade; thumbnail surface and compositor hint retire only after full opacity');
+ const source=await tile.locator('.wall-display').getAttribute('src');assert.ok(source.startsWith('blob:'));
+ assert.ok((await tile.locator('.wall-display').getAttribute('data-preview-source')).includes('/media/display?'));
  releaseWarm();await page.waitForFunction(()=>window.warmBlobs.length>=4);await page.setViewportSize({width:1500,height:944});await page.waitForTimeout(120);
- assert.equal(await tile.locator('.wall-display').getAttribute('src'),source);checks.push('Late warm-up Blob aliases plus parent reflow do not replace an already displayed image src');
+ assert.equal(await tile.locator('.wall-display').getAttribute('src'),source);checks.push('Shared warm-up Blob and parent reflow do not replace an already displayed image src');
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);await page.getByRole('slider',{name:'照片流横向位置'}).press('End');await loaderFits(page);await page.screenshot({path:out+'/mobile-loading.png'});
  checks.push('Loading indicator stays centered on desktop and phone, clear of the centered scrollbar');
  releasePage();await page.locator('.wall-photo-loading').waitFor({state:'detached'});
@@ -65,7 +66,7 @@ try{
  checks.push('Returning during decode removes image src and ignores late completion after unmount');await pendingContext.close();
  const reducedContext=await browser.newContext({storageState:storage,reducedMotion:'reduce'}),reduced=await reducedContext.newPage();reduced.on('pageerror',e=>errors.push(e.message));reduced.on('request',r=>requests.push(r.url()));
  await reduced.goto(base+'/#gallery');await reduced.locator('.depth-0').waitFor();await reduced.locator('.depth-0').click();await reduced.locator('.wall-display.settled').first().waitFor();
- assert.equal(await reduced.locator('.wall-display.settled').first().evaluate(e=>getComputedStyle(e).opacity),'1');assert.equal(await reduced.locator('.wall-photo').first().locator('.wall-thumb').count(),0);checks.push('Reduced motion reveals decoded opaque 4K directly and releases its thumbnail');await reducedContext.close();
+ assert.equal(await reduced.locator('.wall-display.settled').first().evaluate(e=>getComputedStyle(e).opacity),'1');assert.equal(await reduced.locator('.wall-photo').first().locator('.wall-thumb').evaluate(e=>getComputedStyle(e).visibility),'hidden');checks.push('Reduced motion reveals decoded opaque 4K directly and hides its retained transition thumbnail');await reducedContext.close();
  assert.equal(requests.filter(u=>/\/original(?:-compatible)?(?:\?|$)/.test(u)).length,0);assert.deepEqual(errors,[]);checks.push('Zero original-file requests and uncaught browser errors');
  await fs.writeFile(process.env.MUSEUM_BROWSER_EVIDENCE||'docs/research/wall-promotion-evidence.json',JSON.stringify({date:new Date().toISOString(),checks,errors,frames:samples,fixture:'Synthetic photos; controlled network and decode gates. Frame coverage is measured on rendered image layers; private photo color remains separate.'},null,2));console.log(JSON.stringify({checks,errors},null,2));
 }catch(e){await page.screenshot({path:'data/wall-promotion/failure.png'});throw e}finally{releaseWarm();releaseImage();releasePage();await browser.close()}

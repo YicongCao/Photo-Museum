@@ -1,0 +1,16 @@
+ALTER TABLE runtime_revision ADD COLUMN telemetry INTEGER NOT NULL DEFAULT 0;
+CREATE TRIGGER telemetry_processing_progress_insert AFTER INSERT ON processing_progress BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_processing_progress_delete AFTER DELETE ON processing_progress BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_processing_progress_update AFTER UPDATE OF stage,status,steps_json,bytes_done,bytes_total,updated ON processing_progress WHEN OLD.stage IS NOT NEW.stage OR OLD.status IS NOT NEW.status OR OLD.steps_json IS NOT NEW.steps_json OR OLD.bytes_done IS NOT NEW.bytes_done OR OLD.bytes_total IS NOT NEW.bytes_total OR OLD.updated IS NOT NEW.updated BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_file_completions_insert AFTER INSERT ON file_completions BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_file_completions_delete AFTER DELETE ON file_completions BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_file_completions_update AFTER UPDATE OF completed ON file_completions WHEN OLD.completed IS NOT NEW.completed BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_scan_dirs_insert AFTER INSERT ON scan_dirs BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_scan_dirs_delete AFTER DELETE ON scan_dirs BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_scan_dirs_update AFTER UPDATE OF state,lease_until,error ON scan_dirs WHEN OLD.state IS NOT NEW.state OR OLD.lease_until IS NOT NEW.lease_until OR OLD.error IS NOT NEW.error BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_cache_files_insert AFTER INSERT ON cache_files BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_cache_files_delete AFTER DELETE ON cache_files BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_cache_files_update AFTER UPDATE OF size,path ON cache_files WHEN OLD.size IS NOT NEW.size OR OLD.path IS NOT NEW.path BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_sources_insert AFTER INSERT ON sources BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_sources_delete AFTER DELETE ON sources BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;
+CREATE TRIGGER telemetry_sources_update AFTER UPDATE OF name,username,secret,ca_pem,url,allow_http ON sources WHEN OLD.name IS NOT NEW.name OR OLD.username IS NOT NEW.username OR OLD.secret IS NOT NEW.secret OR OLD.ca_pem IS NOT NEW.ca_pem OR OLD.url IS NOT NEW.url OR OLD.allow_http IS NOT NEW.allow_http BEGIN UPDATE runtime_revision SET telemetry=telemetry+1 WHERE id=1; END;

@@ -1,4 +1,5 @@
 """Separate, resumable file pipeline; one cache writer, fenced result publication."""
+from .runtime_revision import revision as work_revision, heartbeat
 import argparse
 import os
 import signal
@@ -266,7 +267,7 @@ def main():
         raise SystemExit(0)
     signal.signal(signal.SIGTERM,shutdown)
     worker=MediaWorker(Database(a.data))
-    run_loop(worker.tick,once=a.once)
+    run_loop(worker.tick, revision=lambda: work_revision(worker.db), heartbeat=lambda: heartbeat(worker.db,worker.id),once=a.once)
 
 if __name__=='__main__':
     main()

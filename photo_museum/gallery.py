@@ -4,12 +4,14 @@ import os
 import hashlib
 import json
 import time
+import threading
 from datetime import datetime
 from pathlib import PurePosixPath
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from .cache import Cache
+from .read_snapshot import cached_read
 from .photography import enabled as photography_enabled
 from . import aesthetics
 
@@ -56,11 +58,15 @@ class BudgetInput(BaseModel):
 
 def register(app,database,owner):
     cache=Cache(database)
+    from .runtime_revision import revision as runtime_revision
+    catalog_lock = threading.Lock()
+    catalog_snapshot = [None, None]
     def pipeline(c):
         from .photography import pipeline_suffix
         version=c.execute("SELECT value FROM settings WHERE key='analysis_version'").fetchone()
         return '|'+(version['value'] if version and os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1' else 'disabled')+pipeline_suffix(c)+aesthetics.pipeline_suffix(c)
     @app.get('/api/media/state',dependencies=[Depends(owner)])
+    @cached_read(database)
     def media_state(after: int | None = None):
         with database.connect() as c:
             c.execute('BEGIN')
@@ -68,13 +74,13 @@ def register(app,database,owner):
             counts={r['status']:r['n'] for r in c.execute("SELECT q.status,count(*) n FROM media_jobs q JOIN entries e ON e.id=q.asset_id AND e.revision=q.revision WHERE e.missing=0 AND e.scope_excluded=0 GROUP BY q.status")}
             errors=[dict(r) for r in c.execute("SELECT q.asset_id,q.status,q.stage,q.error,e.path FROM media_jobs q JOIN entries e ON e.id=q.asset_id AND e.revision=q.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status IN ('failed','unsupported')")]
             if os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1':
-                errors.extend(dict(r) for r in c.execute("""SELECT e.id asset_id,'failed' status,'analysis' stage,json_extract(a.data_json,'$.error') error,e.path FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND a.provider='visual' AND a.version=(SELECT value FROM settings WHERE key='analysis_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL"""))
+                errors.extend(dict(r) for r in c.execute("""SELECT e.id asset_id,'failed' status,'analysis' stage,json_extract(a.data_json,'$.error') error,e.path FROM analysis a INDEXED BY analysis_readiness JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision JOIN media_info m INDEXED BY media_readiness ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND a.provider='visual' AND a.version=(SELECT value FROM settings WHERE key='analysis_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL"""))
             if photography_enabled():
-                errors.extend(dict(r) for r in c.execute("""SELECT e.id asset_id,'failed' status,'photography' stage,json_extract(a.data_json,'$.error') error,e.path FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND a.provider='photography' AND a.version=(SELECT value FROM settings WHERE key='photography_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL"""))
+                errors.extend(dict(r) for r in c.execute("""SELECT e.id asset_id,'failed' status,'photography' stage,json_extract(a.data_json,'$.error') error,e.path FROM analysis a INDEXED BY analysis_readiness JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision JOIN media_info m INDEXED BY media_readiness ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND a.provider='photography' AND a.version=(SELECT value FROM settings WHERE key='photography_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL"""))
             if aesthetics.enabled():
                 errors.extend(dict(r) for r in c.execute("""SELECT e.id asset_id,'failed' status,'aesthetics' stage,json_extract(a.data_json,'$.error') error,e.path
-                    FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
-                    JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision
+                    FROM analysis a INDEXED BY analysis_readiness JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
+                    JOIN media_info m INDEXED BY media_readiness ON m.asset_id=e.id AND m.revision=e.revision
                     JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision
                     WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND a.provider='aesthetics'
                     AND a.version=(SELECT value FROM settings WHERE key='aesthetics_version')
@@ -99,13 +105,13 @@ def register(app,database,owner):
             cursor=c.execute('SELECT coalesce(max(id),0) FROM file_completions').fetchone()[0] if after is None else max(0,after)
             events=[]
             if after is not None:
-                for r in c.execute("""SELECT e.*,m.data_json,f.id completion_id,f.steps_json,f.completed completed_at FROM file_completions f JOIN media_info m ON m.asset_id=f.asset_id AND m.revision=f.revision JOIN entries e ON e.id=f.asset_id AND e.revision=f.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE q.status IN ('ready','indexed') AND f.id>? AND e.missing=0 AND e.scope_excluded=0 AND f.pipeline IN (json_extract(m.data_json,'$.version')||?,json_extract(m.data_json,'$.version')||?) ORDER BY f.id LIMIT 100""",(cursor,current_pipeline,'|metadata-only')):
+                for r in c.execute("""SELECT e.*,m.data_json,f.id completion_id,f.steps_json,f.completed completed_at FROM file_completions f JOIN media_info m INDEXED BY media_readiness ON m.asset_id=f.asset_id AND m.revision=f.revision JOIN entries e ON e.id=f.asset_id AND e.revision=f.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE q.status IN ('ready','indexed') AND f.id>? AND e.missing=0 AND e.scope_excluded=0 AND f.pipeline IN (json_extract(m.data_json,'$.version')||?,json_extract(m.data_json,'$.version')||?) ORDER BY f.id LIMIT 100""",(cursor,current_pipeline,'|metadata-only')):
                     event=pack(dict(r))
                     event.update(completion_id=r['completion_id'],asset_id=r['id'],path=r['path'],steps=json.loads(r['steps_json']),completed=True)
                     events.append(event)
                     cursor=r['completion_id']
             if after is not None and not events:cursor=c.execute('SELECT coalesce(max(id),0) FROM file_completions').fetchone()[0]
-            fully_done=c.execute("SELECT count(DISTINCT f.asset_id) FROM file_completions f JOIN entries e ON e.id=f.asset_id AND e.revision=f.revision JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE q.status IN ('ready','indexed') AND e.missing=0 AND e.scope_excluded=0 AND f.pipeline IN (json_extract(m.data_json,'$.version')||?,json_extract(m.data_json,'$.version')||?)",(current_pipeline,'|metadata-only')).fetchone()[0]
+            fully_done=c.execute("SELECT count(DISTINCT f.asset_id) FROM file_completions f JOIN entries e ON e.id=f.asset_id AND e.revision=f.revision JOIN media_info m INDEXED BY media_readiness ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE q.status IN ('ready','indexed') AND e.missing=0 AND e.scope_excluded=0 AND f.pipeline IN (json_extract(m.data_json,'$.version')||?,json_extract(m.data_json,'$.version')||?)",(current_pipeline,'|metadata-only')).fetchone()[0]
             settings=dict(c.execute("SELECT key,value FROM settings WHERE key IN ('media_paused','cache_budget')"))
             bytes_used=c.execute('SELECT coalesce(sum(size),0) FROM cache_files').fetchone()[0]
         temporary_bytes=0
@@ -117,6 +123,7 @@ def register(app,database,owner):
         return {'aesthetics_enabled':aesthetics.enabled(),'photography_enabled':photography_enabled(),'completion_cursor':cursor,'completion_events':events,'fully_done':fully_done,'counts':counts,'error_count':len(errors),'errors':errors[:100],'active':active,'recent':recent,'paused':settings['media_paused']=='true','cache_bytes':bytes_used+temporary_bytes,'temporary_bytes':temporary_bytes,'budget_bytes':int(settings['cache_budget'])}
 
     @app.get('/api/media/directories',dependencies=[Depends(owner)])
+    @cached_read(database)
     def directories():
         with database.connect() as c:
             rows=[dict(r) for r in c.execute("""WITH latest AS (
@@ -126,11 +133,11 @@ def register(app,database,owner):
             ), totals AS (
               SELECT e.source_id,e.parent,count(*) total,
                 sum(q.status='ready') cached,
-                sum(q.status IN ('failed','unsupported') OR (?=1 AND q.status='ready' AND EXISTS(SELECT 1 FROM analysis a JOIN media_info m ON m.asset_id=a.asset_id AND m.revision=a.revision WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual' AND a.version=(SELECT value FROM settings WHERE key='analysis_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL)) OR (?=1 AND q.status='ready' AND EXISTS(SELECT 1 FROM analysis a WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider='photography' AND a.version=(SELECT value FROM settings WHERE key='photography_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL))) errors,
+                sum(q.status IN ('failed','unsupported') OR (?=1 AND q.status='ready' AND EXISTS(SELECT 1 FROM analysis a INDEXED BY analysis_readiness JOIN media_info m INDEXED BY media_readiness ON m.asset_id=a.asset_id AND m.revision=a.revision WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual' AND a.version=(SELECT value FROM settings WHERE key='analysis_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL)) OR (?=1 AND q.status='ready' AND EXISTS(SELECT 1 FROM analysis a INDEXED BY analysis_readiness WHERE a.asset_id=e.id AND a.revision=e.revision AND a.provider='photography' AND a.version=(SELECT value FROM settings WHERE key='photography_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL))) errors,
                 sum(q.status='running' AND q.lease_until>unixepoch('now')) active,
                 sum(EXISTS(SELECT 1 FROM file_completions f WHERE f.asset_id=e.id AND f.revision=e.revision AND q.status IN ('ready','indexed') AND f.pipeline IN (json_extract(m.data_json,'$.version')||?,json_extract(m.data_json,'$.version')||?))) done,
                 min(CASE WHEN q.status='running' AND q.lease_until>unixepoch('now') THEN e.path END) current_file
-              FROM entries e LEFT JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision LEFT JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision
+              FROM entries e LEFT JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision LEFT JOIN media_info m INDEXED BY media_readiness ON m.asset_id=e.id AND m.revision=e.revision
               WHERE e.missing=0 AND e.scope_excluded=0 AND e.is_dir=0 GROUP BY e.source_id,e.parent
             ) SELECT l.source_id,l.path,l.source_root,l.state,l.lease_until,l.job_status,l.error,coalesce(t.total,0) total,
                 coalesce(t.cached,0) cached,coalesce(t.errors,0) errors,coalesce(t.active,0) active,coalesce(t.done,0) done,t.current_file
@@ -140,8 +147,8 @@ def register(app,database,owner):
             focus=json.loads(focus_row['value']) if focus_row else None
             paused=c.execute("SELECT value FROM settings WHERE key='media_paused'").fetchone()[0]=='true'
             aesthetic_errors={(r['source_id'],r['parent']):r['n'] for r in c.execute("""SELECT e.source_id,e.parent,count(*) n
-                FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
-                JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision
+                FROM analysis a INDEXED BY analysis_readiness JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
+                JOIN media_info m INDEXED BY media_readiness ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision
                 WHERE a.provider='aesthetics' AND a.version=(SELECT value FROM settings WHERE key='aesthetics_version')
                 AND e.missing=0 AND e.scope_excluded=0 AND q.status='ready'
                 AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version')
@@ -224,8 +231,8 @@ def register(app,database,owner):
             result=[dict(r) for r in c.execute("""SELECT e.*,m.data_json,coalesce(u.pinned,0) pinned,coalesce(u.excluded,0) excluded,
                 CASE WHEN json_extract(a.data_json,'$.error') IS NULL AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND ((SELECT value FROM settings WHERE key='analysis_version') IS NULL OR a.version=(SELECT value FROM settings WHERE key='analysis_version')) THEN json_extract(a.data_json,'$.score') END score,
                 (SELECT md.value_json FROM metadata md WHERE md.asset_id=e.id AND md.field='captured_at' AND md.stale=0 AND (md.layer!='inferred' OR json_extract(md.info_json,'$.accepted')=1) ORDER BY CASE md.layer WHEN 'manual' THEN 0 WHEN 'observed' THEN 1 ELSE 2 END LIMIT 1) capture_json,json_extract(a.data_json,'$.signature') signature,json_extract(a.data_json,'$.tags[0].label') concept,s.root source_root FROM entries e JOIN sources s ON s.id=e.source_id
-                JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision
-                LEFT JOIN curation u ON u.asset_id=e.id LEFT JOIN analysis a ON a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual'
+                JOIN media_info m INDEXED BY media_readiness ON m.asset_id=e.id AND m.revision=e.revision
+                LEFT JOIN curation u ON u.asset_id=e.id LEFT JOIN analysis a INDEXED BY analysis_readiness ON a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual'
                 WHERE e.missing=0 AND e.scope_excluded=0 AND (EXISTS(SELECT 1 FROM derivatives d WHERE d.asset_id=e.id AND d.revision=e.revision AND d.profile='thumb' AND d.status='ready') OR json_extract(m.data_json,'$.metadata_only')=1)"""+scope+' ORDER BY e.path',params)]
             neural=aesthetics.scores(c, [r['id'] for r in result] if gid is not None else None) if aesthetics.enabled() else {}
             for r in result:
@@ -245,6 +252,18 @@ def register(app,database,owner):
 
     @app.get('/api/gallery',dependencies=[Depends(owner)])
     def gallery():
+        # Single flight per process; never invalidate on preview LRU touches.
+        # Authentication still runs for every request before this function.
+        with catalog_lock:
+            version = runtime_revision(database, 'catalog')
+            if catalog_snapshot[0] == version:
+                return catalog_snapshot[1]
+            result = {**build_gallery(), 'revision': version}
+            if runtime_revision(database, 'catalog') == version:
+                catalog_snapshot[:] = [version, result]
+            return result
+
+    def build_gallery():
         groups={}
         for r in rows():
             key=group_key(r)

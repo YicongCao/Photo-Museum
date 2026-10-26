@@ -158,6 +158,13 @@ export const Tunnel = forwardRef(function Tunnel(
       onIndex(clamp(Math.round(p), 0, activities.length - 1));
     });
   };
+  useEffect(()=>{
+    // Keep compositor hints only while moving, not throughout a static visit.
+    const node=stage.current;
+    node.dataset.moving='true';
+    const timer=setTimeout(()=>{delete node.dataset.moving},240);
+    return()=>{clearTimeout(timer);delete node.dataset.moving};
+  },[position]);
   const end = (e) => {
     const g = gesture.current;
     if (!g || e.pointerId !== g.id) return;
@@ -285,7 +292,7 @@ export const Tunnel = forwardRef(function Tunnel(
   );
 });
 
-export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, initialLeft=0, onPosition }) {
+export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, initialLeft=0, onPosition, moving=false }) {
   const container = useRef(null),
     request=useRef(null),restoreTarget=useRef(initialLeft),
     drag = useRef(null),
@@ -449,7 +456,7 @@ export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, ini
               }}
               aria-label={"查看 " + p.name}
             >
-              {(p.preview || p.thumbnail) ? <WallImage photo={p} display={warm?.urls.get(p.id)}/> : <div className="video-index-card"><Icon name="video" />视频</div>}
+              {(p.preview || p.thumbnail) ? <WallImage photo={p} display={warm?.urls.get(p.id)} moving={moving}/> : <div className="video-index-card"><Icon name="video" />视频</div>}
               <span>{p.kind === "video_candidate" ? "▶" : ""}</span>
             </button>
           ))}
