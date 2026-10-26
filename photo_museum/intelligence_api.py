@@ -22,10 +22,10 @@ class MergeInput(BaseModel):
  target_id:str=Field(min_length=1,max_length=128)
  source_ids:list[str]=Field(min_length=1,max_length=200)
 
-def invalidate_merges(c,ids):
+def invalidate_merges(c,ids,people=()):
  # Any later correction of a moved face makes undo unsafe, even if moved back.
- for mid,raw in c.execute('SELECT id,faces_json FROM people_merges WHERE valid=1 AND undone IS NULL').fetchall():
-  if any(f['id'] in ids for f in json.loads(raw)):
+ for mid,raw,target,sources in c.execute('SELECT id,faces_json,target_id,sources_json FROM people_merges WHERE valid=1 AND undone IS NULL').fetchall():
+  if any(f['id'] in ids for f in json.loads(raw)) or set(people).intersection([target]+json.loads(sources)):
    c.execute('UPDATE people_merges SET valid=0 WHERE id=?',(mid,))
 
 # A manual identity correction survives model upgrades; automatic stale results do not.
@@ -108,6 +108,7 @@ def register(app,database,owner):
   with database.connect() as c:
    c.execute('BEGIN IMMEDIATE')
    if not c.execute('SELECT 1 FROM people WHERE id=?',(pid,)).fetchone():raise HTTPException(404)
+   invalidate_merges(c,set(),{pid})
    c.execute('UPDATE people SET label=?,updated=? WHERE id=?',(body.label,time.time(),pid))
    c.execute('UPDATE faces SET manual=1 WHERE person_id=?',(pid,))
   return {'ok':True}

@@ -78,3 +78,12 @@ def test_hidden_identity_records_follow_merge_without_exposing_them(system):
  with db.connect() as conn:assert tuple(conn.execute("SELECT person_id,manual FROM faces WHERE id='hidden-old-face'").fetchone())==(a,0)
  assert c.post('/api/people/merges/'+mid+'/undo',json={}).status_code==200
  with db.connect() as conn:assert tuple(conn.execute("SELECT person_id,manual FROM faces WHERE id='hidden-old-face'").fetchone())==(b,0)
+
+
+def test_later_name_confirmation_is_not_reverted_by_old_undo(system):
+ app,c,remote,a,b,faces=groups(system)
+ mid=c.post('/api/people/merges',json={'target_id':a,'source_ids':[b]}).json()['merge_id']
+ assert c.post('/api/people/'+a,json={'label':'合成新姓名'}).status_code==200
+ assert c.post('/api/people/merges/'+mid+'/undo',json={}).status_code==409
+ assert c.get('/api/people').json()['people'][0]['label']=='合成新姓名'
+ with app.state.db.connect() as conn:assert conn.execute('SELECT count(*) FROM faces WHERE person_id=? AND manual=1',(a,)).fetchone()[0]==2
