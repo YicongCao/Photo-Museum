@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "Real local question API renders a query crop, photo context, multiple confirmed examples and non-probabilistic similarity",
+    "Skip advances within the session without writing an identity decision",
+    "Failed answer preserves the same question and does not show a saved decision",
+    "No persists and removes the exact face/person question",
+    "Yes confirms only the shown face and immediately enriches its person, across reload",
+    "Recent confirmation history provides a persistent explicit undo",
+    "Small and short displays keep the page fixed and Yes/No controls reachable",
+    "No confirmed named examples produces an actionable empty state, not fabricated questions"
+  ],
+  "errors": [],
+  "originalRequests": 0,
+  "fixture": "Synthetic vectors and generated photos, not recognition accuracy"
+}

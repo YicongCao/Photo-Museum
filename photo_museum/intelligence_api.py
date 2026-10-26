@@ -23,6 +23,8 @@ class MergeInput(BaseModel):
  source_ids:list[str]=Field(min_length=1,max_length=200)
 
 def invalidate_merges(c,ids,people=()):
+ from .face_matching import invalidate_reviews
+ invalidate_reviews(c,ids,people)
  # Any later correction of a moved face makes undo unsafe, even if moved back.
  for mid,raw,target,sources in c.execute('SELECT id,faces_json,target_id,sources_json FROM people_merges WHERE valid=1 AND undone IS NULL').fetchall():
   if any(f['id'] in ids for f in json.loads(raw)) or set(people).intersection([target]+json.loads(sources)):
@@ -36,6 +38,8 @@ def portrait_url(fid):return '/api/faces/'+fid+'/portrait'
 
 
 def register(app,database,owner):
+ from .face_review_api import register as register_review
+ register_review(app,database,owner,invalidate_merges)
  @app.get('/api/intelligence',dependencies=[Depends(owner)])
  def overview():
   with database.connect() as c:
@@ -110,7 +114,7 @@ def register(app,database,owner):
    if not c.execute('SELECT 1 FROM people WHERE id=?',(pid,)).fetchone():raise HTTPException(404)
    invalidate_merges(c,set(),{pid})
    c.execute('UPDATE people SET label=?,updated=? WHERE id=?',(body.label,time.time(),pid))
-   c.execute('UPDATE faces SET manual=1 WHERE person_id=?',(pid,))
+   c.execute('UPDATE faces SET manual=1 WHERE id IN (SELECT f.id '+FACE_JOIN+' WHERE '+ACTIVE_FACE+' AND f.person_id=?)',(pid,))
   return {'ok':True}
 
  @app.get('/api/people/{pid}/faces',dependencies=[Depends(owner)])

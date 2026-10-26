@@ -86,23 +86,22 @@ class AnalysisWorker:
    if not media or media['updated']!=r['media_updated'] or media['status']!='ready':return True
    existing=c.execute('SELECT 1 FROM faces WHERE asset_id=? AND revision=? AND manual=1',(r['id'],r['revision'])).fetchone()
    if not existing:
+    c.execute('DELETE FROM face_matches WHERE face_id IN (SELECT id FROM faces WHERE asset_id=? AND revision=?)',(r['id'],r['revision']))
     c.execute('DELETE FROM faces WHERE asset_id=? AND revision=?',(r['id'],r['revision']))
-    # Conservative online clustering, never assign a real person's name automatically.
-    import numpy as np
-    clusters=[dict(x) for x in c.execute('SELECT f.person_id,f.embedding FROM faces f JOIN entries e ON e.id=f.asset_id AND e.revision=f.revision WHERE e.missing=0 AND e.scope_excluded=0 AND f.model=? AND f.person_id IS NOT NULL GROUP BY f.person_id',(self.provider.version,))]
+    from .face_matching import bank,unit,assign_new,POLICY
+    references=bank(c,self.provider.version);used=set()
     for face in result.pop('faces',[]):
-     vector=np.array(face['embedding'],dtype=np.float32)
-     best=None;similarity=.55
-     for other in clusters:
-      v=np.frombuffer(other['embedding'],dtype=np.float32)
-      match=float(vector@v)
-      if match>similarity:best,similarity=other['person_id'],match
+     vector=unit(face['embedding'])
+     if vector is None:
+      result['invalid_face_features']=result.get('invalid_face_features',0)+1;continue
+     best,match=assign_new(vector,references,r['id'],used)
      if best is None:
       best=uuid.uuid4().hex
       c.execute('INSERT INTO people VALUES(?,?,?)',(best,'',time.time()))
-      clusters.append({'person_id':best,'embedding':vector.tobytes()})
-     fid=uuid.uuid4().hex
+     fid=uuid.uuid4().hex;used.add(best)
      c.execute('INSERT INTO faces VALUES(?,?,?,?,?,?,?,0)',(fid,r['id'],r['revision'],best,json.dumps(face['box']),vector.tobytes(),self.provider.version))
+     if match:
+      c.execute('INSERT OR REPLACE INTO face_matches VALUES(?,?,?,?,?,?,?,?)',(fid,best,self.provider.version,POLICY,match['similarity'],match['support'],match['margin'],time.time()))
    else:result.pop('faces',None)
    media=c.execute('SELECT data_json FROM media_info WHERE asset_id=? AND revision=?',(r['id'],r['revision'])).fetchone()
    info=json.loads(media['data_json']) if media else {}

@@ -2,6 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {Icon} from './icons';
 import {StatusNotice,StatusPanel,SavedStatus} from './system-status';
 import './people-settings.css';
+import {FaceReview} from './face-review';
 
 function Portrait({src}){
  const [failed,setFailed]=useState(false);
@@ -64,6 +65,7 @@ export function PeopleSettings({api}){
  return <section className="people-settings" aria-label="面孔与姓名">
   <div className="settings-section-title"><h2><Icon name="face"/>面孔与姓名</h2><button onClick={refresh} disabled={busy||loading} aria-label="刷新面孔"><Icon name="refresh"/></button></div>
   <div className="people-summary">{[['检测面孔',overview?.faces],['关联照片',overview?.photos_with_faces],['人物分组',overview?.people],['已命名',overview?.named_people]].map(([label,n])=><span key={label}><small>{label}</small><strong>{n==null?'—':n.toLocaleString()}</strong></span>)}</div>
+  <FaceReview api={api} generation={revision} onChange={refresh}/>
   <div className="people-filters"><label><Icon name="face"/><input aria-label="搜索人物姓名" value={text} onChange={e=>setText(e.target.value)} maxLength={80} placeholder="搜索姓名"/></label><select aria-label="人物命名状态" value={named} onChange={e=>{setNamed(e.target.value);setOffset(0)}}><option value="all">全部人物</option><option value="unnamed">未命名</option><option value="named">已命名</option></select></div>
   <div className="people-selection-toolbar"><button disabled={busy} aria-pressed={multi} onClick={()=>{setMulti(v=>!v);setPicks({});setProposal(null);setMergeError('')}}>{multi?'取消多选':'多选合并'}</button>{multi&&<><span>已选 {picked.length} 组</span><select aria-label="合并到人物" value={picks[target]?target:''} disabled={busy} onChange={e=>{setTarget(e.target.value);setProposal(null)}}><option value="">选择保留的人物</option>{picked.map(p=><option key={p.id} value={p.id}>{title(p)} · {p.id.slice(0,6)}</option>)}</select><button disabled={busy||picked.length<2||!picks[target]} onClick={()=>setProposal({target:picks[target],sources:picked.filter(p=>p.id!==target)})}>合并所选分组</button></>}</div>
   {mergeError&&<StatusNotice error={mergeError}/>}
