@@ -1,0 +1,27 @@
+/* Fixed footer prevents the photograph jumping when progress fades away. */
+.photo-viewer:has(.viewer-bottom){grid-template-rows:48px minmax(0,1fr) 56px;grid-template-columns:minmax(0,1fr) clamp(200px,calc(100vw - (100dvh - 104px) * var(--photo-ratio,1.5)),520px)}
+.photo-viewer.image-only:has(.viewer-bottom){grid-template-columns:minmax(0,1fr)}
+.photo-viewer .viewer-bottom{padding:8px 28px;border-top:1px solid #b88b4a29;gap:20px;background:#000}
+.viewer-bottom .original-progress{flex:1;min-width:0;align-self:center;display:flex;flex-direction:column;gap:7px;opacity:1;transform:translateY(0);transition:opacity 280ms ease,transform 280ms ease}
+.original-progress .original-progress-track{display:block;width:100%;height:12px;overflow:visible}
+.original-progress .segment-wait{fill:#252422}
+.original-progress .segment-leading{fill:#f0d6ae;filter:drop-shadow(0 0 1.5px #c2935460)}
+.original-progress-labels{display:flex;align-items:center;gap:24px;min-height:21px;font-size:12px;line-height:20px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.original-progress-stage{display:flex;align-items:center;gap:10px;color:#c6a275;flex:1;min-width:0}
+.original-progress-stage .icon{width:19px;height:19px;stroke-width:1.2;flex-shrink:0}
+.original-progress-bytes{color:#96938c;letter-spacing:.02em}
+.original-progress-percent{color:#d8b583;text-align:right;min-width:54px;font-size:21px;font-weight:300;letter-spacing:-.035em}
+.original-progress-percent small{display:inline;font-size:.7em;margin-left:2px;line-height:inherit}
+.original-progress.failed .segment-done{fill:#87765f;filter:none}
+.original-progress.dismiss{opacity:0;transform:translateY(3px);pointer-events:none}
+.original-progress-done{color:#a7a198}
+@media(max-width:700px){
+ .photo-viewer:has(.viewer-bottom){grid-template-columns:1fr;grid-template-rows:48px minmax(0,1fr) minmax(150px,28dvh) 56px}
+ .photo-viewer.image-only:has(.viewer-bottom){grid-template-rows:48px minmax(0,1fr) 56px}
+ .photo-viewer .viewer-bottom{padding:8px 16px;gap:10px}
+ .original-progress-labels{font-size:10px;gap:8px}
+ .original-progress-stage{gap:6px}.original-progress-stage .icon{width:16px;height:16px}
+ .original-progress-percent{font-size:17px;min-width:40px}
+ .original-progress .original-progress-track{height:10px}
+}
+@media(prefers-reduced-motion:reduce){.viewer-bottom .original-progress{transition:none}.original-progress .segment-leading{filter:none}}

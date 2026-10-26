@@ -47,6 +47,8 @@ def create_app(directory=None, dav_factory=WebDAV):
     db = Database(directory or os.environ.get('MUSEUM_DATA', ROOT / 'data/server'))
     security = Security(db)
     app.state.db, app.state.security = db, security
+    from .view_progress import ViewProgress
+    view_progress = ViewProgress()
     allowed = set(os.environ.get('MUSEUM_HOSTS', '127.0.0.1:8790,localhost:8790,testserver').split(','))
 
     @app.middleware('http')
@@ -285,13 +287,25 @@ def create_app(directory=None, dav_factory=WebDAV):
             raise HTTPException(413,'超大文件仅索引')
 
     @app.get('/api/assets/{aid}/original-compatible', dependencies=[Depends(owner)])
-    def original_compatible(aid: str, revision: str):
+    def original_compatible(aid: str, revision: str, progress_id: str | None = None):
         from .view_original import converted_original
+        if progress_id is not None and not re.fullmatch(r'[a-f0-9]{32}', progress_id):
+            raise HTTPException(422, '进度标识无效')
         row = asset(aid)
         if row['revision'] != revision:
             raise HTTPException(409, '源版本已变更')
         reject_placeholder(row)
-        return converted_original(db, row, dav_for(row['source_id']))
+        report = (lambda stage, done=0, total=None: view_progress.report((aid, revision, progress_id), stage, done, total)) if progress_id else None
+        return converted_original(db, row, dav_for(row['source_id']), progress=report)
+
+    @app.get('/api/assets/{aid}/original-progress', dependencies=[Depends(owner)])
+    def original_progress(aid: str, revision: str, progress_id: str):
+        if not re.fullmatch(r'[a-f0-9]{32}', progress_id):
+            raise HTTPException(422, '进度标识无效')
+        row = asset(aid)
+        if row['revision'] != revision:
+            raise HTTPException(409, '源版本已变更')
+        return view_progress.read((aid, revision, progress_id)) or {'stage': 'waiting', 'done': 0, 'total': None}
 
     @app.get('/api/assets/{aid}/original', dependencies=[Depends(owner)])
     def original(aid: str, revision: str, request: Request):

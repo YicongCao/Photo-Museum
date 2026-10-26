@@ -11,23 +11,44 @@ def test_on_demand_compatible_original_fetches_nas_and_cleans(system,monkeypatch
     remote.entries={ROOT:None,EVENT:None,EVENT+'/one.jpg':jpeg()}
     scan(app,client,sid);MediaWorker(app.state.db).tick()
     row=client.get('/api/assets').json()['items'][0]
-    url=f"/api/assets/{row['id']}/original-compatible?revision={row['revision']}"
+    url=f"/api/assets/{row['id']}/original-compatible?revision={row['revision']}&progress_id={'a'*32}"
+    progress_url=url.replace('original-compatible','original-progress')
+    assert client.get(progress_url).json()['stage']=='waiting'
     calls=len([r for r in remote.calls if r[0]=='GET'])
     def conversion(source,outputs,meta,**kwargs):
+        progress=client.get(progress_url).json()
+        assert progress['stage']=='convert' and progress['done']==progress['total']>0
         (outputs/'compatible.jpg').write_bytes(source.read_bytes())
     monkeypatch.setattr(module,'still',conversion)
     response=client.get(url)
     assert response.status_code==200 and response.content==remote.entries[EVENT+'/one.jpg']
     assert 'no-store' in response.headers['cache-control']
+    assert int(response.headers['content-length'])==len(response.content)
+    assert client.get(progress_url).json()['stage']=='delivery'
+    assert client.get(progress_url.replace('a'*32,'b'*32)).json()['stage']=='waiting'
+    assert client.get(progress_url.replace('a'*32,'invalid')).status_code==422
     assert len([r for r in remote.calls if r[0]=='GET'])==calls+1
     assert list((app.state.db.directory/'view-work').iterdir())==[]
     with app.state.db.connect() as c:assert not c.execute("SELECT 1 FROM cache_files WHERE profile='compatible'").fetchone()
     def fail(*a,**kwargs):raise module.MediaUnsupported('test')
     monkeypatch.setattr(module,'still',fail)
     assert client.get(url).status_code==415
+    assert client.get(progress_url).json()['stage']=='failed'
     assert list((app.state.db.directory/'view-work').iterdir())==[]
     assert client.get(url.replace(row['revision'],'old')).status_code==409
     client.post('/api/logout',json={});assert client.get(url).status_code==401
+    assert client.get(progress_url).status_code==401
+
+
+def test_progress_registry_bounded_and_expired(monkeypatch):
+    import photo_museum.view_progress as module
+    progress=module.ViewProgress()
+    for i in range(70):progress.report(i,'download',i,100)
+    assert len(progress.items)==64 and progress.read(0) is None
+    assert progress.read(69)=={'stage':'download','done':69,'total':100}
+    now=module.time.monotonic()
+    monkeypatch.setattr(module.time,'monotonic',lambda:now+601)
+    assert progress.read(69) is None
 
 
 def test_converted_response_cleans_if_client_disconnects_before_body(system,monkeypatch):

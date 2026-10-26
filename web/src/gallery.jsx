@@ -9,6 +9,8 @@ import "./gallery.css";
 import { useSceneMotion, createActivityWarmup } from "./scene-motion";
 import {prepareCover,coverPreviewSources,randomCoverIndex} from './random-cover';
 import {PhotoLoading} from "./loading-mark";
+import {OriginalProgress} from './original-progress';
+import {receiveOriginal} from './original-transfer.mjs';
 import {StatusNotice,StatusPanel,MediaStatus} from "./system-status";
 import {useGalleryHistory} from "./gallery-history";
 import { PhotoArchive } from "./photo-archive";
@@ -343,6 +345,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
 function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChange,returnLabel='返回照片墙' }) {
   const preferences=usePreferences();
   const [requested,setRequested]=useState(false),[retryOriginal,setRetryOriginal]=useState(0),[nativeFallback,setNativeFallback]=useState(false);
+  const [transfer,setTransfer]=useState(null);
   const [suggestions, setSuggestions] = useState([]),
     [mutationError, setMutationError] = useState("");
   const [manifest, setManifest] = useState(null),
@@ -401,7 +404,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
   },[photo.id,api]);
   useEffect(()=>{
     const c=new AbortController();let url,decoded;
-    setOriginal(null);setNativeFallback(false);
+    setOriginal(null);setNativeFallback(false);setTransfer(null);
     const m=manifest;if(!m)return()=>c.abort();
     if(m.placeholder){setPhase(m.placeholder==='video'?'此视频超大':'此图片超大');return()=>c.abort()}
     if(photo.kind==='video_candidate'){setPhase('视频封面');return()=>c.abort()}
@@ -410,12 +413,26 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
     }
     setPhase('4K · 原图读取中');
     const acquire=async target=>{
-      const response=await fetch(target,{signal:c.signal,cache:'no-store'});
+      const id=crypto.randomUUID().replaceAll('-',''),compatible=target.includes('/original-compatible?');
+      let latest={id,status:'waiting',done:0,total:null,percent:0},timer,poll;
+      const report=patch=>{if(!c.signal.aborted){latest={...latest,...patch,percent:Math.max(latest.percent,patch.percent||0)};setTransfer(latest)}};
+      report({});
+      const progressUrl=target.replace('/original-compatible?','/original-progress?')+'&progress_id='+id;
+      if(compatible){
+       poll=new AbortController();
+       const sample=async()=>{try{const r=await fetch(progressUrl,{signal:poll.signal,cache:'no-store'});if(r.ok){const p=await r.json();if(!poll.signal.aborted)report({status:p.stage,done:p.done,total:p.total,percent:p.stage==='convert'||p.stage==='delivery'?90:p.total?Math.min(90,p.done/p.total*90):0})}}catch{}finally{if(!poll.signal.aborted)timer=setTimeout(sample,300)}};
+       sample();
+      }
+      const stop=()=>{poll?.abort();clearTimeout(timer)};c.signal.addEventListener('abort',stop,{once:true});
+      let response;
+      try{response=await fetch(target+(compatible?'&progress_id='+id:''),{signal:c.signal,cache:'no-store'})}finally{stop();c.signal.removeEventListener('abort',stop)}
       if(!response.ok)throw Error('原图暂不可用');
-      const blob=await response.blob();if(c.signal.aborted)return;
+      const blob=await receiveOriginal(response,c.signal,(done,total)=>report({status:compatible?'delivery':'download',done,total,percent:total?(compatible?90:0)+Math.min(1,done/total)*(compatible?9:99):compatible?90:0}));if(c.signal.aborted)return;
+      report({status:'decode',percent:99});
       url=URL.createObjectURL(blob);decoded=new Image();decoded.src=url;
       try{await decoded.decode()}catch(error){decoded.removeAttribute('src');decoded=null;URL.revokeObjectURL(url);url=null;throw Object.assign(Error('原图无法解码'),{decodeFailed:true})}
       decoded.removeAttribute('src');decoded=null;
+      report({status:'ready',percent:100});
     };
     (async()=>{try{
       try{await acquire(nativeChoice?m.original:m.original_compatible||m.original)}catch(e){
@@ -424,7 +441,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
       if(c.signal.aborted)return;setOriginal(url);
       if(!nativeChoice)setPhase(m.original_compatible?'原图 · SDR 兼容显示':'原图');
       else setPhase(p=>p==='原生不可用 · SDR 原图'?p:'原图 · 原生色彩');
-    }catch(e){if(!c.signal.aborted)setPhase('保留 4K · 原图暂不可用')}})();
+    }catch(e){if(!c.signal.aborted){setPhase('保留 4K · 原图暂不可用');setTransfer(p=>p?{...p,status:'failed'}:p)}}})();
     return()=>{c.abort();decoded?.removeAttribute('src');if(url)URL.revokeObjectURL(url)};
   },[photo.id,manifest,nativeChoice,requested,retryOriginal,preferences.ready,preferences.values.original_loading,preferences.ready?'':preferences.error]);
   const visiblePhase=original?phase:previewFailed?'预览暂不可用':source===photo.thumbnail&&source!==photo.preview&&previewReady?'保留缩略图 · 4K 暂不可用':phase;
@@ -510,13 +527,13 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
         )}
       </div>
       <div className="viewer-bottom">
-        <span aria-live="polite">{visiblePhase.includes("读取中")?<PhotoLoading compact label={visiblePhase}/>:<MediaStatus failed={/暂不可用|失败|无法/.test(visiblePhase)}>{visiblePhase}</MediaStatus>}</span>
+        {transfer?<OriginalProgress key={transfer.id} state={transfer} label={visiblePhase}/>:<span aria-live="polite">{visiblePhase.includes("读取中")?<PhotoLoading compact label={visiblePhase}/>:<MediaStatus failed={/暂不可用|失败|无法/.test(visiblePhase)}>{visiblePhase}</MediaStatus>}</span>}
         <span>
           <button
             onClick={toggleImmersive}
             aria-label={zoom ? "返回照片档案" : "铺满浏览器"}
           >
-            {zoom ? "⊖" : "⊕"}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true"><path d={zoom?'M3 10h7V3M10 10 3 3M21 14h-7v7M14 14l7 7':'M14 3h7v7M21 3l-7 7M10 21H3v-7M3 21l7-7'}/></svg>
           </button>{" "}
           {(manifest?.playback || manifest?.live?.playback) && (
             <button onClick={() => setPlay(!play)}>

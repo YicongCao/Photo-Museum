@@ -12,13 +12,14 @@ from .webdav import DAVError
 _slots = threading.BoundedSemaphore(1)
 
 
-def converted_original(db, row, client):
+def converted_original(db, row, client, progress=None):
     if not _slots.acquire(blocking=False):
         client.close()
         raise HTTPException(503, '原图转换忙，请稍后重试')
     temporary = None
     handle = None
     try:
+        if progress: progress('download', 0, row['size'])
         if row['size'] is None or row['size'] > 256 * 1024**2:
             raise HTTPException(413, '原图超过单次转换上限')
         parent = db.directory / 'view-work'
@@ -28,7 +29,9 @@ def converted_original(db, row, client):
         current = client.list(row['path'], depth=0)
         if len(current) != 1 or current[0].revision != row['revision']:
             raise HTTPException(409, '原图已更新，请重新扫描')
-        local = download(client, current[0], folder/'spool', max_bytes=256*1024**2, budget=300*1024**2)['path']
+        local = download(client, current[0], folder/'spool', max_bytes=256*1024**2, budget=300*1024**2,
+                         progress=(lambda done, total: progress('download', done, total)) if progress else None)['path']
+        if progress: progress('convert', row['size'], row['size'])
         outputs = folder/'outputs'; outputs.mkdir()
         # Full-resolution SDR conversion; all outputs belong to this one transient request.
         still(local, outputs, metadata(local), compatible=True)
@@ -36,7 +39,10 @@ def converted_original(db, row, client):
         if not result.exists():
             raise HTTPException(415, '此文件无需兼容转换，请使用原图入口')
         handle = result.open('rb')
+        length = result.stat().st_size
+        if progress: progress('delivery', 0, length)
     except BaseException as exc:
+        if progress: progress('failed')
         if handle: handle.close()
         if temporary: temporary.cleanup()
         _slots.release()
@@ -66,4 +72,4 @@ def converted_original(db, row, client):
                 await super().__call__(scope, receive, send)
             finally:
                 cleanup()
-    return TemporaryImageResponse(chunks(), media_type='image/jpeg', headers={'Cache-Control':'private, no-store'}, background=BackgroundTask(cleanup))
+    return TemporaryImageResponse(chunks(), media_type='image/jpeg', headers={'Cache-Control':'private, no-store', 'Content-Length':str(length)}, background=BackgroundTask(cleanup))
