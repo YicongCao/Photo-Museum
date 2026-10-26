@@ -25,13 +25,13 @@ const stable=async p=>{await p.waitForFunction(()=>document.querySelector('.gall
 async function loaderFits(p){
  const r=await p.locator('.gallery-photo-loading:visible').boundingBox(),size=p.viewportSize();assert.ok(r);
  assert.ok(Math.abs(r.x+r.width/2-size.width/2)<1&&Math.abs(r.y+r.height/2-size.height/2)<1,JSON.stringify(r));
- const bar=await p.locator('.wall-scroll-control').boundingBox();if(bar)assert.ok(r.y+r.height<=bar.y||r.y>=bar.y+bar.height,'Loading indicator must clear the horizontal scrollbar');
+ const bar=await p.locator('.wall-scroll-control').count()?await p.locator('.wall-scroll-control').boundingBox():null;if(bar)assert.ok(r.y+r.height<=bar.y||r.y>=bar.y+bar.height,'Loading indicator must clear the horizontal scrollbar');
  const caption=await p.locator('.gallery-caption').boundingBox();if(caption)assert.ok(r.x>=caption.x+caption.width||r.y+r.height<=caption.y,'Loading indicator must clear the activity caption');
 }
 try{
- await page.goto(base+'/#gallery');await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.locator('.depth-0').waitFor();await page.locator('.depth-0').click();await stable(page);
+ await page.goto(base+'/#gallery');await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.locator('.depth-0').waitFor();await page.locator('.depth-0').click();await page.locator('.gallery-photo-loading:visible').waitFor();await loaderFits(page);await page.screenshot({path:out+'/desktop-loading.png'});releasePage();await stable(page);
  const tile=page.locator('.wall-photo').first();await expect.poll(()=>tile.locator('.wall-thumb').evaluate(e=>e.complete&&e.naturalWidth>0)).toBe(true);
- await page.locator('.wall-photo-loading:visible').waitFor();await loaderFits(page);await page.screenshot({path:out+'/desktop-loading.png'});
+
  releaseImage();await page.waitForFunction(()=>window.decodePending.length>0);
  assert.equal(await tile.locator('.wall-display.ready').count(),0);assert.ok(await tile.locator('.wall-thumb').isVisible());checks.push('Slow 4K decode keeps the painted thumbnail visible; no premature ready state');
  await page.evaluate(()=>{
@@ -50,8 +50,8 @@ try{
  assert.ok((await tile.locator('.wall-display').getAttribute('data-preview-source')).includes('/media/display?'));
  releaseWarm();await page.waitForFunction(()=>window.warmBlobs.length>=4);await page.setViewportSize({width:1500,height:944});await page.waitForTimeout(120);
  assert.equal(await tile.locator('.wall-display').getAttribute('src'),source);checks.push('Shared warm-up Blob and parent reflow do not replace an already displayed image src');
- await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);await page.getByRole('slider',{name:'照片流横向位置'}).press('End');await loaderFits(page);await page.screenshot({path:out+'/mobile-loading.png'});
- checks.push('Loading indicator stays centered on desktop and phone, clear of the centered scrollbar');
+ await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);await page.getByRole('slider',{name:'照片流横向位置'}).press('End');await page.waitForTimeout(300);assert.equal(await page.locator('.wall-photo-loading').count(),0);await page.screenshot({path:out+'/mobile-complete.png'});
+ checks.push('Complete geometry is available before the wall opens; mobile End requires no metadata paging or loader');
  releasePage();await page.locator('.wall-photo-loading').waitFor({state:'detached'});
  const storage=await context.storageState();
  const brokenContext=await browser.newContext({storageState:storage,reducedMotion:'reduce'}),broken=await brokenContext.newPage();broken.on('pageerror',e=>errors.push(e.message));broken.on('request',r=>requests.push(r.url()));

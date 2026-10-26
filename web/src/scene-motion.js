@@ -1,3 +1,4 @@
+import {completeWallCatalogue} from './wall-catalogue.mjs';
 import {markTransitionPhase} from './transition-diagnostics';
 import {previews as previewQueue} from './preview-queue';
 import { useEffect, useRef } from 'react';
@@ -126,7 +127,8 @@ export function useSceneMotion(root) {
 // Keep encoded 4K previews only. Never prefetch NAS originals or retain decoded Image objects.
 export function createActivityWarmup(api,id,endpoint) {
   const controller=new AbortController(), urls=new Map(), leases=[];
-  const item={id,urls,data:null,promote(){if(item.promoted)return;item.promoted=true;for(const p of item.data?.items || []){if(p.thumbnail){const l=previewQueue.acquire(p.thumbnail,0);leases.push(l);l.promise.catch(()=>{})}}},dispose(){controller.abort();leases.forEach(l=>l.release());urls.clear();}};
+  const item={id,urls,data:null,promote(){if(item.promoted)return;item.promoted=true;for(const p of (item.data?.items || []).slice(0,15)){if(p.thumbnail){const l=previewQueue.acquire(p.thumbnail,0);leases.push(l);l.promise.catch(()=>{})}}},dispose(){controller.abort();leases.forEach(l=>l.release());urls.clear();}};
+  item.stopPreviews=()=>{if(item.previewsStopped)return;item.previewsStopped=true;controller.abort();leases.forEach(l=>l.release());urls.clear()};
   item.promise=(async()=>{
     const data=await api(endpoint || `/gallery/${id}?limit=15`,'GET',undefined,{signal:controller.signal});
     item.data=data;
@@ -147,6 +149,13 @@ export function createActivityWarmup(api,id,endpoint) {
     item.previewPromise.catch(()=>{});
     return data;
   })();
+  item.complete=async signal=>{
+    if(item.fullData)return item.fullData;
+    const initial=await item.promise;
+    const data=await completeWallCatalogue(api,endpoint || `/gallery/${id}`,initial,signal);
+    if(signal?.aborted)throw new DOMException('Cancelled','AbortError');
+    item.fullData=data;item.data=data;return data;
+  };
   item.promise.catch(()=>{});
   return item;
 }

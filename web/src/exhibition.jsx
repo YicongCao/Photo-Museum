@@ -6,6 +6,8 @@ import React, {
   useLayoutEffect,
   useRef,
   useState,
+  useMemo,
+  memo,
 } from "react";
 import {WallImage} from "./wall-image";
 import {PhotoLoading} from "./loading-mark";
@@ -294,6 +296,7 @@ export const Tunnel = forwardRef(function Tunnel(
 
 export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, initialLeft=0, onPosition, moving=false, onSequence }) {
   const container = useRef(null),
+    scrollFrame=useRef(null),scrollEnd=useRef(null),position=useRef(initialLeft),slider=useRef(null),percentage=useRef(null),positionCallback=useRef(onPosition),
     request=useRef(null),restoreTarget=useRef(initialLeft),
     drag = useRef(null),
     suppress = useRef(false),
@@ -301,7 +304,21 @@ export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, ini
     [total, setTotal] = useState(warm?.data?.total ?? null),
     [height, setHeight] = useState(500),
     [left, setLeft] = useState(0),
-    [busy, setBusy] = useState(false),[loadError,setLoadError]=useState(null);
+    [busy, setBusy] = useState(false),[loadError,setLoadError]=useState(null),[scrolling,setScrolling]=useState(false),[width,setWidth]=useState(1000);
+  positionCallback.current=onPosition;
+  const syncPosition=()=>{
+    const node=container.current;if(!node)return;const x=node.scrollLeft,max=Math.max(0,node.scrollWidth-node.clientWidth);position.current=x;
+    if(slider.current)slider.current.value=String(x);
+    if(percentage.current)percentage.current.textContent=(max?Math.round(x/max*100):0)+'%';
+    setLeft(Math.floor(x/256)*256);
+  };
+  const scroll=()=>{
+    warm?.stopPreviews?.();
+    if(scrollFrame.current===null)scrollFrame.current=requestAnimationFrame(()=>{scrollFrame.current=null;syncPosition()});
+    setScrolling(true);clearTimeout(scrollEnd.current);
+    scrollEnd.current=setTimeout(()=>{setScrolling(false);positionCallback.current?.(container.current?.scrollLeft || 0)},180);
+  };
+  useEffect(()=>()=>{cancelAnimationFrame(scrollFrame.current);clearTimeout(scrollEnd.current);positionCallback.current?.(position.current)},[]);
   const state = useRef({
     offset: warm?.data?.items.length || 0,
     total: warm?.data?.total ?? Infinity,
@@ -347,8 +364,8 @@ export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, ini
     };
   }, []);
   useLayoutEffect(() => {
-    setHeight(container.current.getBoundingClientRect().height);
-    const ro = new ResizeObserver(([e]) => setHeight(e.contentRect.height));
+    setHeight(container.current.getBoundingClientRect().height);setWidth(container.current.clientWidth);
+    const ro = new ResizeObserver(([e]) => {setHeight(e.contentRect.height);setWidth(e.contentRect.width)});
     ro.observe(container.current);
     return () => ro.disconnect();
   }, []);
@@ -356,6 +373,7 @@ export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, ini
     const node = container.current;
     const wheel = (e) => {
       if (e.ctrlKey) return;
+      if(Math.abs(e.deltaX)>Math.abs(e.deltaY)&&e.deltaMode===0)return;
       e.preventDefault();
       node.scrollLeft +=
         (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) *
@@ -364,24 +382,16 @@ export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, ini
     node.addEventListener("wheel", wheel, { passive: false });
     return () => node.removeEventListener("wheel", wheel);
   }, []);
-  const rows = height < 400 ? 2 : 3,
-    gap = 7,
-    h = (height - (rows - 1) * gap) / rows,
-    ends = Array(rows).fill(0);
-  const layout = items.map((p) => {
-      const row = ends.indexOf(Math.min(...ends));
-      const ratio =
-          p.info?.width && p.info?.height ? p.info.width / p.info.height : 1.5,
-        w = h * ratio,
-        x = ends[row];
-      ends[row] += w + gap;
-      return { p, x, y: row * (h + gap), w };
-    }),
-    extent = Math.max(...ends, 1);
+  const {layout,extent,h}=useMemo(()=>{
+    const rows=height<400?2:3,gap=7,h=(height-(rows-1)*gap)/rows,ends=Array(rows).fill(0);
+    const layout=items.map(p=>{const row=ends.indexOf(Math.min(...ends)),ratio=p.info?.width&&p.info?.height?p.info.width/p.info.height:1.5,w=h*ratio,x=ends[row];ends[row]+=w+gap;return {p,x,y:row*(h+gap),w}});
+    return {layout,extent:Math.max(...ends,1),h};
+  },[items,height]);
+  useLayoutEffect(()=>{syncPosition()},[extent,width]);
   useLayoutEffect(()=>{
     const wanted=restoreTarget.current,node=container.current;
     if(!wanted || !items.length)return;
-    node.scrollLeft=wanted;setLeft(node.scrollLeft);
+    node.scrollLeft=wanted;syncPosition();
     if(extent>=wanted+node.clientWidth || items.length>=state.current.total)restoreTarget.current=0;
     else load();
   },[extent,items.length]);
@@ -394,7 +404,9 @@ export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, ini
       ref={container}
       aria-label="活动照片墙"
       tabIndex="0"
-      onScroll={(e) => {setLeft(e.currentTarget.scrollLeft);onPosition?.(e.currentTarget.scrollLeft)}}
+      data-scrolling={scrolling}
+      onScroll={scroll}
+      onClickCapture={e=>positionCallback.current?.(e.currentTarget.scrollLeft)}
       onKeyDown={(e) => {
         if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
           e.preventDefault();
@@ -449,22 +461,7 @@ export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, ini
               x + w >= left - (container.current?.clientWidth || 1000) &&
               x <= left + 2 * (container.current?.clientWidth || 1000),
           )
-          .map(({ p, x, y, w }) => (
-            <button
-              className="wall-photo"
-              data-photo={p.id}
-              key={p.id}
-              style={{ left: x, top: y, width: w, height: h }}
-              onClick={(e) => {
-                if (suppress.current && e.detail !== 0) return;
-                onOpen(p);
-              }}
-              aria-label={"查看 " + p.name}
-            >
-              {(p.preview || p.thumbnail) ? <WallImage photo={p} display={warm?.urls.get(p.id)} moving={moving}/> : <div className="video-index-card"><Icon name="video" />视频</div>}
-              <span>{p.kind === "video_candidate" ? "▶" : ""}</span>
-            </button>
-          ))}
+          .map(({ p, x, y, w }) => <WallTile key={p.id} p={p} x={x} y={y} w={w} h={h} display={warm?.urls.get(p.id)} moving={moving||scrolling} promote={x+w>=left&&x<=left+width+256} onOpen={onOpen} suppress={suppress}/>)}
         {!busy && items.length < (total ?? Infinity) && (
           <button
             className="wall-load"
@@ -479,8 +476,17 @@ export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, ini
     </section>
     {loadError&&<div className="wall-data-notice"><StatusNotice error={loadError} scope="照片流" detail="保留已展开的照片" onRetry={load}/></div>}
     {busy && (items.length===0 || extent-left<=(container.current?.clientWidth || 0)+1) && <PhotoLoading size="small" className="gallery-photo-loading wall-photo-loading" label="加载照片"/>}
-    <div className="wall-scroll-control"><input type="range" aria-label="照片流横向位置" min="0" max={Math.max(0,extent-(container.current?.clientWidth || 0))} step="1" value={Math.min(left,Math.max(0,extent-(container.current?.clientWidth || 0)))}
-      onChange={e=>{container.current.scrollLeft=Number(e.target.value);setLeft(Number(e.target.value));onPosition?.(Number(e.target.value))}}/><output>{extent>(container.current?.clientWidth || 0)?Math.round(left/Math.max(1,extent-(container.current?.clientWidth || 0))*100):0}%</output></div>
+    <div className="wall-scroll-control"><input ref={slider} type="range" aria-label="照片流横向位置" min="0" max={Math.max(0,extent-width)} step="1" defaultValue={initialLeft}
+      onChange={e=>{container.current.scrollLeft=Number(e.target.value);syncPosition();scroll()}}/><output ref={percentage}>0%</output></div>
     </>
   );
 }
+
+// Scroll frames only move the virtual window; unchanged tiles do not rerender.
+const WallTile=memo(function WallTile({p,x,y,w,h,display,moving,promote,onOpen,suppress}){
+ return <button className="wall-photo" data-photo={p.id} style={{left:x,top:y,width:w,height:h}} aria-label={'查看 '+p.name}
+  onClick={e=>{if(suppress.current&&e.detail!==0)return;onOpen(p)}}>
+  {(p.preview||p.thumbnail)?<WallImage photo={p} display={display} moving={moving} promote={promote}/>:<div className="video-index-card"><Icon name="video"/>视频</div>}
+  <span>{p.kind==='video_candidate'?'▶':''}</span>
+ </button>;
+});

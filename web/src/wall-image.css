@@ -11,3 +11,8 @@
 .gallery-shell .gallery-photo-loading{position:fixed;left:50%;top:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);z-index:35;pointer-events:none;white-space:nowrap}
 .gallery-shell[aria-busy=true] .wall-photo-loading{display:none}
 @media(prefers-reduced-motion:reduce){.wall-photo .wall-display{transition:none}}
+
+/* During actual scrolling use small decoded surfaces, then promote only visible
+   tiles through the bounded fetch/decode queue after the gesture settles. */
+.horizontal-wall[data-scrolling=true] .wall-thumb:not([data-preview-pending]){visibility:visible}
+.horizontal-wall[data-scrolling=true] .wall-photo:has(.wall-thumb:not([data-preview-pending])) .wall-display{visibility:hidden}

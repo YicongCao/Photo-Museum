@@ -107,7 +107,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
     if (!current || view!=='tunnel' || !['cover','space'].includes(room) || openingRef.current) return;
     const timer=setTimeout(()=>{
       if(openingRef.current || warm.current?.id===current.id)return;
-      warm.current?.dispose();warm.current=createActivityWarmup(api,current.id);
+      warm.current?.dispose();warm.current=createActivityWarmup(api,current.id);warm.current.catalogRevision=catalogueRevision.current;
     },280);
     return ()=>clearTimeout(timer);
   },[current?.id,view,room]);
@@ -142,8 +142,8 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
       if(target.view==='wall'){
         const id=target.collection?.id || target.wallId;
         if(!target.collection&&!activities.some(a=>a.id===id))throw Error('活动已不可用');
-        if(warm.current?.id!==id){warm.current?.dispose();warm.current=createActivityWarmup(api,id,target.collection?target.collection.endpoint+'&limit=15':undefined)}
-        const staged=warm.current,data=await staged.promise;if(token!==transition.current)return;
+        if(warm.current?.id!==id||warm.current.catalogRevision!==catalogueRevision.current){warm.current?.dispose();warm.current=createActivityWarmup(api,id,target.collection?target.collection.endpoint+'&limit=15':undefined);warm.current.catalogRevision=catalogueRevision.current}
+        const staged=warm.current,data=await staged.complete(request.signal);if(token!==transition.current)return;
         if(!target.photo)staged.promote();
         setCounts({photos:data.photos,videos:data.videos});
       }
@@ -198,6 +198,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
       if(c.signal.aborted)return;
       if(d.revision!=null&&catalogueRevision.current===d.revision){setLoadError(null);setLoaded(true);return}
       catalogueRevision.current=d.revision;
+      if(warm.current&&!openingRef.current&&sceneRef.current?.view==='tunnel'&&!sceneRef.current?.photo){warm.current.dispose();warm.current=null}
       setLoadError(null);setRoomRevision(n=>n+1);setLoaded(true);
       const next=d.activities.findIndex(a=>a.id===selectedId.current);
       setActivities(d.activities);setIndex(i=>next<0?Math.min(i,Math.max(0,d.activities.length-1)):next);
