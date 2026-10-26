@@ -5,7 +5,7 @@ description: 修改 photo-museum 页面视觉或加载、错误、空状态、�
 
 # Photo Museum 界面设计
 
-先读项目 AGENTS.md、docs/STATUS.md 和与任务有关的 docs/design/visual-language.md 段落；状态/文案工作以 docs/design/system-status-language.md 为当前规范。时间线现版先读 docs/research/timeline-drawer.md：Cover Flow右侧20%展开玻璃纵栏，真实照片伸到其后方，不复制缩略图当背景，年份/活动无背景块。旧timeline-smoke-glass为历史概念，不能据此恢复固定色块。
+先读项目 AGENTS.md、docs/STATUS.md 和与任务有关的 docs/design/visual-language.md 段落；状态/文案工作以 docs/design/system-status-language.md 为当前规范。时间线现版先读 docs/research/timeline-drawer.md：Gallery导航/时间线按钮在右30%淡入，Cover Flow仅最终面板矩形触发玻璃纵栏，菜单打开时收起并暂停；真实照片伸到其后方，不复制缩略图当背景，年份/活动无背景块。旧timeline-smoke-glass为历史概念，不能据此恢复固定色块。
 
 ## 实作判断
 
@@ -25,4 +25,6 @@ description: 修改 photo-museum 页面视觉或加载、错误、空状态、�
 
 不把合成故障注入当成真实断网根因修复。结束保留用户当前正式页面和后台任务，停止自己的fixture；交付附规范、验证与截图的绝对路径。
 
-抽屉时间线复验：隔离P5 fixture（84张生成图）运行web/tests/timeline-drawer.mjs及cover-layout.test.mjs；再跑timeline-preview.mjs、coverflow-resize.mjs和coverflow-light.mjs。输出用MUSEUM_BROWSER_OUTPUT/MUSEUM_BROWSER_EVIDENCE指向data/<本轮>，不覆盖历史。关闭后需把鼠标移出右20%再进入才能重触发；键盘按.timeline-toggle的Enter可固定展开。旧timeline-material脚本依赖已移除的复制缩略图层，只适用于历史版本。检查玻璃像素响应真实后方封面、无色块、关闭释放预览、隐藏inert、触屏选中收起及开合不重排，不能只查blur属性。
+抽屉时间线复验：隔离P5 fixture（84张生成图）运行web/tests/timeline-drawer.mjs及cover-layout.test.mjs；再跑timeline-preview.mjs、coverflow-resize.mjs和coverflow-light.mjs。输出用MUSEUM_BROWSER_OUTPUT/MUSEUM_BROWSER_EVIDENCE指向data/<本轮>，不覆盖历史。关闭后需把鼠标移出最终面板矩形再进入才能重触发；键盘按.timeline-toggle的Enter可固定展开。旧timeline-material脚本依赖已移除的复制缩略图层，只适用于历史版本。检查玻璃像素响应真实后方封面、无色块、关闭释放预览、隐藏inert、触屏选中收起及开合不重排，不能只查blur属性。
+
+导航渐隐专项：隔离fixture运行`node web/tests/gallery-chrome.mjs`，验证30%边界、面板最终矩形（用offset排除自身离屏动画）、导航/翻页区排除、菜单开启时已展开面板收起及关闭后重入、日夜、Tab、触屏、快速点击、照片墙返回与跨页常显。隐藏控件pointer-events:none；Playwright locator.click会在移动前检查命中，测试快速靠近应先取boundingBox再用mouse.click坐标，不能force绕过命中检查。截图只用合成图库。

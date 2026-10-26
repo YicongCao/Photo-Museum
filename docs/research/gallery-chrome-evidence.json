@@ -1,0 +1,49 @@
+{
+  "checks": [
+    "Mouse-rest state hides navigation and timeline entry without reserving space or catching clicks",
+    "30% viewport boundary reveals both controls while the panel rectangle remains a distinct reveal region",
+    "Timeline uses only its final rectangle; nav and next-arrow areas never open it and moving up to navigation closes the panel",
+    "Room menu suspends the timeline even in overlapping pixels; closing requires a fresh leave/reenter, with navigation still accessible",
+    "Tab reveals keyboard navigation even when mouse controls were hidden",
+    "Both palettes fade correctly and a native fast approach-and-click from the hidden state is not lost",
+    "Photo wall keeps its left return action visible while right navigation follows the reveal policy",
+    "Reduced-motion setting disables fade without hiding actions",
+    "Touch-only screens keep both entries visible and usable without hover",
+    "Dashboard and Settings navigation stay permanently visible",
+    "No original downloads or uncaught browser errors"
+  ],
+  "errors": [],
+  "fixture": "84 synthetic images, Chromium mouse/touch emulation",
+  "timeline": {
+    "checks": [
+      "Timeline starts fully offscreen and inert, with a named 44px entry and no decorative photo copy",
+      "Only entering the final panel rectangle opens it; top navigation and bottom arrows do not; cover geometry stays fixed",
+      "Full-width Cover Flow overlaps the real blurred backdrop; year, month and activity labels have no background blocks",
+      "Pixel test confirms visible glass responds to photographs behind it, rather than a flat or duplicated texture",
+      "Leaving closes after a brief grace period; photo bubble closes and releases its Blob URLs",
+      "Scrolling inside keeps the drawer open and its position survives hiding",
+      "Keyboard opens the timeline, keeps focused items available and returns focus on Escape",
+      "Night and day text reach 4.5:1 against worst-case composited photo backgrounds",
+      "Desktop, tablet, phone and short landscape all use the same vertical hierarchy inside one screen",
+      "Reduced motion switches directly without slide animation",
+      "Touch-only devices open explicitly and retract after selecting an event",
+      "Spacetime retains its existing timeline and Cover Flow listeners are removed on departure",
+      "No NAS originals, external requests or uncaught browser errors"
+    ],
+    "errors": [],
+    "contrastResults": {
+      "light": [
+        7.445821139831717,
+        4.853884232875157,
+        4.744359232133859,
+        5.243834489080986
+      ],
+      "dark": [
+        6.321954651214505,
+        5.297076298707362,
+        5.267267990584666,
+        5.372569308537288
+      ]
+    }
+  }
+}

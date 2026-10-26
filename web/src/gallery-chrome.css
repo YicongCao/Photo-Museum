@@ -1,0 +1,8 @@
+/* Gallery-only controls: accessible to Tab even while visually at rest. */
+.gallery-shell[data-chrome-visible] :is(.museum-nav,.timeline-toggle){opacity:0;pointer-events:none;transition:opacity 220ms ease}
+.gallery-shell[data-chrome-visible=true] :is(.museum-nav,.timeline-toggle),
+.gallery-shell:has(.timeline-drawer.is-open,.museum-nav :focus-visible,.timeline-toggle:focus-visible) :is(.museum-nav,.timeline-toggle){opacity:1;pointer-events:auto}
+@media(hover:none){.gallery-shell[data-chrome-visible] :is(.museum-nav,.timeline-toggle){opacity:1;pointer-events:auto}}
+@media(prefers-reduced-motion:reduce){.gallery-shell[data-chrome-visible] :is(.museum-nav,.timeline-toggle){transition:none}}
+
+.gallery-shell[data-chrome-visible] .museum-nav :is(a,button){pointer-events:inherit}

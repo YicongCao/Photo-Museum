@@ -6,7 +6,7 @@ import {TimelineDrawer} from "./timeline-drawer";
 
 const monthLabels=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-export function ActivityTimeline({ activities, index, onSelect, theme="dark", drawer=false }) {
+export function ActivityTimeline({ activities, index, onSelect, theme="dark", drawer=false, autoReveal=true }) {
   const root = useRef(null), frame = useRef(0), pointer = useRef(null),pointerFocus=useRef(false);
   const [preview,setPreview]=useState(null);
   const showTimer=useRef(null),closeTimer=useRef(null),removeTimer=useRef(null),pendingFocus=useRef(null);
@@ -114,5 +114,5 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark", dr
       </section>)}
     </section>)}
   </aside>;
-  return <>{drawer?<TimelineDrawer onClose={closePreview}>{rail}</TimelineDrawer>:rail}{preview && createPortal(<TimelinePreview key={preview.activity.id} activity={preview.activity} anchor={preview.anchor} closing={preview.closing} theme={theme}/>,document.body)}</>;
+  return <>{drawer?<TimelineDrawer onClose={closePreview} autoReveal={autoReveal}>{rail}</TimelineDrawer>:rail}{preview && createPortal(<TimelinePreview key={preview.activity.id} activity={preview.activity} anchor={preview.anchor} closing={preview.closing} theme={theme}/>,document.body)}</>;
 }

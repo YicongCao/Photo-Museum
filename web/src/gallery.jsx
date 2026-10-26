@@ -26,6 +26,8 @@ import './gallery-refinement.css';
 import './gallery-navigation.css';
 import './gallery-cover-polish.css';
 import './gallery-timeline-glass.css';
+import {useGalleryChrome} from './gallery-chrome';
+import './gallery-chrome.css';
 
 const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道',revisit:'故地重游',scroll:'记忆长卷',rings:'人生年轮',constellation:'记忆星图'};
 const creativeRooms={rings:RingsRoom,constellation:ConstellationRoom,scroll:MemoryScrollRoom,revisit:RevisitRoom};
@@ -68,6 +70,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
     lastFocus = useRef(null),
     selectedId = useRef(null);
   const shell=useRef(null), warm=useRef(null), openingRef=useRef(false);
+  const chromeVisible=useGalleryChrome(shell,{menuOpen:roomMenu});
   const animate=useSceneMotion(shell);
   const transition=useRef(0),sceneRef=useRef(null),navigationRequest=useRef(null),pendingFocus=useRef(null);
   const current = activities[index];
@@ -196,7 +199,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   const toggleImmersive=()=>immersive?navigation.back(capture({immersive:false})):restoreScene(capture({immersive:true}));
   const displayTheme=room==='cover'&&view==='tunnel'&&!photo?coverTheme:'dark';
   return (
-    <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening} data-theme={displayTheme} data-cover-style={coverStyle}>
+    <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening} data-theme={displayTheme} data-cover-style={coverStyle} data-chrome-visible={chromeVisible}>
       <header className="gallery-nav" inert={!!photo || opening}>
         {view === "wall" && <button className="gallery-back" onClick={rootWall?returnCurator:backGallery} aria-label={rootWall?'返回策展助理':room==='cover'?'返回 Gallery':'返回 '+roomNames[room]}>← {rootWall?'策展助理':room==='cover'?'Gallery':roomNames[room]}</button>}
         {exhibitionId&&view==='tunnel'&&<><button className="gallery-curated-back" onClick={returnCurator}>← 策展助理</button><span className="gallery-curated-context">{scopeMeta?.title}</span></>}
@@ -254,7 +257,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
             />
           </div>}
           {view === "tunnel" && ['cover','space'].includes(room) && (
-            <ActivityTimeline activities={activities} index={index} onSelect={goTo} theme={displayTheme} drawer={room==='cover'} />
+            <ActivityTimeline activities={activities} index={index} onSelect={goTo} theme={displayTheme} drawer={room==='cover'} autoReveal={!roomMenu} />
           )}
           {(view==='wall'||['cover','space'].includes(room))&&displayedActivity&&<div className="gallery-caption">
             <div className="caption-date">
