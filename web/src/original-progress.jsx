@@ -8,15 +8,18 @@ export function OriginalProgress({state,label='原图就绪'}){
  const [dismiss,setDismiss]=useState(false),[hidden,setHidden]=useState(false);
  const gradient='transfer-'+useId().replaceAll(':','');
  const target=state.status==='failed'?current.current:Math.floor((state.percent||0)*BARS/100);
- const percent=Math.floor(lit/BARS*100);
+ const percent=state.status==='ready'?100:Math.min(99,Math.max(0,Math.floor(state.percent||0)));
  useEffect(()=>{
   if(state.status==='failed'||target<=current.current)return;
   if(matchMedia('(prefers-reduced-motion: reduce)').matches){current.current=target;setLit(target);return}
   let frame;
-  const tick=()=>{
+  const from=current.current,start=performance.now(),duration=state.status==='ready'?120:220;
+  const tick=now=>{
    if(latest.current.status==='failed')return;
-   // At most one new bar per painted frame, even when a network chunk jumps.
-   current.current=Math.min(target,current.current+1);setLit(current.current);
+   // A continuous ordered front, bounded by elapsed time rather than refresh rate.
+   // Fast transfers may illuminate several adjacent ticks in one painted frame.
+   const next=Math.min(target,from+Math.floor((target-from)*Math.min(1,(now-start)/duration)));
+   if(next!==current.current){current.current=next;setLit(next)}
    if(current.current<target)frame=requestAnimationFrame(tick);
   };
   frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);
@@ -24,7 +27,7 @@ export function OriginalProgress({state,label='原图就绪'}){
  useEffect(()=>{
   if(state.status!=='ready'||lit<BARS)return;
   if(matchMedia('(prefers-reduced-motion: reduce)').matches){setHidden(true);return}
-  const start=setTimeout(()=>setDismiss(true),350),end=setTimeout(()=>setHidden(true),650);
+  const start=setTimeout(()=>setDismiss(true),80),end=setTimeout(()=>setHidden(true),280);
   return()=>{clearTimeout(start);clearTimeout(end)};
  },[state.status,lit]);
  if(hidden)return <span className="original-progress-done" role="status">{label}</span>;

@@ -2,7 +2,7 @@
 .photo-viewer:has(.viewer-bottom){grid-template-rows:48px minmax(0,1fr) 56px;grid-template-columns:minmax(0,1fr) clamp(200px,calc(100vw - (100dvh - 104px) * var(--photo-ratio,1.5)),520px)}
 .photo-viewer.image-only:has(.viewer-bottom){grid-template-columns:minmax(0,1fr)}
 .photo-viewer .viewer-bottom{padding:8px 28px;border-top:1px solid #b88b4a29;gap:20px;background:#000}
-.viewer-bottom .original-progress{flex:1;min-width:0;align-self:center;display:flex;flex-direction:column;gap:7px;opacity:1;transform:translateY(0);transition:opacity 280ms ease,transform 280ms ease}
+.viewer-bottom .original-progress{flex:1;min-width:0;align-self:center;display:flex;flex-direction:column;gap:7px;opacity:1;transform:translateY(0);transition:opacity 180ms ease,transform 180ms ease}
 .original-progress .original-progress-track{display:block;width:100%;height:12px;overflow:visible}
 .original-progress .segment-wait{fill:#252422}
 .original-progress .segment-leading{fill:#f0d6ae;filter:drop-shadow(0 0 1.5px #c2935460)}
