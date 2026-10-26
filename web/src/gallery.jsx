@@ -53,7 +53,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
     [loadError,setLoadError]=useState(null),
     [wallId,setWallId]=useState(null),
     [counts,setCounts]=useState(null),
-    [opening,setOpening]=useState(false),[immersive,setImmersive]=useState(false);
+    [opening,setOpening]=useState(false),[sceneLoading,setSceneLoading]=useState(false),[immersive,setImmersive]=useState(false);
   const [room,setRoom]=useState(()=>roomNames[roomHint]?roomHint:roomNames[savedRooms(storageKey).room]?savedRooms(storageKey).room:'cover'),[roomMenu,setRoomMenu]=useState(false),
     [anchor,setAnchor]=useState(()=>savedRooms(storageKey).anchor || null),[roomStates,setRoomStates]=useState(()=>savedRooms(storageKey).states || {}),
     [collection,setCollection]=useState(null);
@@ -120,7 +120,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   async function restoreScene(target,{record=true,initial=false,photoRecord=null,selector='.wall-scene .wall-photo img'}={}){
     cancelRandom();
     const origin=capture(),token=++transition.current;
-    animate.cancel();navigationRequest.current?.abort();const request=new AbortController();navigationRequest.current=request;openingRef.current=true;setOpening(true);setError('');
+    animate.cancel();navigationRequest.current?.abort();const request=new AbortController();navigationRequest.current=request;openingRef.current=true;setOpening(true);setSceneLoading(true);setError('');
     if(record){navigation.sync(origin);navigation.push(target)}
     try{
       let nextPhoto=photoRecord;
@@ -143,6 +143,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
         setRoom(target.room);setView(target.view);setWallId(target.wallId || null);setCollection(target.collection || null);
         setPhoto(nextPhoto || null);setImmersive(Boolean(target.immersive));setIndex(nextIndex);if(target.anchor)setAnchor(target.anchor);
       };
+      setSceneLoading(false);
       if(initial){commit();return}
       let before='.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room,.wall-scene:not(.scene-inactive)',incoming='.gallery-room-host,.cover-scene:not(.scene-inactive),.spacetime-room',mode='room';
       if(origin.photo&&target.photo?.id===origin.photo.id){before='.viewer-image-area';incoming=before;mode='fit'}
@@ -158,7 +159,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
         pendingFocus.current={element:lastFocus.current,id:origin.photo.id};lastFocus.current=null;
       }
     }catch(e){if(token===transition.current&&e.name!=='AbortError'){setError(e.message);navigation.replace(origin)}}
-    finally{if(token===transition.current){openingRef.current=false;setOpening(false)}}
+    finally{if(token===transition.current){openingRef.current=false;setOpening(false);setSceneLoading(false)}}
   }
   const changeRoom=next=>{setRoomMenu(false);if(next===room&&view==='tunnel')return;return restoreScene(capture({room:next,view:'tunnel',photo:null,immersive:false}))};
   const openCollection=(descriptor,options)=>restoreScene(capture({view:'wall',wallId:null,collection:descriptor,photo:null,immersive:false,wallLeft:wallPositions.current[descriptor.id] || 0}),options);
@@ -186,7 +187,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
     }catch(e){if(!c.signal.aborted)setLoadError(e)}
     finally{if(catalogueRequest.current===c)catalogueRequest.current=null}
   };
-  useEffect(()=>{reload();const timer=setInterval(reload,15000);return()=>{clearInterval(timer);catalogueRequest.current?.abort()}},[]);
+  useEffect(()=>{reload();const timer=setInterval(()=>{if(sceneRef.current.view==='tunnel'&&!sceneRef.current.photo)reload()},15000);return()=>{clearInterval(timer);catalogueRequest.current?.abort()}},[]);
   const goTo = (i) => {
     cancelRandom();
     if (view === "tunnel") tunnel.current?.goTo(i);
@@ -295,7 +296,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
             </div>
           </div>}
           {randomBusy&&<PhotoLoading size="small" symbol="dice" className="gallery-photo-loading random-cover-loading" label="随机选片"/>}
-          {opening && (view==='wall'||['cover','space'].includes(room)) && <PhotoLoading size="small" className="gallery-photo-loading" label="加载照片"/>}
+          {sceneLoading && (view==='wall'||['cover','space'].includes(room)) && <PhotoLoading size="small" className="gallery-photo-loading" label="加载照片"/>}
           {view === "tunnel" && ['cover','space'].includes(room) && (
             <div className="tunnel-controls">
               <button

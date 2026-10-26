@@ -466,7 +466,7 @@ export function PhotoWall({ activity, api, onOpen, warm, onCounts, endpoint, ini
       </div>
     </section>
     {loadError&&<div className="wall-data-notice"><StatusNotice error={loadError} scope="照片流" detail="保留已展开的照片" onRetry={load}/></div>}
-    {busy && <PhotoLoading size="small" className="gallery-photo-loading wall-photo-loading" label="加载照片"/>}
+    {busy && (items.length===0 || extent-left<=(container.current?.clientWidth || 0)+1) && <PhotoLoading size="small" className="gallery-photo-loading wall-photo-loading" label="加载照片"/>}
     <div className="wall-scroll-control"><input type="range" aria-label="照片流横向位置" min="0" max={Math.max(0,extent-(container.current?.clientWidth || 0))} step="1" value={Math.min(left,Math.max(0,extent-(container.current?.clientWidth || 0)))}
       onChange={e=>{container.current.scrollLeft=Number(e.target.value);setLeft(Number(e.target.value));onPosition?.(Number(e.target.value))}}/><output>{extent>(container.current?.clientWidth || 0)?Math.round(left/Math.max(1,extent-(container.current?.clientWidth || 0))*100):0}%</output></div>
     </>

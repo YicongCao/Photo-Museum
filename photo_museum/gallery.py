@@ -203,21 +203,37 @@ def register(app,database,owner):
         try:return datetime.fromisoformat(value[:10].replace(':','-')+value[10:19].replace(' ','T')).isoformat()
         except ValueError:return None
 
-    def rows():
+    def rows(gid=None):
         with database.connect() as c:
+            scope, params = '', []
+            if gid is not None:
+                # Resolve the opaque group ID from lightweight directory keys,
+                # then use entry_parent before joining metadata/analysis JSON.
+                clauses=[]
+                for source in c.execute('SELECT id,root FROM sources'):
+                    for parent in c.execute('SELECT DISTINCT parent FROM entries WHERE source_id=? AND missing=0 AND scope_excluded=0', (source['id'],)):
+                        relative=parent['parent'][len(source['root']):].strip('/')
+                        if relative and event_id(source['id'],relative.split('/')[0])==gid:
+                            clauses.append('(e.source_id=? AND e.parent=?)');params.extend((source['id'],parent['parent']))
+                        elif not relative:
+                            for entry in c.execute('SELECT id,path FROM entries WHERE source_id=? AND parent=? AND is_dir=0 AND missing=0 AND scope_excluded=0',(source['id'],parent['parent'])):
+                                if event_id(source['id'],entry['path'][len(source['root']):].strip('/').split('/')[0])==gid:
+                                    clauses.append('e.id=?');params.append(entry['id'])
+                if not clauses:return []
+                scope=' AND ('+' OR '.join(clauses)+')'
             result=[dict(r) for r in c.execute("""SELECT e.*,m.data_json,coalesce(u.pinned,0) pinned,coalesce(u.excluded,0) excluded,
                 CASE WHEN json_extract(a.data_json,'$.error') IS NULL AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND ((SELECT value FROM settings WHERE key='analysis_version') IS NULL OR a.version=(SELECT value FROM settings WHERE key='analysis_version')) THEN json_extract(a.data_json,'$.score') END score,
                 (SELECT md.value_json FROM metadata md WHERE md.asset_id=e.id AND md.field='captured_at' AND md.stale=0 AND (md.layer!='inferred' OR json_extract(md.info_json,'$.accepted')=1) ORDER BY CASE md.layer WHEN 'manual' THEN 0 WHEN 'observed' THEN 1 ELSE 2 END LIMIT 1) capture_json,json_extract(a.data_json,'$.signature') signature,json_extract(a.data_json,'$.tags[0].label') concept,s.root source_root FROM entries e JOIN sources s ON s.id=e.source_id
                 JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision
                 LEFT JOIN curation u ON u.asset_id=e.id LEFT JOIN analysis a ON a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual'
-                WHERE e.missing=0 AND e.scope_excluded=0 AND (EXISTS(SELECT 1 FROM derivatives d WHERE d.asset_id=e.id AND d.revision=e.revision AND d.profile='thumb' AND d.status='ready') OR json_extract(m.data_json,'$.metadata_only')=1) ORDER BY e.path""")]
-            neural=aesthetics.scores(c) if aesthetics.enabled() else {}
+                WHERE e.missing=0 AND e.scope_excluded=0 AND (EXISTS(SELECT 1 FROM derivatives d WHERE d.asset_id=e.id AND d.revision=e.revision AND d.profile='thumb' AND d.status='ready') OR json_extract(m.data_json,'$.metadata_only')=1)"""+scope+' ORDER BY e.path',params)]
+            neural=aesthetics.scores(c, [r['id'] for r in result] if gid is not None else None) if aesthetics.enabled() else {}
             for r in result:
                 r['technical_score']=r['score'];r['aesthetic_score']=neural.get(r['id'])
                 r['score']=r['aesthetic_score'] if aesthetics.enabled() else r['technical_score']
                 r['score_kind']='aesthetic' if aesthetics.enabled() else 'technical'
             pairs={}
-            for r in c.execute("""SELECT e.id,e.source_id,e.parent,e.kind,m.value_json FROM entries e JOIN metadata m ON m.asset_id=e.id AND m.source_revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND m.field='content_identifier' AND m.layer='observed' AND m.stale=0"""):
+            for r in c.execute("""SELECT e.id,e.source_id,e.parent,e.kind,m.value_json FROM entries e JOIN metadata m ON m.asset_id=e.id AND m.source_revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND m.field='content_identifier' AND m.layer='observed' AND m.stale=0"""+scope,params):
                 group=pairs.setdefault((r['source_id'],r['parent'],r['value_json']),{'images':[],'videos':[]})
                 group['videos' if r['kind']=='video_candidate' else 'images'].append(r['id'])
             hidden={g['videos'][0] for g in pairs.values() if g['images'] and len(g['videos'])==1}
@@ -258,7 +274,7 @@ def register(app,database,owner):
     def activity(gid:str,offset:int=0,limit:int=100):
         if offset<0 or not 1<=limit<=200:
             raise HTTPException(400)
-        selected=[r for r in rows() if group_key(r)==gid]
+        selected=rows(gid)
         selected.sort(key=lambda r:(capture_value(r) is None,capture_value(r) or '',r['path'],r['id']))
         previews=[pack(r) for r in selected if r['kind']=='image_candidate' and not json.loads(r['data_json']).get('metadata_only')][:15] if offset==0 else []
         return {'items':[pack(r) for r in selected[offset:offset+limit]],'total':len(selected),

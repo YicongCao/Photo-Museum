@@ -49,7 +49,7 @@ try{
  const source=await tile.locator('.wall-display').getAttribute('src');assert.ok(source.includes('/media/display?'));
  releaseWarm();await page.waitForFunction(()=>window.warmBlobs.length>=4);await page.setViewportSize({width:1500,height:944});await page.waitForTimeout(120);
  assert.equal(await tile.locator('.wall-display').getAttribute('src'),source);checks.push('Late warm-up Blob aliases plus parent reflow do not replace an already displayed image src');
- await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);await loaderFits(page);await page.screenshot({path:out+'/mobile-loading.png'});
+ await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);await page.getByRole('slider',{name:'照片流横向位置'}).press('End');await loaderFits(page);await page.screenshot({path:out+'/mobile-loading.png'});
  checks.push('Loading indicator stays centered on desktop and phone, clear of the centered scrollbar');
  releasePage();await page.locator('.wall-photo-loading').waitFor({state:'detached'});
  const storage=await context.storageState();

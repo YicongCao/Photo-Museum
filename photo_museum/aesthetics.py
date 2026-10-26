@@ -39,8 +39,19 @@ def score_value(data):
     return value if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) else None
 
 
-def scores(c):
+def scores(c, asset_ids=None):
     """Bulk current values for local exhibition projections; no per-photo SQL loop."""
+    if asset_ids is not None:
+        ids=list(dict.fromkeys(asset_ids))
+        result={}
+        for start in range(0,len(ids),800):
+            batch=ids[start:start+800]
+            result.update(_scores(c, ' AND e.id IN ('+','.join('?' for _ in batch)+')',batch))
+        return result
+    return _scores(c)
+
+
+def _scores(c, scope='', params=()):
     return {r['asset_id']: score_value(json.loads(r['data_json'])) for r in c.execute("""
         SELECT a.asset_id,a.data_json FROM analysis a
         JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
@@ -49,7 +60,7 @@ def scores(c):
         WHERE a.provider='aesthetics' AND a.version=(SELECT value FROM settings WHERE key='aesthetics_version')
         AND e.missing=0 AND e.scope_excluded=0 AND q.status='ready'
         AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version')
-        AND json_extract(a.data_json,'$.input_preview_updated') IS m.updated""")}
+        AND json_extract(a.data_json,'$.input_preview_updated') IS m.updated"""+scope,params)}
 
 
 class LocalAesthetics:
