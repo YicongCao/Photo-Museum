@@ -174,6 +174,10 @@ def register(app,database,owner):
   with database.connect() as c:photography=current(c,aid,rows[0]['revision']) if rows else None
   if photography:result['photography']=photography
   else:result.pop('photography',None)
+  from . import aesthetics
+  with database.connect() as c:aesthetic=aesthetics.current(c,aid,rows[0]['revision']) if rows and aesthetics.enabled() else None
+  if aesthetic:result['aesthetics']=aesthetic
+  else:result.pop('aesthetics',None)
   with database.connect() as c:
    result['people']={'items':[dict(r) for r in c.execute('SELECT p.id,p.label,count(*) face_count '+FACE_JOIN+' JOIN people p ON p.id=f.person_id WHERE '+ACTIVE_FACE+' AND f.asset_id=? GROUP BY p.id ORDER BY p.label,p.id',(aid,))]}
   return result

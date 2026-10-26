@@ -253,6 +253,9 @@ export function CurrentInspection({ file, media, onClose }) {
             "face",
             data?.faces != null ? `${data.faces} 张人脸` : null,
           )}
+          {(file?.aesthetics_enabled || data?.aesthetics) && row('aesthetic','美学评分','score',
+            data?.aesthetics?.data?.score != null ? data.aesthetics.data.score.toFixed(1)+' · 神经美学' : null,
+            '本地神经模型预测，名义十分制；未按个人偏好校准')}
           {row(
             "score",
             "技术 / 构图分",

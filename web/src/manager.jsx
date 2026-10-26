@@ -28,6 +28,7 @@ const stageNames = {
   publish: "发布藏品",
   analysis: "本地分析",
   photography: "摄影风格 / 主题",
+  aesthetics: "美学评分",
 };
 const fmt = (n) => Number(n || 0).toLocaleString();
 export function Manager({ api, state, refresh, onLogout }) {

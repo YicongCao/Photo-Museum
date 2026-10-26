@@ -5,6 +5,8 @@ export function taskStatus(media, jobs = [], loadError = "") {
   if (media.active?.length || jobs.some(j => ["queued", "running"].includes(j.status)))
     return { text: "任务进行中", icon: "clock" };
   const total = Object.values(media.counts || {}).reduce((sum, n) => sum + n, 0);
+  if (total > (media.fully_done || 0) + (media.error_count || 0) && media.completion_events?.length)
+    return { text: "任务进行中", icon: "clock" };
   if (total > (media.fully_done || 0) + (media.error_count || 0))
     return { text: "等待处理", icon: "clock" };
   if (media.error_count) return { text: "有待处理异常", icon: "alert" };

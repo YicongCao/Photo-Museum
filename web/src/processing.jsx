@@ -16,7 +16,8 @@ export const processingSteps = [
   ["style", "摄影风格", "style"],
   ["topic", "摄影主题", "topic"],
   ["faces", "人脸", "face"],
-  ["score", "构图评分", "score"],
+  ["score", "技术评分", "score"],
+  ["aesthetic", "美学评分", "score"],
 ];
 const statusLabels = {
   running: "处理中",
@@ -40,6 +41,7 @@ function itemSteps(file) {
   return [
     ["download", "原图", "download"],
     ...processingSteps.filter(([id]) =>
+      id === "aesthetic" && !file?.aesthetics_enabled && !steps[id] ? false :
       (id === "style" || id === "topic") && !file?.photography_enabled && !steps[id]
         ? false
         : id === "frame" || id === "playback"
@@ -163,7 +165,7 @@ export function FileProcessing({
     onCurrent?.(frame);
   }, [frame?.asset_id, frame?.revision, media]);
   const current = frame,
-    items = itemSteps(current),
+    items = itemSteps(current || {aesthetics_enabled:media?.aesthetics_enabled,photography_enabled:media?.photography_enabled}),
     steps = current?.steps || {};
   const count = items.filter(
     ([id], i) =>

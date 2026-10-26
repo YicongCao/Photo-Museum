@@ -40,6 +40,10 @@ def main():
     if (models/'photography/manifest.json').exists() and importlib.util.find_spec('open_clip'):
         env['MUSEUM_PHOTOGRAPHY_ENABLED']='1'
         commands.append([sys.executable,'-m','photo_museum.photography_worker','--data',env['MUSEUM_DATA'],'--models',str(models)])
+    env['MUSEUM_AESTHETICS_ENABLED']='0'
+    if (models/'aesthetics/head.safetensors').exists() and (models/'photography/manifest.json').exists() and importlib.util.find_spec('open_clip'):
+        env['MUSEUM_AESTHETICS_ENABLED']='1'
+        commands.append([sys.executable,'-m','photo_museum.aesthetics_worker','--data',env['MUSEUM_DATA'],'--models',str(models)])
     stopping = False
     def stop(*_):
         nonlocal stopping

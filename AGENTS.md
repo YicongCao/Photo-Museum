@@ -160,3 +160,9 @@ Settings面孔页支持跨页多选，明确选择保留的目标身份；同名
 内网继续 HTTP/1.1，不为多图加载引入 HTTPS。PreviewImage/PreviewSVG 使用共享优先级队列（fetch 上限6、后台预热上限2），可见内容优先，临近视口按需读取，同源同URL引用去重、取消和释放。Cover Flow缩略图保留原生img通道并报告前景读取状态，后台预热等前景完成后120ms再开始；不要为了形式统一强制转Blob而增加封面冷启动耗时。原图不入预热队列。
 
 只有thumb/display响应可private缓存，必须no-cache/must-revalidate、Vary Cookie及ETag；每次304之前重新鉴权、核验scope/隐藏/revision和文件存在。原图、兼容原图、接口数据和错误仍no-store。缓存访问时间写入合并为30秒一次，保持原淘汰保护。性能结论必须同时报告首次/重复进入、本机/模拟网络与无收益场景；验证见docs/research/image-loading-performance.md。
+
+## 神经美学正式评分（2026-10-26）
+
+用户已确认神经美学排序并授权正式补算。独立aesthetics provider/worker仅用本地display标准CLIP中心裁切，原始预测名义十分制、一位小数展示，不乘10/不夹断/不冒充概率或个人校准；技术分及其色域假定扣分独立保留。模型固定来源、权重、许可与预处理版本，运行时不下载。补算不重跑人脸/标签、不动人工姓名和合并。缺display报需处理、零NAS兜底；缓存版本/更新时间变化拒绝旧结果。
+
+覆盖旧技术Top10约束：活动封面完成本活动补分后整体切成有效美学Top10；未完整时整组明确回退技术Top10，不混排尺度。其他展厅使用有效美学分，未知不当低分。策展min_score仍为技术分0–100，新增min_aesthetic_score用于神经美学。完成事件与Dashboard包括新子任务，快速完成的真实事件可证明两次active采样间仍在工作。复验见docs/research/aesthetic-production-rollout.md。

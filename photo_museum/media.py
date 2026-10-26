@@ -4,6 +4,8 @@ import os
 import signal
 import json
 import subprocess
+import tempfile
+import shutil
 from pathlib import Path
 from PIL import Image, ImageCms, ImageOps
 import pillow_heif
@@ -46,6 +48,46 @@ def facts(meta):
     return result
 
 def still(path, folder, meta, progress=lambda *args: None, *, compatible=False):
+    try:
+        return _still_strict(path, folder, meta, progress, compatible=compatible)
+    except OSError as exc:
+        # Only a missing JPEG EOI, with a strict second decode. Never enable global truncation tolerance.
+        if meta.get('FileType')!='JPEG' or 'image file is truncated' not in str(exc):raise
+        if Path(path).stat().st_size>256*1024**2:raise
+        with Path(path).open('rb') as source:
+            if source.read(2)!=b'\xff\xd8':raise
+            source.seek(-2,2)
+            if source.read()==b'\xff\xd9':raise
+        with tempfile.TemporaryDirectory(prefix='jpeg-eoi-',dir=folder) as temporary:
+            repaired=Path(temporary)/'repaired.jpg'
+            with Path(path).open('rb') as source,repaired.open('wb') as target:
+                shutil.copyfileobj(source,target);target.write(b'\xff\xd9')
+            result=_still_strict(repaired,folder,meta,progress,compatible=compatible)
+        return result|{'recovery':'jpeg_missing_eoi','recovery_version':'bounded-compat-v1','source_repaired':False}
+    except ValueError as exc:
+        # This specific HEIF container limit is handled by the bounded native process, not disabled.
+        from . import apple_sdr
+        if (meta.get('FileType') not in ('HEIC','HEIF','HIF') or 'Number of references in iref box' not in str(exc)
+            or not apple_sdr.available()):raise
+        w,h=meta.get('ImageWidth'),meta.get('ImageHeight')
+        if (not isinstance(w,(int,float)) or not isinstance(h,(int,float)) or w<=0 or h<=0
+            or w*h>Image.MAX_IMAGE_PIXELS or Path(path).stat().st_size>256*1024**2):raise
+        with tempfile.TemporaryDirectory(prefix='heif-native-',dir=folder) as temporary:
+            temporary=Path(temporary)
+            image,size=apple_sdr.render(path,temporary,command,max_edge=None if compatible else 3840)
+            try:
+                decoded=temporary/'decoded.png'
+                image.save(decoded,icc_profile=ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes())
+            finally:image.close()
+            result=_still_strict(decoded,folder,{'FileType':'PNG','ColorSpace':1},progress,compatible=compatible)
+        result.update(width=size[0],height=size[1],color='apple_native_sdr',hdr_source=bool(hdr_reason(meta)),
+                      source_color=meta.get('ProfileDescription'),source_bit_depth=meta.get('BitsPerSample') or meta.get('BitDepth'),
+                      recovery='heif_iref_native',recovery_version='bounded-compat-v1',renderer='apple-coreimage')
+        if result['hdr_source']:result.update(render_version=HDR_VERSION,hdr_policy='explicit-sdr-v3',hdr_renderer='apple-coreimage')
+        return result
+
+
+def _still_strict(path, folder, meta, progress=lambda *args: None, *, compatible=False):
     nclx, auxiliaries, h = {}, [], None
     if meta.get('FileType') in ('HEIC','HEIF','HIF'):
         h = pillow_heif.open_heif(path, convert_hdr_to_8bit=False)
@@ -64,7 +106,8 @@ def still(path, folder, meta, progress=lambda *args: None, *, compatible=False):
     icc_sdr_base = bool(h and h.info.get('bit_depth') == 8 and h.info.get('icc_profile')
                         and meta.get('ProfileDescription') in ('Display P3','sRGB IEC61966-2.1','sRGB') and not primary_hdr)
     from . import apple_sdr
-    use_apple = bool(reason and apple_sdr.available())
+    native_sdr_nclx = bool(h and not h.info.get('icc_profile') and nclx.get('color_primaries')==12 and nclx.get('transfer_characteristics') in (1,13) and not reason)
+    use_apple = bool((reason or native_sdr_nclx) and apple_sdr.available())
     if gain_map and primary_hdr and not use_apple:
         raise MediaUnsupported('gainmap_hdr_base_requires_native_sdr')
     if reason and not (use_apple or primary_hdr or apple_sdr_base or jpeg_sdr_base or icc_sdr_base):
@@ -105,6 +148,8 @@ def still(path, folder, meta, progress=lambda *args: None, *, compatible=False):
         original_size = image.size
     try:
         result = {'width':original_size[0],'height':original_size[1],'color':color,'hdr':False,'hdr_source':bool(reason),'sdr_base':apple_sdr_base or jpeg_sdr_base or icc_sdr_base,'assumed_color':assumed,'score_penalty':15 if assumed else 0,'cache_policy':'preview-only-v1','source_bit_depth':source_bits,'source_color':source_color}
+        if use_apple and native_sdr_nclx:
+            result.update(recovery='declared_p3_sdr_native',renderer='apple-coreimage',recovery_version='bounded-compat-v1')
         if reason:
             result.update(render_version=HDR_VERSION, hdr_policy='explicit-sdr-v3',
                           source_gain_map=gain_map,

@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from .cache import Cache
 from .photography import enabled as photography_enabled
+from . import aesthetics
 
 def activity_time(event, rows):
     """Latest observed capture within the declared period; never invent a day."""
@@ -58,7 +59,7 @@ def register(app,database,owner):
     def pipeline(c):
         from .photography import pipeline_suffix
         version=c.execute("SELECT value FROM settings WHERE key='analysis_version'").fetchone()
-        return '|'+(version['value'] if version and os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1' else 'disabled')+pipeline_suffix(c)
+        return '|'+(version['value'] if version and os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1' else 'disabled')+pipeline_suffix(c)+aesthetics.pipeline_suffix(c)
     @app.get('/api/media/state',dependencies=[Depends(owner)])
     def media_state(after: int | None = None):
         with database.connect() as c:
@@ -70,11 +71,22 @@ def register(app,database,owner):
                 errors.extend(dict(r) for r in c.execute("""SELECT e.id asset_id,'failed' status,'analysis' stage,json_extract(a.data_json,'$.error') error,e.path FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND a.provider='visual' AND a.version=(SELECT value FROM settings WHERE key='analysis_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL"""))
             if photography_enabled():
                 errors.extend(dict(r) for r in c.execute("""SELECT e.id asset_id,'failed' status,'photography' stage,json_extract(a.data_json,'$.error') error,e.path FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND a.provider='photography' AND a.version=(SELECT value FROM settings WHERE key='photography_version') AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND json_extract(a.data_json,'$.error') IS NOT NULL"""))
+            if aesthetics.enabled():
+                errors.extend(dict(r) for r in c.execute("""SELECT e.id asset_id,'failed' status,'aesthetics' stage,json_extract(a.data_json,'$.error') error,e.path
+                    FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
+                    JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision
+                    JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision
+                    WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='ready' AND a.provider='aesthetics'
+                    AND a.version=(SELECT value FROM settings WHERE key='aesthetics_version')
+                    AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version')
+                    AND json_extract(a.data_json,'$.input_preview_updated') IS m.updated
+                    AND json_extract(a.data_json,'$.error') IS NOT NULL"""))
             active=[dict(r) for r in c.execute("""SELECT q.asset_id,q.stage,e.path,e.kind,e.revision,e.size,'media' lane FROM media_jobs q JOIN entries e ON e.id=q.asset_id AND e.revision=q.revision WHERE e.missing=0 AND e.scope_excluded=0 AND q.status='running' AND q.lease_until>? ORDER BY q.updated DESC LIMIT 4""",(time.time(),))]
-            analyzing=[dict(r) for r in c.execute("""SELECT p.asset_id,p.stage,e.path,e.kind,e.revision,e.size,p.lane FROM processing_progress p JOIN entries e ON e.id=p.asset_id AND e.revision=p.revision WHERE e.missing=0 AND e.scope_excluded=0 AND p.lane IN ('analysis','photography') AND p.status='running' AND p.updated>? ORDER BY p.updated DESC LIMIT 2""",(time.time()-60,))]
+            analyzing=[dict(r) for r in c.execute("""SELECT p.asset_id,p.stage,e.path,e.kind,e.revision,e.size,p.lane FROM processing_progress p JOIN entries e ON e.id=p.asset_id AND e.revision=p.revision WHERE e.missing=0 AND e.scope_excluded=0 AND p.lane IN ('analysis','photography','aesthetics') AND p.status='running' AND p.updated>? ORDER BY p.updated DESC LIMIT 2""",(time.time()-60,))]
             active.extend(r for r in analyzing if not any(a['asset_id']==r['asset_id'] for a in active))
             for item in active:
                 item['photography_enabled']=photography_enabled()
+                item['aesthetics_enabled']=aesthetics.enabled()
                 item['steps']={}
                 item['bytes_done']=0
                 item['bytes_total']=item['size']
@@ -102,7 +114,7 @@ def register(app,database,owner):
                 if path.is_file():temporary_bytes+=path.stat().st_size
             except FileNotFoundError:
                 pass
-        return {'completion_cursor':cursor,'completion_events':events,'fully_done':fully_done,'counts':counts,'error_count':len(errors),'errors':errors[:100],'active':active,'recent':recent,'paused':settings['media_paused']=='true','cache_bytes':bytes_used+temporary_bytes,'temporary_bytes':temporary_bytes,'budget_bytes':int(settings['cache_budget'])}
+        return {'aesthetics_enabled':aesthetics.enabled(),'photography_enabled':photography_enabled(),'completion_cursor':cursor,'completion_events':events,'fully_done':fully_done,'counts':counts,'error_count':len(errors),'errors':errors[:100],'active':active,'recent':recent,'paused':settings['media_paused']=='true','cache_bytes':bytes_used+temporary_bytes,'temporary_bytes':temporary_bytes,'budget_bytes':int(settings['cache_budget'])}
 
     @app.get('/api/media/directories',dependencies=[Depends(owner)])
     def directories():
@@ -123,11 +135,20 @@ def register(app,database,owner):
             ) SELECT l.source_id,l.path,l.source_root,l.state,l.lease_until,l.job_status,l.error,coalesce(t.total,0) total,
                 coalesce(t.cached,0) cached,coalesce(t.errors,0) errors,coalesce(t.active,0) active,coalesce(t.done,0) done,t.current_file
               FROM latest l LEFT JOIN totals t ON t.source_id=l.source_id AND t.parent=l.path WHERE l.position=1 AND l.state!='excluded' AND NOT EXISTS(SELECT 1 FROM entries gone WHERE gone.source_id=l.source_id AND gone.path=l.path AND gone.missing=1) ORDER BY l.path DESC""",(int(os.environ.get('MUSEUM_ANALYSIS_ENABLED')=='1'),int(photography_enabled()),pipeline(c),'|metadata-only'))]
-            analysis_dirs={tuple(r) for r in c.execute("SELECT e.source_id,e.parent FROM processing_progress p JOIN entries e ON e.id=p.asset_id AND e.revision=p.revision WHERE p.status='running' AND p.lane IN ('analysis','photography') AND p.updated>? AND e.missing=0 AND e.scope_excluded=0",(time.time()-60,))}
+            analysis_dirs={tuple(r) for r in c.execute("SELECT e.source_id,e.parent FROM processing_progress p JOIN entries e ON e.id=p.asset_id AND e.revision=p.revision WHERE p.status='running' AND p.lane IN ('analysis','photography','aesthetics') AND p.updated>? AND e.missing=0 AND e.scope_excluded=0",(time.time()-60,))}
             focus_row=c.execute("SELECT value FROM settings WHERE key='media_directory'").fetchone()
             focus=json.loads(focus_row['value']) if focus_row else None
             paused=c.execute("SELECT value FROM settings WHERE key='media_paused'").fetchone()[0]=='true'
+            aesthetic_errors={(r['source_id'],r['parent']):r['n'] for r in c.execute("""SELECT e.source_id,e.parent,count(*) n
+                FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
+                JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision
+                WHERE a.provider='aesthetics' AND a.version=(SELECT value FROM settings WHERE key='aesthetics_version')
+                AND e.missing=0 AND e.scope_excluded=0 AND q.status='ready'
+                AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version')
+                AND json_extract(a.data_json,'$.input_preview_updated') IS m.updated AND json_extract(a.data_json,'$.error') IS NOT NULL
+                GROUP BY e.source_id,e.parent""")} if aesthetics.enabled() else {}
             for r in rows:
+                r['errors']+=aesthetic_errors.get((r['source_id'],r['path']),0)
                 r['current']=bool(focus and r['source_id']==focus['source_id'] and r['path']==focus['parent'])
                 r['active']=bool(r['active'] or (r['state']=='leased' and (r['lease_until'] or 0)>time.time()) or (r['source_id'],r['path']) in analysis_dirs)
                 r['status']='paused' if paused and r['done']<r['total'] else 'running' if r['active'] else 'paused' if r['job_status']=='paused' else 'failed' if r['errors'] or r['error'] else 'completed' if r['state']=='done' and r['done']==r['total'] else 'pending'
@@ -162,12 +183,16 @@ def register(app,database,owner):
     def pack(row):
         result={k:row[k] for k in ('id','revision','kind')}
         result['photography_enabled']=photography_enabled()
+        result['aesthetics_enabled']=aesthetics.enabled()
         result.update(name=PurePosixPath(row['path']).name,thumbnail=media_url(row,'thumb'),preview=media_url(row,'display'),pinned=bool(row.get('pinned')),excluded=bool(row.get('excluded')))
         result['info']=json.loads(row['data_json']) if row.get('data_json') else {}
         result['metadata_only']=bool(result['info'].get('metadata_only'))
         if result['metadata_only'] and not result['info'].get('cached_preview'):
             result['thumbnail']=None;result['preview']=None
         result['score']=row.get('score')
+        result['technical_score']=row.get('technical_score')
+        result['aesthetic_score']=row.get('aesthetic_score')
+        result['score_kind']=row.get('score_kind')
         result['captured_at']=capture_value(row)
         if row.get('completed_at'):result['completed_at']=row['completed_at']
         return result
@@ -181,11 +206,16 @@ def register(app,database,owner):
     def rows():
         with database.connect() as c:
             result=[dict(r) for r in c.execute("""SELECT e.*,m.data_json,coalesce(u.pinned,0) pinned,coalesce(u.excluded,0) excluded,
-                CASE WHEN json_extract(a.data_json,'$.error') IS NULL AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') THEN json_extract(a.data_json,'$.score') END score,
+                CASE WHEN json_extract(a.data_json,'$.error') IS NULL AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version') AND ((SELECT value FROM settings WHERE key='analysis_version') IS NULL OR a.version=(SELECT value FROM settings WHERE key='analysis_version')) THEN json_extract(a.data_json,'$.score') END score,
                 (SELECT md.value_json FROM metadata md WHERE md.asset_id=e.id AND md.field='captured_at' AND md.stale=0 AND (md.layer!='inferred' OR json_extract(md.info_json,'$.accepted')=1) ORDER BY CASE md.layer WHEN 'manual' THEN 0 WHEN 'observed' THEN 1 ELSE 2 END LIMIT 1) capture_json,json_extract(a.data_json,'$.signature') signature,json_extract(a.data_json,'$.tags[0].label') concept,s.root source_root FROM entries e JOIN sources s ON s.id=e.source_id
                 JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision
                 LEFT JOIN curation u ON u.asset_id=e.id LEFT JOIN analysis a ON a.asset_id=e.id AND a.revision=e.revision AND a.provider='visual'
                 WHERE e.missing=0 AND e.scope_excluded=0 AND (EXISTS(SELECT 1 FROM derivatives d WHERE d.asset_id=e.id AND d.revision=e.revision AND d.profile='thumb' AND d.status='ready') OR json_extract(m.data_json,'$.metadata_only')=1) ORDER BY e.path""")]
+            neural=aesthetics.scores(c) if aesthetics.enabled() else {}
+            for r in result:
+                r['technical_score']=r['score'];r['aesthetic_score']=neural.get(r['id'])
+                r['score']=r['aesthetic_score'] if aesthetics.enabled() else r['technical_score']
+                r['score_kind']='aesthetic' if aesthetics.enabled() else 'technical'
             pairs={}
             for r in c.execute("""SELECT e.id,e.source_id,e.parent,e.kind,m.value_json FROM entries e JOIN metadata m ON m.asset_id=e.id AND m.source_revision=e.revision WHERE e.missing=0 AND e.scope_excluded=0 AND m.field='content_identifier' AND m.layer='observed' AND m.stale=0"""):
                 group=pairs.setdefault((r['source_id'],r['parent'],r['value_json']),{'images':[],'videos':[]})
@@ -208,12 +238,18 @@ def register(app,database,owner):
         for g in groups.values():
             all_rows=g.pop('rows')
             candidates=[r for r in all_rows if not r['excluded'] and r['kind']=='image_candidate' and not json.loads(r['data_json']).get('placeholder')]
+            # One scale per activity while backfill runs; never compare 0-100 with neural estimates.
+            pending=sum(r['aesthetic_score'] is None for r in candidates) if aesthetics.enabled() else 0
+            use_neural=aesthetics.enabled() and pending==0
+            for r in candidates:
+                r['score']=r['aesthetic_score'] if use_neural else r['technical_score']
+                r['score_kind']='aesthetic' if use_neural else 'technical'
             # Strict score Top10. Pins remain user annotations, never override this ranking.
             ranked=sorted((r for r in candidates if isinstance(r['score'],(int,float))),key=lambda r:(-r['score'],r['path'],r['id']))
             selected=ranked[:10]
             g.update(latest_capture=activity_time(g['event'],[{'data_json':json.dumps({'captured_at':capture_value(r)})} for r in all_rows]),count=len(all_rows),
                      photos=sum(r['kind']=='image_candidate' for r in all_rows),videos=sum(r['kind']=='video_candidate' for r in all_rows),
-                     selection_policy='score-top10',unscored=sum(r['score'] is None for r in candidates),selected=[pack(r) for r in selected])
+                     selection_policy='aesthetic-top10' if use_neural else 'technical-top10-backfill' if aesthetics.enabled() else 'score-top10',aesthetic_pending=pending,unscored=sum(r['score'] is None for r in candidates),selected=[pack(r) for r in selected])
             result.append(g)
         result.sort(key=lambda g:(g['event'].get('year') or 0,g['event'].get('month') or 0,g['latest_capture'],g['event'].get('theme') or '',g['id']),reverse=True)
         return {'activities':result}

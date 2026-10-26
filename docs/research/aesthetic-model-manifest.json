@@ -1,0 +1,35 @@
+{
+  "repository": "https://github.com/LAION-AI/aesthetic-predictor",
+  "commit": "6d122adad522ab246644d9dc1c6d7a3810ee255f",
+  "license": "MIT, repository license; no separate weight license file in upstream root",
+  "files": {
+    "sa_0_4_vit_b_32_linear.pth": {
+      "url": "https://raw.githubusercontent.com/LAION-AI/aesthetic-predictor/6d122adad522ab246644d9dc1c6d7a3810ee255f/sa_0_4_vit_b_32_linear.pth",
+      "sha256": "c7b14cead230694acc7b9447974d3cad78003c72da032e402a303b6c2429e85f",
+      "bytes": 3047
+    },
+    "LICENSE": {
+      "url": "https://raw.githubusercontent.com/LAION-AI/aesthetic-predictor/6d122adad522ab246644d9dc1c6d7a3810ee255f/LICENSE",
+      "sha256": "3c8693d95e6ae2e39f37083b1242dfefde5639f754ff8a0a6d4d51038247a00a",
+      "bytes": 1065
+    },
+    "README.md": {
+      "url": "https://raw.githubusercontent.com/LAION-AI/aesthetic-predictor/6d122adad522ab246644d9dc1c6d7a3810ee255f/README.md",
+      "sha256": "c146fa39e3ef99e52f7d2c5bec99e92c553daa51be58e097a61e90945807e824",
+      "bytes": 1757
+    },
+    "converted": {
+      "sha256": "61f78d14fb6c4a9cdfcc7183bd374dcfa43002f82b68f5d0cf8ddf2ec5ad6a06",
+      "format": "safetensors",
+      "keys": {
+        "weight": [
+          1,
+          512
+        ],
+        "bias": [
+          1
+        ]
+      }
+    }
+  }
+}

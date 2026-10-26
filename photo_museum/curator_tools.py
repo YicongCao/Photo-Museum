@@ -34,7 +34,8 @@ class Filters(Input):
     def valid_keywords(cls,values):
         if any(len(v)>160 or ':' not in v or v.split(':',1)[0] not in DOMAINS for v in values):raise ValueError('关键词 ID 无效，请先查询词库')
         return values
-    min_score:float|None=Field(default=None,ge=0,le=100,allow_inf_nan=False)
+    min_score:float|None=Field(default=None,ge=0,le=100,allow_inf_nan=False,description='原技术分0–100，保留历史筛选语义')
+    min_aesthetic_score:float|None=Field(default=None,allow_inf_nan=False,description='神经美学预测值，名义十分制，非概率；用此字段筛选美感')
     pinned:bool|None=None
     has_people:bool|None=None
     person:str=Field(default='',max_length=80)
@@ -158,7 +159,7 @@ def schema():
     return {'fields':{'date':'effective拍摄日期；年/月/日精度分开，目录年度不补一月，接受推断有标记',
         'activity':'目录活动主题；不是摄影topic','camera':'相机型号/厂商','lens':'镜头型号',
         'place':'有效GPS解析的国家/省/最近城市或镇；city不是地级市行政归属，不能自动把附近镇名归为用户要求的市；精确GPS不出本机','style':'本地CLIP摄影风格候选与相似度',
-        'topic':'本地CLIP摄影主题候选与相似度','subject':'本地主体类别候选','score':'0–100技术/构图分，不是喜爱概率',
+        'topic':'本地CLIP摄影主题候选与相似度','subject':'本地主体类别候选','score':'排序分：启用神经模型时为美学预测值，名义十分制，未启用时为技术分；见score_kind，不是喜爱概率','technical_score':'0–100技术分；min_score始终筛此列','aesthetic_score':'独立神经美学原始预测，名义十分制；min_aesthetic_score筛此列',
         'pinned':'馆主标记','people':'仅本地按有人/人物标签筛选，姓名/脸框/特征不回传',
         'orientation':'landscape/portrait/square，按有效宽高','exposure':'真实ISO、光圈、快门秒数、实际/35mm等效焦距，逐文件事实不能近邻复制',
         'color':'源色域、位深、HDR标记和sRGB假定；浏览预览统一SDR/sRGB'},'rooms':ROOMS,
@@ -249,7 +250,8 @@ class LocalTools:
             if not stamp or len(stamp)<len(boundary):return False
             a,b=span(stamp);lo,hi=span(boundary)
             if start and b<lo or not start and a>hi:return False
-        if f.min_score is not None and (p['score'] is None or p['score']<f.min_score):return False
+        if f.min_score is not None and (p.get('technical_score',p['score']) is None or p.get('technical_score',p['score'])<f.min_score):return False
+        if f.min_aesthetic_score is not None and (p.get('aesthetic_score') is None or p['aesthetic_score']<f.min_aesthetic_score):return False
         if f.pinned is not None and p['pinned']!=f.pinned:return False
         if f.has_people is not None and bool(p['people_count'])!=f.has_people:return False
         if f.person and not any(f.person.casefold() in s.casefold() for s in p['people_terms']):return False
@@ -274,7 +276,7 @@ class LocalTools:
     @staticmethod
     def brief(p):
         return {'id':p['id'],'period':p['period'],'date_precision':p['date_precision'],'date_estimated':p['date_estimated'],
-                'activity':p['event'].get('theme'),'camera':p['camera'],'lens':p['lens'],'score':p['score'],'pinned':p['pinned'],
+                'activity':p['event'].get('theme'),'camera':p['camera'],'lens':p['lens'],'score':p['score'],'score_kind':p.get('score_kind','technical'),'technical_score':p.get('technical_score',p['score']),'aesthetic_score':p.get('aesthetic_score'),'pinned':p['pinned'],
                 'location':{k:place_label(p['place'],k) for k in ('country','province','city')} if p.get('place') else None,
                 'place_precision':'nearest_city' if p.get('place') else None,'location_estimated':p['gps_layer']=='inferred',
                 'style_candidates':p['styles'],'topic_candidates':p['topics'],'subject_candidates':p['subjects'][:4],

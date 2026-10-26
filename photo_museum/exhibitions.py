@@ -11,6 +11,7 @@ from fastapi import Depends,HTTPException,Query
 from .gallery import media_url,event_id
 from .localization import localize_place
 from .preferences import read_preferences,allowed_place
+from . import aesthetics
 
 
 def key(prefix,*values):
@@ -80,6 +81,7 @@ class ExhibitionCatalog:
                     AND m.field IN ('captured_at','gps','make','camera','lens','focal_length')"""+suffix+""")
                     SELECT * FROM ranked WHERE priority=1""",asset_ids):
                     if m['asset_id'] in ids:meta[m['asset_id']][m['field']]=dict(m)
+                neural=aesthetics.scores(c) if aesthetics.enabled() else {}
             result=[]
             for r in rows:
                 fields=meta[r['id']]
@@ -107,7 +109,8 @@ class ExhibitionCatalog:
                 if place:place=localize_place(place)
                 p={'id':r['id'],'revision':r['revision'],'kind':r['kind'],'name':PurePosixPath(r['path']).name,
                    'thumbnail':media_url(r,'thumb'),'preview':media_url(r,'display'),'info':info,
-                   'pinned':bool(r['pinned']),'score':score,'captured_at':value('captured_at'),
+                   'pinned':bool(r['pinned']),'score':neural.get(r['id']) if aesthetics.enabled() else score,
+                   'technical_score':score,'aesthetic_score':neural.get(r['id']),'score_kind':'aesthetic' if aesthetics.enabled() else 'technical','captured_at':value('captured_at'),
                    'period':capture,'date_source':date_source,'date_precision':{4:'year',7:'month',10:'day'}.get(len(capture or ''),'unknown'),
                    'date_estimated':fields.get('captured_at',{}).get('layer')=='inferred',
                    'activity_id':event_id(r['source_id'],r['path'][len(r['source_root']):].strip('/').split('/')[0]),'event':ev,
@@ -306,4 +309,4 @@ def register(app,db,owner,prefix='/api',catalog_factory=None):
         return {'device':device,'count':len(found),'selected':ranked[:6],
                 'years':[{'year':int(y),'count':n} for y,n in sorted(years.items())],
                 'date_unknown':sum(p['period'] is None for p in found),'focal':[{'label':k,'count':v} for k,v in focal.items()],
-                'related':lenses[:12],'selection_policy':'technical-score','pinned':pinned}
+                'related':lenses[:12],'selection_policy':'aesthetic-score' if aesthetics.enabled() else 'technical-score','pinned':pinned}
