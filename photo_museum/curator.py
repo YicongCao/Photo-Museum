@@ -12,6 +12,8 @@ from .curator_tools import Input,LocalTools,Filters,TOOLS,ROOMS,schema
 from .cache import Cache
 from .gallery import activity_time
 
+from .curator_limits import MAX_ROUNDS, MAX_TOOL_CALLS, RUN_TIMEOUT_SECONDS, MAX_TOOLS_PER_RESPONSE
+
 TERMINAL=('completed','failed','cancelled','interrupted')
 
 def tool_failure(error):
@@ -133,24 +135,24 @@ class Curator:
             buffers[kind]+=text
             if time.monotonic()-last_emit>.18 or sum(map(len,buffers.values()))>1000:flush()
         try:
-            async with asyncio.timeout(240):
+            async with asyncio.timeout(RUN_TIMEOUT_SECONDS):
                 run=self.get_run(rid);local=LocalTools(self.db,self.catalog,rid,run['room'])
-                prompt=Path(__file__).with_name('curator-prompt.txt').read_text()
+                prompt=Path(__file__).with_name('curator-prompt.txt').read_text().replace('{{MAX_ROUNDS}}',str(MAX_ROUNDS)).replace('{{MAX_TOOL_CALLS}}',str(MAX_TOOL_CALLS)).replace('{{MAX_TOOLS_PER_RESPONSE}}',str(MAX_TOOLS_PER_RESPONSE))
                 messages=[{'role':'system','content':prompt+'\n当前日期：'+time.strftime('%Y-%m-%d')+'\n用户指定展厅：'+run['room']+'\n字段摘要：'+json.dumps(schema()['fields'],ensure_ascii=False)},
                           {'role':'user','content':run['prompt']}]
                 self.update(rid,'running');calls=0;final_answer='';invalid_streak=0
-                for turn in range(8):
+                for turn in range(MAX_ROUNDS):
                     if len(json.dumps(messages,ensure_ascii=False))>180000:raise ProviderError('本次上下文已达上限，请缩小筛选范围')
-                    self.event(rid,'phase',{'stage':'thinking','round':turn+1,'label':'模型思考'})
+                    self.event(rid,'phase',{'stage':'thinking','round':turn+1,'label':'模型思考','remaining_tools':MAX_TOOL_CALLS-calls,'max_rounds':MAX_ROUNDS})
                     message,usage=await self.complete(config,messages,TOOLS,delta,transport=self.transport)
                     flush(True);messages.append(message)
                     safe_usage={k:usage[k] for k in ('prompt_tokens','completion_tokens','total_tokens') if isinstance(usage.get(k),int)}
                     if safe_usage:self.event(rid,'usage',safe_usage)
                     tool_calls=message.get('tool_calls') or []
                     if not tool_calls:final_answer=redact(message.get('content') or '');break
+                    if calls+len(tool_calls)>MAX_TOOL_CALLS:raise ProviderError(f'本次累计工具调用将超过{MAX_TOOL_CALLS}次上限')
                     for call in tool_calls:
                         calls+=1
-                        if calls>24:raise ProviderError('已达本次工具调用上限')
                         name=call['function']['name'];started=time.monotonic()
                         try:
                             args=json.loads(call['function']['arguments'])
@@ -165,7 +167,7 @@ class Curator:
                         if result.get('code')=='tool_execution_failed':raise ProviderError(result['error'])
                         invalid_streak=invalid_streak+1 if result.get('error') else 0
                         if invalid_streak>=3:raise ProviderError('工具连续3次未通过校验，已停止重复尝试；请查看工具错误中的字段提示')
-                else:raise ProviderError('达到本次推理轮次上限，未发布展览')
+                else:raise ProviderError(f'达到本次{MAX_ROUNDS}轮推理上限，未发布展览')
                 self.update(rid,'running',answer=final_answer)
                 if local.draft:
                     local.draft['title']=redact(local.draft['title'])

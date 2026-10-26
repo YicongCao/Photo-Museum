@@ -2,6 +2,8 @@
 import calendar
 from collections import Counter,defaultdict
 from datetime import date
+from typing import Literal
+from .travel_statistics import summarize_trips
 import hashlib,json,math,random,re,uuid
 from pathlib import PurePosixPath
 from pydantic import BaseModel,ConfigDict,Field,field_validator
@@ -82,7 +84,7 @@ class FacetInput(Input):
     limit:int=Field(default=30,ge=1,le=60)
 class SearchInput(Input):
     filters:Filters=Field(default_factory=Filters)
-    order:str='diverse'
+    order:Literal['score','time','random','diverse']=Field(default='diverse',description='time=拍摄时间升序；score=评分降序；random=随机；diverse=多样化。不能使用date或date_asc。')
     limit:int=Field(default=32,ge=1,le=100)
     offset:int=Field(default=0,ge=0,le=10000)
     @field_validator('filters',mode='before')
@@ -101,6 +103,15 @@ class SearchInput(Input):
     def order_valid(cls,v):
         if v not in ('score','time','random','diverse'):raise ValueError('排序无效')
         return v
+class TripInput(Input):
+    filters:Filters=Field(default_factory=Filters)
+    gap_days:int=Field(default=7,ge=1,le=60,description='相邻拍摄日超过此天数另起疑似行程；默认7，并返回3/7/14天敏感性比较')
+    offset:int=Field(default=0,ge=0,le=10000)
+    limit:int=Field(default=100,ge=1,le=100)
+    @field_validator('filters',mode='before')
+    @classmethod
+    def object_filters(cls,v):return SearchInput.object_filters(v)
+
 class LookupInput(Input):
     query:str=Field(default='',max_length=160)
     domains:list[str]=Field(default_factory=lambda:list(DOMAINS),max_length=4)
@@ -135,6 +146,7 @@ TOOL_SPECS=[
  ('library_overview','获取本地可展成片规模、年代、模型覆盖和缺失信息。',Empty),
  ('list_facets','列出真实分类值和数量。field可用year/activity/camera/lens/country/province/city/style/topic/subject；中文标签或ID可作后续筛选。',FacetInput),
  ('lookup_keywords','查主体subject/摄影主题topic/风格style/城市city的全局去重词库。返回标准ID、中英文别名、来源、父区域、上下文照片数和消歧候选；按返回ID检索，不猜拼写，不自动合并同名词。cursor用于下一页。',LookupInput),
+ ('summarize_trips','对全部匹配照片一次统计疑似行程、相邻首日间隔和上次末张到下次首张间隔及平均/中位数；问旅行次数、多久去一次、时间间隔时优先用此工具，不逐年搜索或拿前100张抽样统计。日期缺失单列，支持filters，不创建展览。',TripInput),
  ('search_photos','在本地索引筛选成片，返回匹配总数、候选摘要与search_id。不同字段为AND，同字段多个值为OR；query按文字词段匹配。无结果不擅自放宽条件。',SearchInput),
  ('photo_details','读取本轮已检索候选的精简元数据，不读取图片或NAS。',DetailsInput),
  ('create_exhibition','根据本轮search_id/候选创建本地展览草案；photo_ids为空时使用该查询前max_photos张。只生成草案，不改原图或人工标记。',DraftInput),
@@ -234,7 +246,13 @@ class LocalTools:
             if not place:return []
             # Missing raw fields are common (especially province). Unknown labels are
             # display placeholders, not searchable facts; never casefold/join None.
-            return list(dict.fromkeys(v for v in ((place.get('display_zh') or {}).get(field),place.get(field)) if isinstance(v,str) and v))
+            values=list(dict.fromkeys(v for v in ((place.get('display_zh') or {}).get(field),place.get(field)) if isinstance(v,str) and v))
+            if field=='country':
+                if isinstance(place.get('country_code'),str):values.append(place['country_code'])
+                for aliases in (('Japan','日本','JP','JPN'),('China','中国','CN','CHN')):
+                    if any(v.casefold() in {a.casefold() for a in aliases} for v in values):
+                        values=list(dict.fromkeys([*values,*aliases]))
+            return values
         if field in ('style','topic','subject'):
             return [str(t[k]) for t in p[{'style':'styles','topic':'topics','subject':'subjects'}[field]] for k in ('id','label')]
         raise ValueError('分类字段无效')
@@ -313,11 +331,13 @@ class LocalTools:
                     if aliases and any(body.query.casefold() in v.casefold() for v in aliases):counts.update(vals)
                 else:counts.update(v for v in set(vals) if v and body.query.casefold() in str(v).casefold())
             return {'field':body.field,'values':[{'value':k,'count':v} for k,v in counts.most_common(body.limit)],'distinct':len(counts)}
-        if name=='search_photos':
+        if name in ('summarize_trips','search_photos'):
             Lexicon(self.db).validate_ids(body.filters.keyword_ids)
             if body.filters.date_from and body.filters.date_to and span(body.filters.date_from)[0]>span(body.filters.date_to)[1]:raise ValueError('日期范围无效')
             if any(getattr(body.filters,k+'_min') is not None and getattr(body.filters,k+'_max') is not None and getattr(body.filters,k+'_min')>getattr(body.filters,k+'_max') for k in ('iso','aperture','exposure','focal')):raise ValueError('数值范围无效')
             found=[p for p in photos if self.matches(p,body.filters)]
+            if name=='summarize_trips':
+                return summarize_trips(found,body.gap_days,body.offset,body.limit)|{'filters':body.filters.model_dump(exclude={'person'})}
             rng=random.Random(hashlib.sha256((self.run_id+json.dumps(body.filters.model_dump(),sort_keys=True)).encode()).digest())
             if body.order=='time':found.sort(key=lambda p:(p['period'] is None,p['period'] or '',str(p['captured_at'] or ''),p['id']))
             elif body.order=='score':found.sort(key=lambda p:(p['score'] is None,-(p['score'] or 0),p['id']))

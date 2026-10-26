@@ -5,6 +5,7 @@ import os
 from urllib.parse import urlsplit
 import httpx
 from pydantic import BaseModel,Field,ConfigDict
+from .curator_limits import MAX_TOOLS_PER_RESPONSE, MAX_ARGUMENT_CHARACTERS
 
 DEFAULT_URL='https://tokenhub.tencentmaas.com/v1'
 DEFAULT_MODEL='hy4-preview'
@@ -86,7 +87,8 @@ async def completion(config,messages,tools,on_delta,transport=None,max_tokens=60
                 value=function.get(k,'')
                 if not isinstance(value,str):raise ProviderError('工具调用格式无效')
                 call['function'][k]+=value
-            if len(calls)>8 or len(call['function']['arguments'])>16000:raise ProviderError('工具调用超过本次上限')
+            if len(calls)>MAX_TOOLS_PER_RESPONSE:raise ProviderError(f'单轮工具调用超过{MAX_TOOLS_PER_RESPONSE}次上限')
+            if len(call['function']['arguments'])>MAX_ARGUMENT_CHARACTERS:raise ProviderError('单个工具参数超过长度上限')
     async with httpx.AsyncClient(timeout=httpx.Timeout(60,connect=15),follow_redirects=False,trust_env=False,transport=transport) as client:
         try:
             async with client.stream('POST',config['base_url']+'/chat/completions',headers={'Authorization':'Bearer '+config['api_key'],'Content-Type':'application/json'},json=payload) as response:

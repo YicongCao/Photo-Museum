@@ -3,7 +3,7 @@ import {Icon} from './icons';
 import {curatorWorkState} from './curator-timeline.js';
 import './curator-timeline.css';
 
-const tools={catalog_schema:['metadata','读取字段'],library_overview:['server','图库概况'],list_facets:['topic','分类检索'],lookup_keywords:['topic','查询词库'],search_photos:['subject','筛选照片'],photo_details:['photo','候选详情'],create_exhibition:['frame','展览草案']};
+const tools={summarize_trips:['clock','统计旅行间隔'],catalog_schema:['metadata','读取字段'],library_overview:['server','图库概况'],list_facets:['topic','分类检索'],lookup_keywords:['topic','查询词库'],search_photos:['subject','筛选照片'],photo_details:['photo','候选详情'],create_exhibition:['frame','展览草案']};
 const states={completed:'已结束',failed:'失败',cancelled:'已取消',interrupted:'已中断'};
 const stamp=value=>value?new Date(value*1000).toLocaleTimeString('zh-CN',{hour12:false}):'';
 
