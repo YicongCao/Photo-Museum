@@ -7,6 +7,13 @@ export function MuseumMark({animated=false,className=''}){
   <g className="museum-leaf leaf-right"><path d="m40 18 16-8v38l-16 8"/><path d="m44 32 5-7 3 5M49 18v.01"/></g>
  </svg>;
 }
-export function PhotoLoading({label='读取照片',compact=false,className=''}){
- return <span role="status" className={'photo-loading '+(compact?'compact ':'')+className}><MuseumMark animated/><span>{label}</span></span>;
+export function PhotoLoading({label='读取图片',compact=false,size='normal',className=''}){
+ return <span role="status" className={'photo-loading '+(compact?'compact ':'')+(size==='small'?'photo-loading-small ':'')+className}>
+  <span className="photo-loading-orbit">
+   <svg className="photo-loading-ring" viewBox="0 0 200 200" fill="none" aria-hidden="true" focusable="false"><circle cx="100" cy="100" r="98" stroke="currentColor" strokeWidth="1.1" vectorEffect="non-scaling-stroke"/></svg>
+   <MuseumMark animated/>
+   {!compact&&<span className="photo-loading-label">{label}</span>}
+  </span>
+  {compact&&<span className="photo-loading-label">{label}</span>}
+ </span>;
 }

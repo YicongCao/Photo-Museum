@@ -273,7 +273,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
               {view==='wall' && <p className="activity-counts">{counts?.photos ?? displayedActivity.photos ?? 0} 张照片{(counts?.videos ?? displayedActivity.videos)>0 && <span> · {counts?.videos ?? displayedActivity.videos} 个视频</span>}</p>}
             </div>
           </div>}
-          {opening && (view==='wall'||['cover','space'].includes(room)) && <PhotoLoading compact className="gallery-photo-loading" label="加载照片"/>}
+          {opening && (view==='wall'||['cover','space'].includes(room)) && <PhotoLoading size="small" className="gallery-photo-loading" label="加载照片"/>}
           {view === "tunnel" && ['cover','space'].includes(room) && (
             <div className="tunnel-controls">
               <button

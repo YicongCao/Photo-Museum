@@ -1325,6 +1325,13 @@
   font-size: 11px;
   padding: 5px 9px;
 }
+.recent-preview-state.is-loading {
+  top: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  background: transparent;
+}
 @keyframes process-pulse {
   from {
     opacity: 0.45;

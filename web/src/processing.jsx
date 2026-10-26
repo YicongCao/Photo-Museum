@@ -392,8 +392,8 @@ export function RecentStrip({ items = [] }) {
               onError={() => setFailed(true)}
             />
             {(!loaded || failed) && (
-              <span className="recent-preview-state">
-                {failed ? <MediaStatus failed>4K 暂不可用</MediaStatus> : <PhotoLoading compact label="读取 4K"/>}
+              <span className={'recent-preview-state'+(!failed?' is-loading':'')}>
+                {failed ? <MediaStatus failed>4K 暂不可用</MediaStatus> : <PhotoLoading size="small" label="读取 4K"/>}
               </span>
             )}
           </div>

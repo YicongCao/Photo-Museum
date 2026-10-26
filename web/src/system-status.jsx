@@ -16,7 +16,7 @@ export function StatusNotice({error,title,detail,onRetry,retryLabel='重新读�
     {(onRetry||onDismiss)&&<div className="museum-status-actions">{onRetry&&<button type="button" disabled={retrying} onClick={retry}><Icon name="refresh" className={retrying?'status-is-retrying':''}/><span>{retrying?'读取中':retryLabel}</span></button>}{onDismiss&&<button type="button" onClick={onDismiss} aria-label="关闭提示"><Icon name="close"/></button>}</div>}
   </div>;
 }
-export function StatusPanel({loading=false,label='读取照片',error,onRetry,empty='暂无可展示照片',action,className=''}){
+export function StatusPanel({loading=false,label='读取图片',error,onRetry,empty='暂无可展示照片',action,className=''}){
   return <div className={'museum-status-panel '+className}>
     {loading&&!error?<PhotoLoading label={label}/>:<><MuseumMark/>{error?<StatusNotice error={error} onRetry={onRetry}/>:<><span className="museum-empty-label">{empty}</span>{action}</>}</>}
   </div>;

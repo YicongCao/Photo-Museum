@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "Centered circular outline encloses logo and text; folding remains 2.4s, subtle ring opacity actually changes in a 5.6s cycle; feathered local mask and no click capture",
+    "Day palette and 320/390/short-landscape layouts preserve readable enclosed labels and no page overflow",
+    "Reduced motion stops both ring and logo; compact status and smaller media badge remain distinct readable sizes",
+    "Real Gallery catalog loading is centered and disappears when the synthetic catalog arrives",
+    "Cover-to-wall loading uses the smaller enclosed badge at bottom right and releases after data arrives",
+    "Detail failure stops loading; cache-only retry shows centered ring, decodes the preview and removes the ring without stealing focus",
+    "Only explicit original loading reads the synthetic original; bottom inline ring preserves the visible 4K preview and ends on success",
+    "Exhibition loading also reuses the circle and clears after its own data loads",
+    "Settings uses the same status component without a separate spinner",
+    "Dashboard recent-photo popup centers the small circle over its thumbnail, clears after 4K, and closes without fetching another original"
+  ],
+  "errors": [],
+  "fixture": "84 synthetic photos, gated local responses, one explicit synthetic-original request; no production/NAS/provider calls"
+}
