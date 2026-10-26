@@ -43,7 +43,7 @@ export const SpacetimeRoom=forwardRef(function SpacetimeRoom({activities,index,o
   <div className="spacetime-boards">
    {visible.map(({a,i,d})=>{
     const scale=reduced?1:Math.pow(.71,d),origin=size.w<700?size.w*.43:size.w*.30,
-      vanish=size.w*(size.w<700?.90:.80),center=vanish-(vanish-origin)*scale-Math.max(0,-d)*size.w*.90,
+      vanish=size.w*(size.w<700?.90:.98),center=vanish-(vanish-origin)*scale-Math.max(0,-d)*size.w*.90,
       y=size.h*.44+(1-scale)*size.h*.015,angle=reduced?0:-14;
     return <button key={a.id} data-activity={a.id} data-cover-offset={d} className={'spacetime-board '+(i===index?'space-current':'')} tabIndex={i===index?0:-1}
      aria-label={'展开活动 '+a.event.theme} onClick={e=>{if(suppress.current&&e.detail!==0)return;if(i!==Math.round(pos.current)){goTo(i);return}onOpen(a.id)}}
@@ -54,6 +54,6 @@ export const SpacetimeRoom=forwardRef(function SpacetimeRoom({activities,index,o
     </button>
    })}
   </div>
-  <div className="spacetime-position"><span>{String(index+1).padStart(2,'0')}</span><input aria-label="时空隧道位置" type="range" min="0" max={Math.max(0,activities.length-1)} step="1" value={index} onChange={e=>goTo(Number(e.target.value))}/><span>{activities.length}</span></div>
+  <div className="spacetime-position" onPointerDown={e=>e.stopPropagation()}><span>{String(index+1).padStart(2,'0')}</span><input aria-label="时空隧道位置" type="range" min="0" max={Math.max(0,activities.length-1)} step="1" value={index} onChange={e=>goTo(Number(e.target.value))}/><span>{activities.length}</span></div>
  </section>;
 });

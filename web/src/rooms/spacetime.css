@@ -1,23 +1,23 @@
-.spacetime-room{position:absolute;inset:70px 0 70px;overflow:hidden;touch-action:none;perspective-origin:50% 45%;isolation:isolate}.spacetime-room-label{position:absolute;left:32px;top:18px;color:#b88b4a;font-size:12px;letter-spacing:.1em;z-index:4}.spacetime-boards{position:absolute;inset:0;perspective-origin:50% 46%;transform-style:preserve-3d;pointer-events:none}.spacetime-board{position:absolute;background:#000;padding:0;border:1px solid #493a24;border-radius:0;min-height:0;overflow:hidden;pointer-events:auto;box-shadow:0 22px 50px #000;transform-style:preserve-3d;will-change:transform;cursor:pointer}.spacetime-board .photo-mosaic{width:100%;height:100%;filter:none;gap:3px}.spacetime-board .mosaic-cell{min-width:0;min-height:0;overflow:hidden}.spacetime-board img{width:100%;height:100%;display:block;object-fit:cover}.spacetime-board:focus-visible{outline:2px solid #d8ae72;outline-offset:4px}.spacetime-floor{position:absolute;inset:45% 0 0;opacity:.34;pointer-events:none}.spacetime-floor svg{width:100%;height:100%;fill:none;stroke:#74552d;stroke-width:.5;mask-image:linear-gradient(transparent,#0004,#000)}.spacetime-position{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:14px;align-items:center;width:min(340px,38vw);color:#a7a198;font-size:11px;z-index:5}.spacetime-position input{width:100%;accent-color:#b88b4a;height:1px;cursor:pointer}.gallery-room-space.gallery-view-tunnel .gallery-caption{left:32px;bottom:28px;transform:none;text-align:left;width:auto;max-width:45vw}.gallery-room-space.gallery-view-tunnel .gallery-caption h1{font-size:clamp(22px,2.3vw,36px)}.gallery-room-space .tunnel-controls{bottom:30px}.gallery-room-space .activity-timeline{z-index:6}
-@media(max-width:700px){.spacetime-room{inset:60px 0 120px}.spacetime-room-label{left:16px;top:12px}.gallery-room-space.gallery-view-tunnel .gallery-caption{left:18px;bottom:92px;max-width:70vw}.gallery-room-space.gallery-view-tunnel .gallery-caption h1{font-size:21px}.spacetime-position{width:56vw;bottom:16px}.spacetime-floor{opacity:.18}}
-@media(prefers-reduced-motion:reduce){.spacetime-floor{display:none}.spacetime-board{will-change:auto}}
-/* The single vanishing point is a procession into depth, distinct from symmetrical Cover Flow. */
-.spacetime-board{overflow:visible;border:0;box-shadow:none;background:transparent;transform-style:flat}
-.spacetime-board>.photo-mosaic{outline:1px solid #cda567;outline-offset:2px;box-shadow:0 0 14px #a47b3925;filter:brightness(var(--space-light,1));overflow:hidden}
-.space-reflection{position:absolute;left:0;right:0;top:calc(100% + 6px);height:var(--space-height);overflow:hidden;pointer-events:none;background:#000}
-.space-reflection>.photo-mosaic{height:100%;transform:scaleY(-1);filter:blur(2.3px) brightness(calc(var(--space-light,1) * .28));}
+/* Scene geometry remains a procession into depth; chrome is shared with Cover Flow. */
+.spacetime-room{position:absolute;inset:70px 0 0;overflow:hidden;touch-action:none;perspective-origin:50% 45%;isolation:isolate}
+.spacetime-room-label,.spacetime-floor{display:none}
+.spacetime-boards{position:absolute;inset:0;z-index:1;perspective:none;transform-style:flat;pointer-events:none}
+.spacetime-board{position:absolute;background:transparent;padding:0;border:0;min-height:0;overflow:visible;pointer-events:auto;box-shadow:none;transform-style:flat;will-change:transform;cursor:pointer}
+.spacetime-board .photo-mosaic{width:100%;height:100%;filter:none;gap:2px}
+.spacetime-board .mosaic-cell{min-width:0;min-height:0;overflow:hidden}
+.spacetime-board img{width:100%;height:100%;display:block;object-fit:cover}
+.spacetime-board:focus-visible{outline:2px solid #d8ae72;outline-offset:4px}
+/* Shared frame/radius/mirror finish lives in gallery-cover-polish.css. */
+.spacetime-board>.photo-mosaic,.space-reflection>.photo-mosaic{background:#b88b4a}
+.spacetime-board>.photo-mosaic{overflow:hidden}
+.spacetime-board>.photo-mosaic img{filter:brightness(var(--space-light,1))}
+.space-reflection{position:absolute;left:0;right:0;top:calc(100% + 14px);height:var(--space-height);overflow:hidden;pointer-events:none;background:#000}
+.space-reflection>.photo-mosaic{height:100%;transform:scaleY(-1)}
 .space-reflection:after{content:'';position:absolute;inset:0;background:linear-gradient(#0000,#0008 36%,#000 90%)}
-.spacetime-floor{display:none}.spacetime-room-label{display:none}.spacetime-position{bottom:14px;opacity:.65;transition:opacity 160ms}.spacetime-position:hover,.spacetime-position:focus-within{opacity:1}
-.gallery-room-space.gallery-view-tunnel .gallery-caption h1{font-family:var(--gallery-display-font);font-weight:400;letter-spacing:.05em}
-.gallery-room-space .gallery-caption:after{content:'';display:block;width:42px;height:2px;background:#b88b4a;margin-top:12px}
-@media(max-width:700px){.spacetime-room{bottom:240px}.spacetime-position{bottom:0}.gallery-room-space .activity-timeline{bottom:148px}.gallery-room-space.gallery-view-tunnel .gallery-caption{bottom:44px}.gallery-room-space .tunnel-controls{bottom:40px}}
-
-/* Nearer panels leave the viewport as opaque surfaces; translucent overlap muddies photographs. */
-.spacetime-boards{transform-style:flat;perspective:none}
-.gallery-room-space.gallery-view-tunnel .gallery-caption{left:88px;max-width:calc(50vw - 110px)}
-@media(max-width:700px){.gallery-room-space.gallery-view-tunnel .gallery-caption{left:72px;max-width:calc(100vw - 144px);bottom:34px}.gallery-room-space .gallery-caption:after{margin-top:8px}}
-/* The mosaic's own backing supplies the gold gutters; they never reveal the next panel. */
-.spacetime-board>.photo-mosaic,.space-reflection>.photo-mosaic{background:#b88b4a;gap:2px}
-.spacetime-boards{z-index:1}.spacetime-position{z-index:10000;isolation:isolate;opacity:1;pointer-events:auto;background:#000d;padding:4px 12px;border-radius:2px}
-
-.spacetime-board>.photo-mosaic{filter:none}.spacetime-board>.photo-mosaic img{filter:brightness(var(--space-light,1))}
+/* Same range track/thumb skin as the photo flow, without an opaque plaque. */
+.spacetime-position{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;width:min(36vw,540px);color:#bba887;font:10px/1 system-ui;z-index:12;isolation:isolate;pointer-events:auto;background:none;padding:0;border:0}
+.spacetime-position span{min-width:24px;text-align:center}
+.spacetime-position input{width:100%;padding:0;margin:0;accent-color:#b88b4a;cursor:ew-resize}
+@media(max-width:700px){.spacetime-room{inset:60px 0 0}.spacetime-position{bottom:2px;width:54vw}}
+@media(max-height:540px) and (min-width:700px){.spacetime-position{bottom:0}.gallery-room-space.gallery-view-tunnel .gallery-caption{bottom:32px!important}}
+@media(prefers-reduced-motion:reduce){.spacetime-board{will-change:auto}}

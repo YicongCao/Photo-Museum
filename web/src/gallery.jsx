@@ -259,7 +259,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
             />
           </div>}
           {view === "tunnel" && ['cover','space'].includes(room) && (
-            <ActivityTimeline activities={activities} index={index} onSelect={goTo} theme={displayTheme} drawer={room==='cover'} autoReveal={!roomMenu} />
+            <ActivityTimeline activities={activities} index={index} onSelect={goTo} theme={displayTheme} drawer autoReveal={!roomMenu} />
           )}
           {(view==='wall'||['cover','space'].includes(room))&&displayedActivity&&<div className="gallery-caption">
             <div className="caption-date">
