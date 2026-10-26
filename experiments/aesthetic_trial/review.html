@@ -1,0 +1,7 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; form-action 'none'; base-uri 'none'"><title>美学评分试验</title><style>/*TRIAL_CSS*/</style></head><body>
+<header><div><small>本地离线试验 · 尚未接入 Gallery</small><h1>美学评分对照</h1></div><nav aria-label="试验方式"><button data-mode="compare" aria-pressed="true">Top10 对照</button><button data-mode="pairs" aria-pressed="false">A/B 偏好</button><button data-mode="all" aria-pressed="false">全部样本</button></nav><button id="export">导出偏好 JSON</button></header>
+<div id="status" class="status" role="status"></div>
+<section class="controls" aria-label="对照设置"><label>活动样本<select id="event"></select></label><label>左侧排序<select id="left-method"><option value="technical">原技术评分</option><option value="center">神经美学 · 标准裁切</option><option value="multi">神经美学 · 三裁块均值</option></select></label><label>右侧排序<select id="right-method"><option value="center">神经美学 · 标准裁切</option><option value="multi">神经美学 · 三裁块均值</option><option value="technical">原技术评分</option></select></label></section>
+<p id="scope" class="note"></p><main id="content"></main>
+<dialog id="zoom"><button id="close-zoom" aria-label="关闭大图">✕</button><img id="zoom-image" alt="样本照片放大预览"><p id="zoom-caption"></p></dialog>
+<script type="application/json" id="trial-data">/*TRIAL_DATA*/</script><script>/*TRIAL_JS*/</script></body></html>
