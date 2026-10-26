@@ -1,3 +1,4 @@
+import {previews} from './preview-queue';
 import React, {useEffect,useState} from 'react';
 import {planTimelineCollage} from './timeline-collage';
 
@@ -8,18 +9,16 @@ export function TimelinePreview({activity,anchor,closing,theme="dark"}) {
   const [failed,setFailed]=useState({});
   const key=plan.photos.map(p=>p.id+'|'+p.thumbnail).join(',');
   useEffect(()=>{
-    const controller=new AbortController(),urls=[];
+    const controller=new AbortController(),leases=[];
     setSources({});setFailed({});
     plan.photos.forEach(async p=>{
       try {
-        const response=await fetch(p.thumbnail,{signal:controller.signal});
-        if(!response.ok)throw new Error('preview');
-        const blob=await response.blob();if(controller.signal.aborted)return;
-        const url=URL.createObjectURL(blob);urls.push(url);
+        const lease=previews.acquire(p.thumbnail,0);leases.push(lease);
+        const url=await lease.promise;if(controller.signal.aborted)return;
         setSources(s=>({...s,[p.id]:url}));
       }catch{if(!controller.signal.aborted)setFailed(s=>({...s,[p.id]:true}));}
     });
-    return ()=>{controller.abort();urls.forEach(url=>URL.revokeObjectURL(url));};
+    return ()=>{controller.abort();leases.forEach(lease=>lease.release());};
   },[key]);
   const clamp=(value,min,max)=>Math.max(min,Math.min(Math.max(min,max),value));
   const leftward=anchor.railLeft>=width+28;

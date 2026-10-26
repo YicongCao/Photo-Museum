@@ -1,3 +1,4 @@
+import {PreviewImage} from '../preview-image';
 import {StatusNotice} from '../system-status';
 import {PhotoLoading} from '../loading-mark';
 import React,{useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
@@ -72,8 +73,8 @@ export function MemoryScrollRoom({api,state={},onState,onCollection,onPhoto}){
      return <article key={chapter.id} className={'memory-chapter '+(portrait?'chapter-portrait':'')+(chapter.id===active?.chapter.id?' chapter-active':'')} style={{left:x,width,'--scroll-hero-height':heroHeight+'px'}} data-chapter={chapter.id}>
       <header><span>{dateLabel(chapter.period?.slice(0,4))}</span><button onClick={()=>onCollection({id:'scroll-'+chapter.id,title:chapter.customTitle||chapter.label,dateLabel:dateLabel(chapter.period),endpoint:endpoint(chapter.id)})} aria-label={'展开章节 '+(chapter.customTitle||chapter.label)}>{chapter.customTitle||chapter.label}<span aria-hidden="true">↗</span></button></header>
       <div className={'memory-chapter-photos '+(!detail.length?'chapter-single':'')}>
-       {hero&&<button className="memory-chapter-hero" aria-label={'查看 '+hero.name} onClick={e=>{if(!suppress.current||e.detail===0)onPhoto(hero)}}><img src={hero.preview||hero.thumbnail} alt="" decoding="async" draggable="false"/></button>}
-       {detail.map(p=><button key={p.id} className="memory-chapter-detail" aria-label={'查看 '+p.name} onClick={e=>{if(!suppress.current||e.detail===0)onPhoto(p)}}><img src={p.preview||p.thumbnail} alt="" decoding="async" draggable="false"/></button>)}
+       {hero&&<button className="memory-chapter-hero" aria-label={'查看 '+hero.name} onClick={e=>{if(!suppress.current||e.detail===0)onPhoto(hero)}}><PreviewImage src={hero.preview||hero.thumbnail} alt="" decoding="async" draggable="false"/></button>}
+       {detail.map(p=><button key={p.id} className="memory-chapter-detail" aria-label={'查看 '+p.name} onClick={e=>{if(!suppress.current||e.detail===0)onPhoto(p)}}><PreviewImage src={p.preview||p.thumbnail} alt="" decoding="async" draggable="false"/></button>)}
       </div>
      </article>
     })}
@@ -89,7 +90,7 @@ export function MemoryScrollRoom({api,state={},onState,onCollection,onPhoto}){
    <header><h2>编排章节</h2><button onClick={closeEdit} aria-label="关闭章节编排" disabled={saving}>×</button></header>
    <div className="scroll-editor-selection" inert={saving||undefined}><label>章节<select aria-label="章节" value={active.chapter.id} onChange={e=>go(layouts.find(c=>c.chapter.id===e.target.value))}>{chapters.map(c=><option key={c.id} value={c.id}>{c.customTitle||c.label}</option>)}</select></label><div><button aria-label="章节前移" disabled={!active.index||saving} onClick={()=>reorder(-1)}>←</button><button aria-label="章节后移" disabled={active.index===chapters.length-1||saving} onClick={()=>reorder(1)}>→</button></div></div>
    <label className="scroll-editor-title">标题<input disabled={saving} maxLength="120" value={draft.chapters.find(c=>c.activity_id===active.chapter.id)?.title??active.chapter.label} onChange={e=>change(active.chapter.id,{title:e.target.value})}/></label>
-   <div className="scroll-editor-images" aria-busy={editor.loading} inert={saving||editor.loading||Boolean(editor.error)||undefined} aria-label="选择章节主图">{(editor.data?.items||active.chapter.selected||[]).map(p=><button key={p.id} aria-label={'主图 '+p.name} aria-pressed={(active.chapter.heroId||active.hero?.id)===p.id} onClick={()=>{setHeroes(h=>({...h,[p.id]:p}));change(active.chapter.id,{hero_id:p.id})}}><img src={p.thumbnail} alt="" decoding="async"/></button>)}</div>
+   <div className="scroll-editor-images" aria-busy={editor.loading} inert={saving||editor.loading||Boolean(editor.error)||undefined} aria-label="选择章节主图">{(editor.data?.items||active.chapter.selected||[]).map(p=><button key={p.id} aria-label={'主图 '+p.name} aria-pressed={(active.chapter.heroId||active.hero?.id)===p.id} onClick={()=>{setHeroes(h=>({...h,[p.id]:p}));change(active.chapter.id,{hero_id:p.id})}}><PreviewImage src={p.thumbnail} alt="" decoding="async"/></button>)}</div>
    {editor.error&&<StatusNotice error={editor.error} onRetry={editor.retry}/>}
    {saveError&&<StatusNotice error={saveError} detail="编排尚未保存" onDismiss={()=>setSaveError('')}/>}
    <footer><span>{editor.loading?<PhotoLoading compact/>:editor.data?.total>60?'显示评分前 60 张':''}</span><button onClick={save} disabled={saving}>{saving?'保存中':'保存编排'}</button></footer>

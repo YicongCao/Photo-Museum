@@ -1,3 +1,4 @@
+import {previews as previewQueue} from './preview-queue';
 import { useEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
 
@@ -57,11 +58,13 @@ export function useSceneMotion(root) {
         {duration:480,easing:'cubic-bezier(.16,1,.3,1)',fill:'both'})));
       await Promise.allSettled(motions.map(a=>a.finished));finish();return true;
     }
-    const animations = [], clones = [];
+    const animations = [], clones = [], cloneLeases=[];
     const width = innerWidth, height = innerHeight;
     const visible = el => { const r=el.getBoundingClientRect(); return getComputedStyle(el).visibility!=='hidden' && r.width>0 && r.height>0 && r.right>0 && r.left<width && r.bottom>0 && r.top<height; };
     const sources = [...root.current.querySelectorAll(selector)].filter(visible).slice(0,40);
     sources.forEach((el,i) => {
+      if(!el.currentSrc&&!el.getAttribute('src'))return;
+      if(el.dataset.previewSource){const lease=previewQueue.acquire(el.dataset.previewSource,0);lease.promise.catch(()=>{});cloneLeases.push(lease)}
       const r=el.getBoundingClientRect(), copy=document.createElement('img');
       copy.dataset.sceneClone='true';copy.src=el.currentSrc || el.src; copy.alt=''; copy.setAttribute('aria-hidden','true');
       Object.assign(copy.style,{position:'fixed',left:`${r.x}px`,top:`${r.y}px`,width:`${r.width}px`,height:`${r.height}px`,objectFit:getComputedStyle(el).objectFit,borderRadius:getComputedStyle(el).borderRadius,zIndex:'100',pointerEvents:'none',margin:'0'});
@@ -81,7 +84,7 @@ export function useSceneMotion(root) {
         {opacity:1,transform:'translate(0,0) scale(1)',filter:'blur(0)'}],
         {duration:760,delay:180+Math.min(i,14)*13,easing:'cubic-bezier(.16,1,.3,1)',fill:'both'}));
     });
-    const finish=()=>{animations.forEach(a=>a.cancel());clones.forEach(el=>{el.removeAttribute('src');el.remove();});if(cleanup.current===finish){running.current=false;cleanup.current=()=>{}}};
+    const finish=()=>{animations.forEach(a=>a.cancel());clones.forEach(el=>{el.removeAttribute('src');el.remove();});cloneLeases.forEach(l=>l.release());if(cleanup.current===finish){running.current=false;cleanup.current=()=>{}}};
     cleanup.current=finish;
     await Promise.allSettled(animations.map(a=>a.finished));finish();
     return true;
@@ -92,20 +95,20 @@ export function useSceneMotion(root) {
 
 // Keep encoded 4K previews only. Never prefetch NAS originals or retain decoded Image objects.
 export function createActivityWarmup(api,id,endpoint) {
-  const controller=new AbortController(), urls=new Map();
-  const item={id,urls,data:null,dispose(){controller.abort();urls.forEach(URL.revokeObjectURL);urls.clear();}};
+  const controller=new AbortController(), urls=new Map(), leases=[];
+  const item={id,urls,data:null,dispose(){controller.abort();leases.forEach(l=>l.release());urls.clear();}};
   item.promise=(async()=>{
     const data=await api(endpoint || `/gallery/${id}?limit=15`,'GET',undefined,{signal:controller.signal});
     item.data=data;
     const previews=data.previews || data.items;
     let next=0;
-    const timer=setTimeout(()=>controller.abort(),8000);
+    const timer=setTimeout(()=>{controller.abort();leases.forEach(l=>l.release());urls.clear()},8000);
     item.previewPromise=(async()=>{try {
       await Promise.allSettled(Array.from({length:4},async()=>{
         while(next<previews.length && !controller.signal.aborted) {
           const p=previews[next++];if(!p.preview)continue;
-          try {const response=await fetch(p.preview,{signal:controller.signal,priority:'low'});if(!response.ok)continue;
-            const blob=await response.blob();if(!controller.signal.aborted)urls.set(p.id,URL.createObjectURL(blob));
+          try {const lease=previewQueue.acquire(p.preview,3);leases.push(lease);
+            const url=await lease.promise;if(!controller.signal.aborted)urls.set(p.id,url);
           }catch{/* A failed preview must not prevent opening the activity. */}
         }
       }));

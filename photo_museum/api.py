@@ -66,7 +66,8 @@ def create_app(directory=None, dav_factory=WebDAV):
             if not length or not length.isdigit() or int(length) > limit:
                 return JSONResponse({'detail': 'Request body too large or length missing'}, 413)
         result = await call_next(request)
-        result.headers['Cache-Control'] = 'no-store'
+        if not getattr(request.state, 'validated_preview', False):
+            result.headers['Cache-Control'] = 'no-store'
         result.headers['X-Content-Type-Options'] = 'nosniff'
         result.headers['Referrer-Policy'] = 'no-referrer'
         result.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:; img-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"

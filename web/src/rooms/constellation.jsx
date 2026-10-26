@@ -1,3 +1,4 @@
+import {PreviewImage} from '../preview-image';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {useRoomData,RoomStatus} from './common';
 import {constellationLayout} from './radial-layout';
@@ -44,7 +45,7 @@ export function ConstellationRoom({api,state={},onState,onCollection,onPhoto}){
   {detail&&<div className="constellation-source" role="status"><span>{selected?.basis || '本地标签候选'} · {selected?.count || 0} 张</span><span>连线表示同一标签，不表示人物关系或相似度。</span><button aria-label="关闭标签依据" onClick={()=>setDetail(false)}>×</button></div>}
   {list?<div className="constellation-list" aria-label="标签分组列表">{groups.map(g=><section className="constellation-list-group" key={g.id}>
    <div><h2>{g.label}</h2><span>{g.basis} · {g.count} 张</span><button onClick={()=>open(g)}>展开 ↗</button></div>
-   <div className="constellation-list-photos">{g.selected?.slice(0,5).map(p=><button key={p.id} onClick={()=>onPhoto(p)} aria-label={'查看 '+p.name}><img src={p.thumbnail} alt="" loading="lazy" decoding="async"/></button>)}</div>
+   <div className="constellation-list-photos">{g.selected?.slice(0,5).map(p=><button key={p.id} onClick={()=>onPhoto(p)} aria-label={'查看 '+p.name}><PreviewImage src={p.thumbnail} alt="" loading="lazy" decoding="async"/></button>)}</div>
   </section>)}</div>:<div className="constellation-stage" ref={stage} tabIndex={0} role="group" aria-label="照片标签星图，可拖动和缩放"
    onPointerDown={down} onPointerMove={move} onPointerUp={end} onPointerCancel={end}
    onKeyDown={e=>{if(e.target!==e.currentTarget)return;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const t=latest.current,next={...t,x:clamp(t.x+(e.key==='ArrowLeft'?60:e.key==='ArrowRight'?-60:0),-1200,1200),y:clamp(t.y+(e.key==='ArrowUp'?60:e.key==='ArrowDown'?-60:0),-800,800)};update(next);persist(next)}if(e.key==='Home'){e.preventDefault();update(origin);persist(origin)}}}>
@@ -52,7 +53,7 @@ export function ConstellationRoom({api,state={},onState,onCollection,onPhoto}){
     <svg viewBox={compact?'0 0 420 560':'0 0 1440 800'} aria-hidden="true" className="constellation-links">{layout.edges.map((e,i)=>{const mid=(e.x1+e.x2)/2;return <g key={e.group+'-'+e.photo}><path d={`M ${e.x1} ${e.y1} C ${mid} ${e.y1},${mid} ${e.y2},${e.x2} ${e.y2}`} style={{animationDelay:Math.min(i*25,240)+'ms'}}/><circle cx={e.x1} cy={e.y1} r="3"/></g>})}</svg>
     {layout.groups.map(g=><button className={'constellation-hub '+(g.id===selected?.id?'selected-hub':'')} key={g.id} style={{left:g.x,top:g.y-14}} aria-label={'选择标签 '+g.label} aria-pressed={g.id===selected?.id} onClick={e=>{if(e.detail===0||!suppressed.current)choose(g)}}><span>{g.label}</span><small>{names[g.kind]} · {g.count}</small></button>)}
     {layout.nodes.map((node,i)=><button key={node.photo.id} className={'constellation-photo '+(node.hero?'constellation-hero':'')} style={{left:node.x,top:node.y,width:node.width,height:node.height,'--node-delay':Math.min(i*25,240)+'ms'}} onClick={e=>{if(e.detail===0)onPhoto(node.photo);else show(node.photo)}} aria-label={'查看 '+node.photo.name}>
-     <img src={node.hero?(node.photo.preview || node.photo.thumbnail):node.photo.thumbnail} alt="" draggable="false" decoding="async"/>
+     <PreviewImage src={node.hero?(node.photo.preview || node.photo.thumbnail):node.photo.thumbnail} alt="" draggable="false" decoding="async"/>
      {node.hero&&<span>{node.photo.period || '日期未详'}</span>}
     </button>)}
    </div>

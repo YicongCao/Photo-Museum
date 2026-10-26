@@ -58,5 +58,8 @@ class Cache:
                 c.execute('DELETE FROM cache_files WHERE key=?',(row['key'],))
                 c.execute("UPDATE derivatives SET status='evicted' WHERE asset_id=? AND revision=? AND profile=?",(aid,revision,profile))
                 return None
-            c.execute('UPDATE cache_files SET accessed=? WHERE key=?', (time.time(),row['key']))
+            # Coalesce hot preview touches; reads should not serialize on SQLite writes.
+            now=time.time()
+            if now-row['accessed'] >= 30:
+                c.execute('UPDATE cache_files SET accessed=? WHERE key=?', (now,row['key']))
             return path

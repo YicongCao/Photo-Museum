@@ -1,3 +1,4 @@
+import {PreviewImage,PreviewSVG} from '../preview-image';
 import React,{useId,useMemo} from 'react';
 import {useRoomData,RoomStatus} from './common';
 import {ringGeometry} from './radial-layout';
@@ -12,7 +13,7 @@ function ActivityPictures({api,activity,year,onPhoto}){
  const result=useRoomData(api,selected.length?null:'/exhibitions/creative/photos?'+new URLSearchParams({kind:'chapter',key:activity.id,year:String(year),sort:'score',limit:'3'}));
  const photos=selected.length?selected:(result.data?.items || []).filter(matches);
  return <div className="rings-detail-images" data-preview-activity={activity.id} aria-busy={!selected.length&&result.loading}>
-  {photos.slice(0,3).map(p=><button key={p.id} data-asset={p.id} aria-label={'查看 '+p.name} onClick={()=>onPhoto(p)}><img src={p.preview || p.thumbnail} alt="" decoding="async"/></button>)}
+  {photos.slice(0,3).map(p=><button key={p.id} data-asset={p.id} aria-label={'查看 '+p.name} onClick={()=>onPhoto(p)}><PreviewImage src={p.preview || p.thumbnail} alt="" decoding="async"/></button>)}
   {!selected.length&&<RoomStatus {...result} empty={!result.loading&&!photos.length}/>}
  </div>;
 }
@@ -43,7 +44,7 @@ export function RingsRoom({api,state={},onState,onCollection,onPhoto}){
        key={item.photo.id} role="button" tabIndex={0} aria-pressed={ring.year.year===year&&item.activity?.id===activity?.id}
        aria-label={`${ring.year.year} · ${title(item.activity)} · 选择活动`} onClick={()=>choose(ring.year.year,item.activity)}
        onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(ring.year.year,item.activity)}}}>
-       <image href={item.photo.thumbnail} x={item.x} y={item.y} width={item.width} height={item.height} preserveAspectRatio="xMidYMid slice" clipPath={`url(#${prefix}-${ring.year.year}-${i})`}/>
+       <PreviewSVG href={item.photo.thumbnail} x={item.x} y={item.y} width={item.width} height={item.height} preserveAspectRatio="xMidYMid slice" clipPath={`url(#${prefix}-${ring.year.year}-${i})`}/>
        <path d={item.path} className="ring-photo-outline"/>
       </g>)}
       <g className="ring-year-label" role="button" tabIndex={0} aria-label={'选择 '+ring.year.year+' 年'} onClick={()=>choose(ring.year.year)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(ring.year.year)}}}>

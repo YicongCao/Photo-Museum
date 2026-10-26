@@ -1,3 +1,4 @@
+import {PreviewImage} from '../preview-image';
 import {StatusNotice} from '../system-status';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {geoNaturalEarth1,geoPath} from 'd3-geo';
@@ -81,7 +82,7 @@ export function MapRoom({api,state,onState,onCollection}) {
      </g>
     </svg>
     {preview?.cover&&<button className="map-photo-preview" onClick={()=>enter(preview)} aria-label={'进入 '+preview.label}>
-     <img key={preview.id} src={preview.cover.thumbnail} alt="" decoding="async"/><span>{preview.label}<small>{preview.count.toLocaleString()} 张照片</small><b aria-hidden="true">↗</b></span>
+     <PreviewImage key={preview.id} src={preview.cover.thumbnail} alt="" decoding="async"/><span>{preview.label}<small>{preview.count.toLocaleString()} 张照片</small><b aria-hidden="true">↗</b></span>
     </button>}
     <div className="map-zoom"><button aria-label="放大地图" onClick={()=>save(zoom(1.6))}>＋</button><button aria-label="缩小地图" onClick={()=>save(zoom(1/1.6))}>−</button><button aria-label="重置地图" onClick={()=>{update(initial);save(initial)}}>↺</button></div>
     <div className="map-credit"><a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer">Natural Earth</a> · <a href="https://www.geonames.org/" target="_blank" rel="noreferrer">GeoNames</a> · 离线 · WGS84</div>
@@ -91,7 +92,7 @@ export function MapRoom({api,state,onState,onCollection}) {
     <p className="map-precision">最近城市{data?.estimated>0&&` · ${data.estimated} 张推断位置`}</p>
     {data?.parent&&<button className="room-primary" onClick={()=>onCollection(collection(data.breadcrumbs.at(-1).label,{place:data.parent},'地图'))}>全部 {data.count} 张照片 ↗</button>}
     <div className="place-list">{data?.groups.map(g=><button key={g.id} className={preview?.id===g.id?'place-preview-active':''} onPointerEnter={()=>setPreviewId(g.id)} onFocus={()=>setPreviewId(g.id)} onClick={()=>enter(g)}>
-      {g.cover&&<img src={g.cover.thumbnail} alt="" loading="lazy"/>}<span className="place-row-label">{g.label}<small>{g.count.toLocaleString()} 张照片</small><i className="place-count-track" aria-hidden="true"><i style={{width:(g.count/largest*100)+'%'}}/></i></span><span aria-hidden="true">↗</span>
+      {g.cover&&<PreviewImage src={g.cover.thumbnail} alt="" loading="lazy"/>}<span className="place-row-label">{g.label}<small>{g.count.toLocaleString()} 张照片</small><i className="place-count-track" aria-hidden="true"><i style={{width:(g.count/largest*100)+'%'}}/></i></span><span aria-hidden="true">↗</span>
     </button>)}{data?.groups.length===0&&!result.loading&&<p>暂无有效定位</p>}</div>
    </aside>
   </div>

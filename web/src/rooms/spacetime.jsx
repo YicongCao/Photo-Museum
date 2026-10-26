@@ -1,3 +1,4 @@
+import {PreviewImage} from '../preview-image';
 import React,{forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react';
 import './spacetime.css';
 import {coverCount} from '../cover-layout.js';
@@ -48,8 +49,8 @@ export const SpacetimeRoom=forwardRef(function SpacetimeRoom({activities,index,o
      aria-label={'展开活动 '+a.event.theme} onClick={e=>{if(suppress.current&&e.detail!==0)return;if(i!==Math.round(pos.current)){goTo(i);return}onOpen(a.id)}}
      style={{width:boardWidth,height:boardHeight,left:reduced?'50%':center,top:y,zIndex:1000-i,
       transform:`translate(-50%,-50%) perspective(1800px) rotateY(${angle}deg) scale(${scale})`,'--space-light':Math.max(.3,1-Math.max(0,d)*.13),'--space-height':boardHeight+'px'}}>
-     <div className={'photo-mosaic count-'+a.selected.length}>{a.selected.length?a.selected.map((p,j)=><div key={p.id} className={'mosaic-cell cell-'+j}><img src={p.thumbnail} alt="" draggable="false" decoding="async"/></div>):<span className="cover-pending">评分中</span>}</div>
-     <div className="space-reflection" aria-hidden="true"><div className={'photo-mosaic count-'+a.selected.length}>{a.selected.map((p,j)=><div key={p.id} className={'mosaic-cell cell-'+j}><img src={p.thumbnail} alt="" draggable="false" decoding="async"/></div>)}</div></div>
+     <div className={'photo-mosaic count-'+a.selected.length}>{a.selected.length?a.selected.map((p,j)=><div key={p.id} className={'mosaic-cell cell-'+j}><PreviewImage src={p.thumbnail} alt="" draggable="false" decoding="async"/></div>):<span className="cover-pending">评分中</span>}</div>
+     <div className="space-reflection" aria-hidden="true"><div className={'photo-mosaic count-'+a.selected.length}>{a.selected.map((p,j)=><div key={p.id} className={'mosaic-cell cell-'+j}><PreviewImage src={p.thumbnail} alt="" draggable="false" decoding="async"/></div>)}</div></div>
     </button>
    })}
   </div>

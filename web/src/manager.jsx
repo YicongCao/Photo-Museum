@@ -1,3 +1,4 @@
+import {PreviewImage} from './preview-image';
 import React, { useEffect, useRef, useState } from "react";
 import { Icon, statusIcon } from "./icons";
 import { FileProcessing, RecentStrip } from "./processing";
@@ -426,7 +427,7 @@ export function Manager({ api, state, refresh, onLogout }) {
                         <div className="job-cover">
                           <Icon name="folder" />
                           {j.cover && (
-                            <img
+                            <PreviewImage
                               src={j.cover}
                               alt="活动封面"
                               loading="lazy"

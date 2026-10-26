@@ -1,3 +1,4 @@
+import {PreviewImage} from './preview-image';
 import {MediaStatus} from './system-status';
 import {PhotoLoading} from './loading-mark';
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -365,7 +366,7 @@ export function RecentStrip({ items = [] }) {
             }}
             onClick={(e) => show(a, e, true)}
           >
-            <img src={a.thumbnail} alt="" />
+            <PreviewImage src={a.thumbnail} alt="" />
             {a.kind === "video_candidate" && <Icon name="video" />}
           </button>
         ))}
@@ -378,12 +379,12 @@ export function RecentStrip({ items = [] }) {
           role={pinned ? "dialog" : "region"}
         >
           <div className="recent-preview-image">
-            <img
+            <PreviewImage
               className="recent-preview-placeholder"
               src={preview.thumbnail}
               alt=""
             />
-            <img
+            <PreviewImage
               key={preview.id + preview.revision}
               className={loaded ? "recent-4k loaded" : "recent-4k"}
               src={preview.preview}

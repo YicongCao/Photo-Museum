@@ -1,3 +1,4 @@
+import {previews} from './preview-queue';
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./tokens.css";
@@ -33,7 +34,7 @@ function App() {
     if(polling.current)return;
     polling.current=true;const c=new AbortController();stateRequest.current=c;
     try {setState(await api('/state','GET',undefined,{signal:c.signal}));setInitialized(true);setPollError(null)}
-    catch(e){if(e.name!=='AbortError'){if(e.status===401){setState(null);setPollError(null)}else setPollError(e)}}
+    catch(e){if(e.name!=='AbortError'){if(e.status===401){previews.clear();setState(null);setPollError(null)}else setPollError(e)}}
     finally{if(!c.signal.aborted){setChecked(true);polling.current=false}}
   }
   const bootstrap=signal=>api('/bootstrap','GET',undefined,{signal}).then(v=>{setInitialized(v.initialized);setBootstrapError(null)}).catch(e=>{if(e.name!=='AbortError')setBootstrapError(e)});
@@ -46,6 +47,7 @@ function App() {
   async function logout() {
     try {
       await api("/logout", "POST", {});
+      previews.clear();
       setAutoUnlockAllowed(false);
       setState(null);setError('');
     } catch (e) {

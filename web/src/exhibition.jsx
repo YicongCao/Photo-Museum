@@ -1,3 +1,4 @@
+import {PreviewImage} from './preview-image';
 import React, {
   forwardRef,
   useEffect,
@@ -252,8 +253,8 @@ export const Tunnel = forwardRef(function Tunnel(
                 {!a.selected.length && <span className="cover-pending">{a.unscored ? "评分中" : "暂无精选照片"}</span>}
                 {a.selected.map((p, j) => (
                   <div className={"mosaic-cell cell-" + j} key={p.id}>
-                    <img
-                      src={p.thumbnail}
+                    <PreviewImage native
+                      priority={Math.abs(d)<.5?0:1} src={p.thumbnail}
                       alt=""
                       draggable="false"
                       decoding="async"
@@ -266,8 +267,8 @@ export const Tunnel = forwardRef(function Tunnel(
                 <div className={mosaic.className} style={mosaic.style}>
                   {a.selected.map((p, j) => (
                     <div className={"mosaic-cell cell-" + j} key={p.id}>
-                      <img
-                        src={p.thumbnail}
+                      <PreviewImage native
+                        priority={Math.abs(d)<.5?0:1} src={p.thumbnail}
                         alt=""
                         draggable="false"
                         decoding="async"

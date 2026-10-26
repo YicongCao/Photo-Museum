@@ -1,3 +1,4 @@
+import {PreviewImage} from './preview-image';
 import {MuseumNav} from './museum-nav';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Icon} from './icons';
@@ -67,7 +68,7 @@ export function Curator({api,onLogout}){
     {run&&<article className="curator-user"><small>要求</small><p>{run.prompt}</p></article>}
     {(answer||run?.answer)&&<article className="curator-response"><small>{active?'模型输出':'策展结果'}</small><p>{run?.status==='completed'?(run.answer || answer):answer || run?.answer}</p></article>}
     {progress&&<section className="curator-preparation" aria-label="展厅数据准备"><div><Icon name="thumbnail"/><span>本地缓存检查</span><output>{progress.checked} / {progress.total}</output></div><progress max={progress.total || 1} value={progress.checked}/><small>可用 {progress.ready}{progress.skipped>0&&` · 已失效 ${progress.skipped}`}</small></section>}
-    {exhibition&&<section className="curator-result" aria-label="展览草案"><header><h2>{exhibition.title}</h2><span>{exhibition.count} 张照片</span></header><div className="curator-result-images">{exhibition.covers.map(p=><img key={p.id} src={p.thumbnail} alt="" decoding="async" onLoad={()=>setImageStates(s=>({...s,[p.id]:'loaded'}))} onError={()=>setImageStates(s=>({...s,[p.id]:'failed'}))}/>)}</div><small>预览 {loaded} / {exhibition.covers.length}{thumbnails.includes('failed')&&' · 部分预览不可用'}</small><div className="curator-show"><select aria-label="展示展厅" value={showRoom} onChange={e=>setShowRoom(e.target.value)}>{Object.entries(exhibitionRooms).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select><button onClick={show} disabled={exhibition.count===0}>Show ↗</button></div></section>}
+    {exhibition&&<section className="curator-result" aria-label="展览草案"><header><h2>{exhibition.title}</h2><span>{exhibition.count} 张照片</span></header><div className="curator-result-images">{exhibition.covers.map(p=><PreviewImage key={p.id} src={p.thumbnail} alt="" decoding="async" onLoad={()=>setImageStates(s=>({...s,[p.id]:'loaded'}))} onError={()=>setImageStates(s=>({...s,[p.id]:'failed'}))}/>)}</div><small>预览 {loaded} / {exhibition.covers.length}{thumbnails.includes('failed')&&' · 部分预览不可用'}</small><div className="curator-show"><select aria-label="展示展厅" value={showRoom} onChange={e=>setShowRoom(e.target.value)}>{Object.entries(exhibitionRooms).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select><button onClick={show} disabled={exhibition.count===0}>Show ↗</button></div></section>}
     {!provider&&!error&&<PhotoLoading compact label="读取策展记录"/>}
     {error&&<StatusNotice error={error} scope="策展记录" onRetry={reloadReadOnly}/>}
     {run?.error&&<StatusNotice error={run.error} scope="本次策展"/>}

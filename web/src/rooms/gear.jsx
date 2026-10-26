@@ -1,3 +1,4 @@
+import {PreviewImage} from '../preview-image';
 import React,{useEffect} from 'react';
 import {useRoomData,RoomStatus,collection} from './common';
 import {CameraDrawing,drawing} from './gear-icons';
@@ -28,7 +29,7 @@ export function GearRoom({api,state,onState,onCollection,onPhoto,anchor}) {
    </div></section><section className="gear-related"><h3>{kind==='camera'?'镜头':'相机'}</h3><div>{detail?.related.map(d=><button key={d.id} onClick={()=>onCollection(collection(d.name,{[kind]:current.id,[d.kind]:d.id,pinned:Boolean(state.pinned)},current.name))}>{d.name}<small>{d.count}</small></button>)}</div></section></div>
    </div>
    {detail?.selected.length>0?<div className="gear-photo-grid">{detail.selected.slice(0,5).map((p,i)=><button key={p.id} className={i===0?'gear-hero':''} onClick={()=>onPhoto(p)} aria-label={'查看 '+p.name}>
-    <img src={i===0?p.preview:p.thumbnail} alt="" decoding="async"/><span>{p.score!=null?'技术分 '+p.score:'未评分'}</span>
+    <PreviewImage src={i===0?p.preview:p.thumbnail} alt="" decoding="async"/><span>{p.score!=null?'技术分 '+p.score:'未评分'}</span>
    </button>)}</div>:current&&!details.loading&&<div className="gear-no-photos">{state.pinned?'暂无已标记照片':'暂无可展示照片'}</div>}
   </div></div>
   <footer className="room-footer"><span>{data?.devices.length || 0} {kind==='camera'?'种设备来源':'种镜头记录'}</span>{!!detail?.date_unknown&&<span>日期未详 {detail.date_unknown}</span>}</footer>

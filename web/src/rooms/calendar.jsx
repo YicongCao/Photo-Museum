@@ -1,3 +1,4 @@
+import {PreviewImage} from '../preview-image';
 import React,{useEffect} from 'react';
 import {useRoomData,RoomStatus,collection,stepPeriod} from './common';
 import {Icon} from '../icons';
@@ -31,7 +32,7 @@ export function CalendarRoom({api,anchor,setAnchor,state,onState,onCollection}) 
   <div className="calendar-grid" aria-busy={result.loading} inert={result.loading || undefined}>
    {data?.cells.map(c=><button className={'calendar-cell '+(c.period===current?'is-selected ':'')+(!c.period.startsWith(data.anchor.slice(0,7))&&scale==='month'?'outside-month':'')}
      key={c.period} aria-label={c.period+' · '+c.count+' 张照片'} disabled={!c.count} onClick={()=>open(c)}>
-     {c.cover&&<img src={c.cover.thumbnail} alt="" decoding="async"/>}
+     {c.cover&&<PreviewImage src={c.cover.thumbnail} alt="" decoding="async"/>}
      <span className="calendar-date">{scale==='year'?Number(c.period.slice(5,7))+' 月':Number(c.period.slice(8,10))}</span>
      {c.count>0&&<span className="calendar-count"><Icon name="photo"/>{c.count}{c.estimated>0&&<span title="包含接受的推断日期"> ◇</span>}</span>}
    </button>)}

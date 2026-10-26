@@ -1,0 +1,367 @@
+{
+  "protocol": "HTTP/1.1",
+  "trials_per_cell": 3,
+  "fixture": "same 84 cached-preview slots; synthetic metadata; 83 unique image pairs",
+  "results": [
+    {
+      "network": "loopback",
+      "scene": "cover",
+      "cache": "cold",
+      "before_ms": 345.8,
+      "after_ms": 351.9,
+      "faster_percent": -1.8,
+      "before_range": [
+        285.4,
+        692.7
+      ],
+      "after_range": [
+        273.8,
+        353.9
+      ],
+      "before_bytes": 26028178,
+      "after_bytes": 26032786
+    },
+    {
+      "network": "loopback",
+      "scene": "cover",
+      "cache": "warm",
+      "before_ms": 333.6,
+      "after_ms": 286.6,
+      "faster_percent": 14.1,
+      "before_range": [
+        319.4,
+        492.9
+      ],
+      "after_range": [
+        273.1,
+        301.1
+      ],
+      "before_bytes": 26028178,
+      "after_bytes": 32640
+    },
+    {
+      "network": "loopback",
+      "scene": "wall",
+      "cache": "cold",
+      "before_ms": 1897.4,
+      "after_ms": 1830.1,
+      "faster_percent": 3.5,
+      "before_range": [
+        1653.4,
+        2164.2
+      ],
+      "after_range": [
+        1787.8,
+        2102.1
+      ],
+      "before_bytes": 26233224,
+      "after_bytes": 26243220
+    },
+    {
+      "network": "loopback",
+      "scene": "wall",
+      "cache": "warm",
+      "before_ms": 2023,
+      "after_ms": 1944.9,
+      "faster_percent": 3.9,
+      "before_range": [
+        1885.7,
+        2164.5
+      ],
+      "after_range": [
+        1626.8,
+        2154.3
+      ],
+      "before_bytes": 26233224,
+      "after_bytes": 39780
+    },
+    {
+      "network": "loopback",
+      "scene": "calendar",
+      "cache": "cold",
+      "before_ms": 178.5,
+      "after_ms": 156.8,
+      "faster_percent": 12.2,
+      "before_range": [
+        155.7,
+        209.6
+      ],
+      "after_range": [
+        152.4,
+        196.4
+      ],
+      "before_bytes": 708480,
+      "after_bytes": 709344
+    },
+    {
+      "network": "loopback",
+      "scene": "calendar",
+      "cache": "warm",
+      "before_ms": 137.5,
+      "after_ms": 136.5,
+      "faster_percent": 0.7,
+      "before_range": [
+        136.7,
+        144.6
+      ],
+      "after_range": [
+        107.1,
+        137.5
+      ],
+      "before_bytes": 708480,
+      "after_bytes": 6120
+    },
+    {
+      "network": "loopback",
+      "scene": "gear",
+      "cache": "cold",
+      "before_ms": 120.8,
+      "after_ms": 89.7,
+      "faster_percent": 25.7,
+      "before_range": [
+        88.9,
+        174.6
+      ],
+      "after_range": [
+        78.9,
+        105.8
+      ],
+      "before_bytes": 4444527,
+      "after_bytes": 4444887
+    },
+    {
+      "network": "loopback",
+      "scene": "gear",
+      "cache": "warm",
+      "before_ms": 121.1,
+      "after_ms": 73.1,
+      "faster_percent": 39.6,
+      "before_range": [
+        107.6,
+        149
+      ],
+      "after_range": [
+        69.3,
+        74.8
+      ],
+      "before_bytes": 4444527,
+      "after_bytes": 2550
+    },
+    {
+      "network": "loopback",
+      "scene": "map",
+      "cache": "cold",
+      "before_ms": 90.2,
+      "after_ms": 73.5,
+      "faster_percent": 18.5,
+      "before_range": [
+        57.2,
+        104.2
+      ],
+      "after_range": [
+        73.1,
+        89.4
+      ],
+      "before_bytes": 210815,
+      "after_bytes": 211031
+    },
+    {
+      "network": "loopback",
+      "scene": "map",
+      "cache": "warm",
+      "before_ms": 72,
+      "after_ms": 73.8,
+      "faster_percent": -2.5,
+      "before_range": [
+        58.5,
+        116.2
+      ],
+      "after_range": [
+        71.1,
+        88.2
+      ],
+      "before_bytes": 210815,
+      "after_bytes": 1530
+    },
+    {
+      "network": "lan100",
+      "scene": "cover",
+      "cache": "cold",
+      "before_ms": 369.7,
+      "after_ms": 362.8,
+      "faster_percent": 1.9,
+      "before_range": [
+        309.1,
+        418.7
+      ],
+      "after_range": [
+        354.9,
+        456.1
+      ],
+      "before_bytes": 2850943,
+      "after_bytes": 7385597
+    },
+    {
+      "network": "lan100",
+      "scene": "cover",
+      "cache": "warm",
+      "before_ms": 402.9,
+      "after_ms": 401.3,
+      "faster_percent": 0.4,
+      "before_range": [
+        387.5,
+        603.7
+      ],
+      "after_range": [
+        371.3,
+        434.1
+      ],
+      "before_bytes": 2850943,
+      "after_bytes": 5054045
+    },
+    {
+      "network": "lan100",
+      "scene": "wall",
+      "cache": "cold",
+      "before_ms": 4819.8,
+      "after_ms": 3516.8,
+      "faster_percent": 27.0,
+      "before_range": [
+        4754.5,
+        4942
+      ],
+      "after_range": [
+        3328.7,
+        3712.1
+      ],
+      "before_bytes": 50545580,
+      "after_bytes": 26243220
+    },
+    {
+      "network": "lan100",
+      "scene": "wall",
+      "cache": "warm",
+      "before_ms": 4643.7,
+      "after_ms": 1809.1,
+      "faster_percent": 61.0,
+      "before_range": [
+        4597.3,
+        4750
+      ],
+      "after_range": [
+        1766.6,
+        2285.4
+      ],
+      "before_bytes": 50545580,
+      "after_bytes": 39780
+    },
+    {
+      "network": "lan100",
+      "scene": "calendar",
+      "cache": "cold",
+      "before_ms": 278.2,
+      "after_ms": 252.7,
+      "faster_percent": 9.2,
+      "before_range": [
+        244.5,
+        279.8
+      ],
+      "after_range": [
+        244.1,
+        263.2
+      ],
+      "before_bytes": 708480,
+      "after_bytes": 709344
+    },
+    {
+      "network": "lan100",
+      "scene": "calendar",
+      "cache": "warm",
+      "before_ms": 221.7,
+      "after_ms": 191,
+      "faster_percent": 13.8,
+      "before_range": [
+        206.4,
+        223
+      ],
+      "after_range": [
+        175.7,
+        191
+      ],
+      "before_bytes": 708480,
+      "after_bytes": 6120
+    },
+    {
+      "network": "lan100",
+      "scene": "gear",
+      "cache": "cold",
+      "before_ms": 519.9,
+      "after_ms": 521.4,
+      "faster_percent": -0.3,
+      "before_range": [
+        504.1,
+        531.9
+      ],
+      "after_range": [
+        507.1,
+        530.4
+      ],
+      "before_bytes": 4444527,
+      "after_bytes": 4444887
+    },
+    {
+      "network": "lan100",
+      "scene": "gear",
+      "cache": "warm",
+      "before_ms": 521.2,
+      "after_ms": 172.7,
+      "faster_percent": 66.9,
+      "before_range": [
+        509,
+        523.8
+      ],
+      "after_range": [
+        159.2,
+        173.3
+      ],
+      "before_bytes": 4444527,
+      "after_bytes": 2550
+    },
+    {
+      "network": "lan100",
+      "scene": "map",
+      "cache": "cold",
+      "before_ms": 173.4,
+      "after_ms": 186.9,
+      "faster_percent": -7.8,
+      "before_range": [
+        156.1,
+        205
+      ],
+      "after_range": [
+        170.6,
+        212
+      ],
+      "before_bytes": 210815,
+      "after_bytes": 211031
+    },
+    {
+      "network": "lan100",
+      "scene": "map",
+      "cache": "warm",
+      "before_ms": 191.6,
+      "after_ms": 169.3,
+      "faster_percent": 11.6,
+      "before_range": [
+        172.1,
+        199.3
+      ],
+      "after_range": [
+        138.5,
+        170.4
+      ],
+      "before_bytes": 210815,
+      "after_bytes": 1530
+    }
+  ]
+}

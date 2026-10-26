@@ -6,8 +6,8 @@ import json
 import time
 from datetime import datetime
 from pathlib import PurePosixPath
-from fastapi import Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import Depends, HTTPException, Request
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from .cache import Cache
 from .photography import enabled as photography_enabled
@@ -230,11 +230,11 @@ def register(app,database,owner):
                 'photos':sum(r['kind']=='image_candidate' for r in selected),'videos':sum(r['kind']=='video_candidate' for r in selected),'order':'capture-ascending'}
 
     @app.get('/api/assets/{aid}/media/{profile}',dependencies=[Depends(owner)])
-    def cached(aid:str,profile:str,revision:str):
+    def cached(aid:str,profile:str,revision:str,request:Request):
         if profile not in ('thumb','display','compatible','playback'):
             raise HTTPException(404)
         with database.connect() as c:
-            r=c.execute('SELECT revision FROM entries WHERE id=? AND missing=0 AND scope_excluded=0',(aid,)).fetchone()
+            r=c.execute('SELECT revision FROM entries WHERE id=? AND missing=0 AND scope_excluded=0 AND NOT EXISTS (SELECT 1 FROM curation WHERE asset_id=entries.id AND excluded=1)',(aid,)).fetchone()
         if not r or r['revision']!=revision:
             raise HTTPException(409,'媒体版本已更新')
         path=cache.lookup(aid,revision,profile)
@@ -243,7 +243,17 @@ def register(app,database,owner):
             with database.connect() as c:
                 c.execute("UPDATE media_jobs SET status='pending',available=0 WHERE asset_id=? AND revision=? AND status='ready'",(aid,revision))
             raise HTTPException(404,'缓存等待生成')
-        return FileResponse(path)
+        if profile not in ('thumb','display'):
+            return FileResponse(path)
+        stat=path.stat()
+        etag='"'+hashlib.sha256(f'{aid}:{revision}:{profile}:{stat.st_mtime_ns}:{stat.st_size}'.encode()).hexdigest()+'"'
+        headers={'Cache-Control':'private, no-cache, must-revalidate','ETag':etag,'Vary':'Cookie'}
+        # Every reuse passes owner(), current scope/revision and cache existence checks.
+        request.state.validated_preview=True
+        candidates=[v.strip().removeprefix('W/') for v in request.headers.get('if-none-match','').split(',')]
+        if etag in candidates or '*' in candidates:
+            return Response(status_code=304,headers=headers)
+        return FileResponse(path,headers=headers,stat_result=stat)
 
     @app.post('/api/assets/{aid}/curation',dependencies=[Depends(owner)])
     def curate(aid:str,body:CurateInput):
