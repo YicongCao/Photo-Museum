@@ -19,10 +19,10 @@ try{
  // Capture actual WAAPI frames, including both halves.
  await page.evaluate(()=>{window.turnFrames=[];const animate=Element.prototype.animate;Element.prototype.animate=function(frames,opts){if(this.classList.contains('image-stack'))window.turnFrames.push({frames,opts});return animate.call(this,frames,opts)}});
  const depth=await page.evaluate(()=>history.state.museumGallery.depth);
- await page.getByRole('button',{name:'下一张照片',exact:true}).click();await settle();assert.notEqual(await photoId(),first);
+ await page.getByRole('button',{name:'下一张照片',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.image-stack')?.getAnimations().length);await page.locator('.image-stack').evaluate(e=>{const a=e.getAnimations()[0];a.pause();a.currentTime=85});await page.screenshot({path:out+'/film-mid-motion.png'});await page.locator('.image-stack').evaluate(e=>e.getAnimations()[0]?.play());await settle();assert.notEqual(await photoId(),first);
  assert.equal(await page.evaluate(()=>history.state.museumGallery.depth),depth);
- const frames=await page.evaluate(()=>window.turnFrames);assert.equal(frames.length,2);assert.ok(frames.every(m=>m.frames.every(f=>f.transform.includes('rotateY')&&!('opacity'in f)&&!f.transform.includes('translate'))));checks.push('Two-phase 330ms central-axis turn without opacity or slide; single-photo History depth unchanged');
- await page.keyboard.press('ArrowLeft');await settle();assert.equal(await photoId(),first);
+ const frames=await page.evaluate(()=>window.turnFrames);assert.equal(frames.length,2);assert.ok(frames.every(m=>m.frames.every(f=>f.transform.includes('translate3d')&&!('opacity'in f)&&!f.transform.includes('rotate'))));assert.equal(frames[0].frames[1].transform,'translate3d(0,8px,0)');assert.ok(frames[0].frames[2].transform.startsWith('translate3d(-'));assert.ok(!frames[1].frames[0].transform.startsWith('translate3d(-'));assert.equal(frames[0].opts.duration+frames[1].opts.duration,360);checks.push('360ms film advance: lower 8px, travel left/right, settle; no rotation/opacity, unchanged History depth');
+ await page.keyboard.press('ArrowLeft');await settle();assert.equal(await photoId(),first);const reverse=await page.evaluate(()=>window.turnFrames.slice(-2));assert.ok(!reverse[0].frames.at(-1).transform.startsWith('translate3d(-'));assert.ok(reverse[1].frames[0].transform.startsWith('translate3d(-'));
  await page.keyboard.press('ArrowRight');await settle();await page.getByRole('button',{name:'下一张照片',exact:true}).click();await settle();
  await page.waitForTimeout(250);await page.screenshot({path:out+'/desktop-middle.png'});
  await page.locator('.viewer-filmstrip-track button').last().click();await settle();

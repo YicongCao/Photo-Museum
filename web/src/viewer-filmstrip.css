@@ -1,4 +1,4 @@
-/* Concept: viewer-filmstrip-turn.png. Central-axis turn; never slide/fade the photo. */
+/* Concept: viewer-filmstrip-turn.png. Photo selection uses a restrained downward dip and horizontal film advance. */
 .photo-viewer.has-filmstrip:has(.viewer-bottom){--filmstrip-height:116px;grid-template-rows:48px minmax(0,1fr) 56px var(--filmstrip-height);grid-template-columns:minmax(0,1fr) clamp(230px,calc(100vw - (100dvh - 220px) * var(--photo-ratio,1.5)),390px)}
 .photo-viewer.has-filmstrip.image-only:has(.viewer-bottom){grid-template-columns:minmax(0,1fr)}
 .viewer-image-area{position:relative}

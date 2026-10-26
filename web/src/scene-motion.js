@@ -15,12 +15,22 @@ export function useSceneMotion(root) {
     if(mode==='photo-next'||mode==='photo-previous'){
       let active=true;const motions=[],sign=mode==='photo-next'?-1:1;
       const finish=()=>{active=false;motions.forEach(a=>a.cancel());if(cleanup.current===finish){running.current=false;cleanup.current=()=>{}}};cleanup.current=finish;
-      const turn=async(from,to,duration)=>{const el=root.current?.querySelector('.image-stack');if(!el)return;
-        const motion=el.animate([{transform:`perspective(1400px) rotateY(${from}deg)`},{transform:`perspective(1400px) rotateY(${to}deg)`}],{duration,easing:'cubic-bezier(.4,0,.6,1)',fill:'both'});
+      const slide=async(entering)=>{const el=root.current?.querySelector('.image-stack');if(!el)return;
+        const width=el.parentElement.clientWidth+16,drop=8;
+        const frames=entering?[
+          {transform:`translate3d(${-sign*width}px,${drop}px,0)`,offset:0},
+          {transform:`translate3d(0,${drop}px,0)`,offset:.74},
+          {transform:'translate3d(0,0,0)',offset:1}
+        ]:[
+          {transform:'translate3d(0,0,0)',offset:0},
+          {transform:`translate3d(0,${drop}px,0)`,offset:.29},
+          {transform:`translate3d(${sign*width}px,${drop}px,0)`,offset:1}
+        ];
+        const motion=el.animate(frames,{duration:entering?190:170,easing:entering?'cubic-bezier(.16,.7,.3,1)':'cubic-bezier(.5,0,.8,.4)',fill:'both'});
         motions.push(motion);await Promise.allSettled([motion.finished]);};
-      await turn(0,sign*90,150);if(!active)return false;
+      await slide(false);if(!active)return false;
       flushSync(change);motions.forEach(a=>a.cancel());motions.length=0;
-      await turn(-sign*90,0,180);if(!active)return false;finish();return true;
+      await slide(true);if(!active)return false;finish();return true;
     }
     if(['cover-wall','wall-cover','photo-close','fit'].includes(mode)){
       let active=true;const motions=[];
