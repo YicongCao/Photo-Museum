@@ -37,9 +37,11 @@ export function useSceneMotion(root) {
         next.forEach((el,i)=>{
           const r=el.getBoundingClientRect(),cover=el.classList.contains('activity-panel'),main=el.classList.contains('depth-0');
           const delay=cover?Math.min(Math.abs(Number(el.dataset.coverOffset)),5)*24:Math.min(270,Math.max(0,r.x-left)*.14)+i%3*14;
-          const from=cover?{opacity:0,translate:`${main?innerWidth/2-r.x-r.width/2:(Number(el.dataset.coverOffset)<0?-1:1)*innerWidth*.55}px 0px`,scale:main?.15:.8}
+          // Keep the tunnel's layout-owned perspective throughout the transition.
+          const space=el.classList.contains('spacetime-board');
+          const from=space?{opacity:0,translate:'60px 0px',scale:.92}:cover?{opacity:0,translate:`${main?innerWidth/2-r.x-r.width/2:(Number(el.dataset.coverOffset)<0?-1:1)*innerWidth*.55}px 0px`,scale:main?.15:.8}
             :{opacity:0,transform:'perspective(1100px) translateX(-84px) rotateY(-25deg) scale(.90)',transformOrigin:'left center'};
-          const to=cover?{opacity:1,translate:'0px 0px',scale:1}:{opacity:1,transform:'perspective(1100px) translateX(0px) rotateY(0deg) scale(1)',transformOrigin:'left center'};
+          const to=(cover||space)?{opacity:1,translate:'0px 0px',scale:1}:{opacity:1,transform:'perspective(1100px) translateX(0px) rotateY(0deg) scale(1)',transformOrigin:'left center'};
           motions.push(el.animate([from,to],{duration:620,delay,easing:'cubic-bezier(.12,.72,.18,1)',fill:'both'}));
         });
       }

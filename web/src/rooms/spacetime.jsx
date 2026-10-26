@@ -1,11 +1,11 @@
 import {PreviewImage} from '../preview-image';
-import React,{forwardRef,useEffect,useImperativeHandle,useRef,useState} from 'react';
+import React,{forwardRef,useEffect,useImperativeHandle,useLayoutEffect,useRef,useState} from 'react';
 import './spacetime.css';
 import {coverCount} from '../cover-layout.js';
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const SpacetimeRoom=forwardRef(function SpacetimeRoom({activities,index,onIndex,onOpen,state,onState},ref){
- const initial=clamp(state.position ?? index,0,activities.length-1),[position,setPosition]=useState(initial),[size,setSize]=useState({w:1200,h:700}),
+ const initial=clamp(Math.round(state.position)===index?state.position:index,0,activities.length-1),[position,setPosition]=useState(initial),[size,setSize]=useState({w:1200,h:700}),
   [reduced,setReduced]=useState(matchMedia('(prefers-reduced-motion: reduce)').matches);
  const root=useRef(null),pos=useRef(initial),target=useRef(initial),frame=useRef(0),idle=useRef(null),gesture=useRef(null),suppress=useRef(false),lastIndex=useRef(index),callbacks=useRef({onIndex,onState});
  callbacks.current={onIndex,onState};
@@ -21,12 +21,19 @@ export const SpacetimeRoom=forwardRef(function SpacetimeRoom({activities,index,o
  };
  const goTo=n=>{target.current=clamp(n,0,activities.length-1);if(reduced){publish(Math.round(target.current));settle()}else animate()};
  useImperativeHandle(ref,()=>({goTo,move:n=>goTo(Math.round(target.current)+n)}));
+ useLayoutEffect(()=>{
+  const node=root.current;
+  // Resolve real geometry before scene-motion measures incoming boards.
+  const measure=()=>setSize({w:node.clientWidth,h:node.clientHeight});
+  measure();const ro=new ResizeObserver(measure);ro.observe(node);
+  return()=>ro.disconnect();
+ },[]);
  useEffect(()=>{
-  const node=root.current,ro=new ResizeObserver(([e])=>setSize({w:e.contentRect.width,h:e.contentRect.height}));ro.observe(node);
+  const node=root.current;
   const wheel=e=>{e.preventDefault();if(e.ctrlKey)return;const d=(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY)*(e.deltaMode===1?16:e.deltaMode===2?node.clientHeight:1);
    goTo(target.current+d/600);clearTimeout(idle.current);idle.current=setTimeout(()=>goTo(Math.round(target.current)),180)};
   node.addEventListener('wheel',wheel,{passive:false});
-  return()=>{ro.disconnect();node.removeEventListener('wheel',wheel);cancelAnimationFrame(frame.current);clearTimeout(idle.current)};
+  return()=>{node.removeEventListener('wheel',wheel);cancelAnimationFrame(frame.current);clearTimeout(idle.current)};
  },[activities.length,reduced]);
  useEffect(()=>{const media=matchMedia('(prefers-reduced-motion: reduce)'),f=()=>setReduced(media.matches);media.addEventListener('change',f);return()=>media.removeEventListener('change',f)},[]);
  useEffect(()=>{if(Math.round(pos.current)!==index&&!gesture.current)goTo(index)},[index]);
@@ -46,7 +53,7 @@ export const SpacetimeRoom=forwardRef(function SpacetimeRoom({activities,index,o
       vanish=size.w*(size.w<700?.90:.98),center=vanish-(vanish-origin)*scale-Math.max(0,-d)*size.w*.90,
       y=size.h*.44+(1-scale)*size.h*.015,angle=reduced?0:-14;
     return <button key={a.id} data-activity={a.id} data-cover-offset={d} className={'spacetime-board '+(i===index?'space-current':'')} tabIndex={i===index?0:-1}
-     aria-label={'展开活动 '+a.event.theme} onClick={e=>{if(suppress.current&&e.detail!==0)return;if(i!==Math.round(pos.current)){goTo(i);return}onOpen(a.id)}}
+     aria-label={'展开活动 '+a.event.theme} onClick={e=>{if(suppress.current&&e.detail!==0)return;if(i!==Math.round(pos.current)){goTo(i);return}settle();onOpen(a.id)}}
      style={{width:boardWidth,height:boardHeight,left:reduced?'50%':center,top:y,zIndex:1000-i,
       transform:`translate(-50%,-50%) perspective(1800px) rotateY(${angle}deg) scale(${scale})`,'--space-light':Math.max(.3,1-Math.max(0,d)*.13),'--space-height':boardHeight+'px'}}>
      <div className={'photo-mosaic count-'+a.selected.length}>{a.selected.length?a.selected.map((p,j)=><div key={p.id} className={'mosaic-cell cell-'+j}><PreviewImage src={p.thumbnail} alt="" draggable="false" decoding="async"/></div>):<span className="cover-pending">评分中</span>}</div>
