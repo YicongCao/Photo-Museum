@@ -1,5 +1,6 @@
 import React from "react";
 const paths = {
+  timeline: 'M7 3v18M3 5h.01M3 12h.01M3 19h.01M11 5h10M11 12h7M11 19h10',
   refresh: 'M20 7v5h-5M4 17v-5h5M5.3 7a8 8 0 0 1 13-2L20 8M4 16l1.7 3a8 8 0 0 0 13-2',
   connection: 'M8 8 4 12a4 4 0 0 0 6 6l3-3M16 16l4-4a4 4 0 0 0-6-6l-3 3M3 3l18 18',
 

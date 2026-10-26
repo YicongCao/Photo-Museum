@@ -49,10 +49,10 @@ try{
  if(out)await page.screenshot({path:path.join(out,'depth-390.png')});
  checks.push('Depth main cover is fully visible and centered on phone');
  await resize(701,541);for(const next of ['classic','framed','depth','arc']){
-  await choose(next);const main=await page.locator('.depth-0').boundingBox(),timeline=await page.locator('.dock-timeline').boundingBox();assert.ok(main.y+main.height<=timeline.y,`${next} overlaps timeline`);
+  await choose(next);const before=await page.locator('.depth-0').boundingBox();await page.getByRole('button',{name:'显示时间线',exact:true}).press('Enter');await page.locator('.timeline-drawer.is-open').waitFor();const after=await page.locator('.depth-0').boundingBox();assert.deepEqual(after,before,`${next} resized when timeline opened`);await page.getByRole('button',{name:'收起时间线',exact:true}).press('Enter');
   if(out)await page.screenshot({path:path.join(out,next+'-701-541.png')});
  }
- checks.push('Main covers clear the horizontal timeline at the short-screen breakpoint');
+ checks.push('Floating timeline leaves main cover geometry unchanged at the short-screen breakpoint');
  await page.mouse.move(300,180);await page.mouse.wheel(70,0);await page.getByRole('button',{name:'Gallery',exact:true}).click();await page.getByRole('menuitemradio',{name:'日历',exact:true}).click();await page.locator('.calendar-room').waitFor();await page.waitForTimeout(400);
  assert.deepEqual(errors,[]);checks.push('Leaving during pending scroll settling cleans up without uncaught browser errors');
  console.log(JSON.stringify({checks,errors},null,2));

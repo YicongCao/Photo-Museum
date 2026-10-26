@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 
 import {createPortal} from "react-dom";
 import {TimelinePreview} from "./timeline-preview";
-import {TimelineSurface} from "./timeline-surface";
+import {TimelineDrawer} from "./timeline-drawer";
 
 const monthLabels=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-export function ActivityTimeline({ activities, index, onSelect, theme="dark", material=false }) {
+export function ActivityTimeline({ activities, index, onSelect, theme="dark", drawer=false }) {
   const root = useRef(null), frame = useRef(0), pointer = useRef(null),pointerFocus=useRef(false);
   const [preview,setPreview]=useState(null);
   const showTimer=useRef(null),closeTimer=useRef(null),removeTimer=useRef(null),pendingFocus=useRef(null);
@@ -72,7 +72,7 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark", ma
     const schedule=()=>{clearTimeout(timer);timer=setTimeout(reveal,180)};
     const observer=new ResizeObserver(schedule);observer.observe(node);schedule();
     return()=>{clearTimeout(timer);observer.disconnect()};
-  },[index,activities[index]?.id,activities.length,material]);
+  },[index,activities[index]?.id,activities.length,drawer]);
   const magnify = (e) => {
     if (e.pointerType === "touch" || !matchMedia("(hover: hover)").matches) return;
     pointer.current = e.clientY;
@@ -114,5 +114,5 @@ export function ActivityTimeline({ activities, index, onSelect, theme="dark", ma
       </section>)}
     </section>)}
   </aside>;
-  return <>{material?<div className="timeline-glass-frame"><TimelineSurface source={activities[index]?.selected?.[0]?.thumbnail}/>{rail}</div>:rail}{preview && createPortal(<TimelinePreview key={preview.activity.id} activity={preview.activity} anchor={preview.anchor} closing={preview.closing} theme={theme}/>,document.body)}</>;
+  return <>{drawer?<TimelineDrawer onClose={closePreview}>{rail}</TimelineDrawer>:rail}{preview && createPortal(<TimelinePreview key={preview.activity.id} activity={preview.activity} anchor={preview.anchor} closing={preview.closing} theme={theme}/>,document.body)}</>;
 }

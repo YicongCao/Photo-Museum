@@ -23,8 +23,6 @@
 .gallery-shell[data-theme=light] .tunnel-controls button{color:#655e54}
 .gallery-shell[data-theme=light] .tunnel-controls button:hover{color:#866128}
 .gallery-shell[data-theme=light] .dock-timeline{background:#ffffffb8;border-color:#ded7cb}
-.gallery-shell[data-theme=light] .dock-timeline :is(.timeline-year,button){color:#655e54}
-.gallery-shell[data-theme=light] .dock-timeline :is(.selected,.timeline-month,button:hover,button:focus-visible){color:#866128}
 .gallery-shell[data-theme=light] .timeline-dot{border-color:#866128}
 .gallery-shell[data-theme=light] .selected .timeline-dot{background:#866128}
 .gallery-shell[data-theme=light] :is(.cover-pending,.gallery-empty>.icon){color:#866128}

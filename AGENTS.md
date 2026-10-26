@@ -127,3 +127,10 @@ Cover Flow 在 Settings → 照片显示中可选经典镜面、金框画廊、�
 词库是既有元数据的本地二次索引，独立lexicon_worker增量维护；不GET原图、不解码/识别、不调用LLM建库。主体synset、摄影topic/style和GeoNames城市保留各自标准ID/别名/出处/不同照片数，同名词需按域和父区域消歧。相关记录变更在原事务入dirty队列，UPDATE仅值确实变化时入队，不能因媒体队列重复stale写入而忙转。代际完成才发布，构建/过期/待更新不能当全库无结果。
 
 策展先用lookup_keywords查真实词条，再放入filters.keyword_ids；同域OR、跨域AND，与其他原条件AND。不把topic当主体，不由活动标题/附近镇名补地级市，不自动扩展上位概念；模型候选、推断采纳和最终缓存复验边界继续沿用。Settings提供词库检查入口。具体实现/验收见docs/research/keyword-lexicon-implementation.md，复验见media-validation skill的references/lexicon.md。
+
+
+## Cover Flow 抽屉时间线（2026-10-26）
+
+最新时间线回到时空隧道同款年/月/活动层级，保留三字母月份、Dock和评分预览；年份、月份、活动无背景色块。Cover Flow使用右侧可收起的玻璃纵栏，进入视口右20%弹出、离开区域/面板220ms后收起。显式44px入口供键盘/触屏使用，Esc关闭、触屏选活动后收起，隐藏内容inert；减少动态效果直接切换。开关不重排封面。
+
+Cover Flow不再为时间线裁掉左右场景，主封面适度加宽、两翼伸到面板后方；16:9九封面和左右平衡不变。玻璃取后方真实画面的backdrop，不复制照片当背景，不新增原图读取；日夜各有可读色彩。时空隧道本身保留原行为。以docs/research/timeline-drawer.md为当前规范，旧固定玻璃/标题色块/手机横栏是历史。

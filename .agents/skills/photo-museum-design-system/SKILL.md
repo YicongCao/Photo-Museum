@@ -5,7 +5,7 @@ description: 修改 photo-museum 页面视觉或加载、错误、空状态、�
 
 # Photo Museum 界面设计
 
-先读项目 AGENTS.md、docs/STATUS.md 和与任务有关的 docs/design/visual-language.md 段落；状态/文案工作以 docs/design/system-status-language.md 为当前规范。时间线材质参考 docs/research/timeline-smoke-glass.md 的已保存概念和实现，不回到纯黑底上只有 backdrop-filter 的做法。
+先读项目 AGENTS.md、docs/STATUS.md 和与任务有关的 docs/design/visual-language.md 段落；状态/文案工作以 docs/design/system-status-language.md 为当前规范。时间线现版先读 docs/research/timeline-drawer.md：Cover Flow右侧20%展开玻璃纵栏，真实照片伸到其后方，不复制缩略图当背景，年份/活动无背景块。旧timeline-smoke-glass为历史概念，不能据此恢复固定色块。
 
 ## 实作判断
 
@@ -24,3 +24,5 @@ description: 修改 photo-museum 页面视觉或加载、错误、空状态、�
 5. 记录具体测试与失败边界，公开只放合成图。正式前端先复制带hash资源，再原子替换index；不因静态更新重启worker。用现有会话查看正式页面，截图仅 data/。不要锁定用户会话或为重试触发付费策展。
 
 不把合成故障注入当成真实断网根因修复。结束保留用户当前正式页面和后台任务，停止自己的fixture；交付附规范、验证与截图的绝对路径。
+
+抽屉时间线复验：隔离P5 fixture（84张生成图）运行web/tests/timeline-drawer.mjs及cover-layout.test.mjs；再跑timeline-preview.mjs、coverflow-resize.mjs和coverflow-light.mjs。输出用MUSEUM_BROWSER_OUTPUT/MUSEUM_BROWSER_EVIDENCE指向data/<本轮>，不覆盖历史。关闭后需把鼠标移出右20%再进入才能重触发；键盘按.timeline-toggle的Enter可固定展开。旧timeline-material脚本依赖已移除的复制缩略图层，只适用于历史版本。检查玻璃像素响应真实后方封面、无色块、关闭释放预览、隐藏inert、触屏选中收起及开合不重排，不能只查blur属性。

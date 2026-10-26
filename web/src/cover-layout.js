@@ -10,17 +10,14 @@ export function coverCount(width,height,total){
 }
 // Continuous geometry keeps the main cover readable while exposing each wing.
 export function coverLayout(width,height,total,position,style='classic'){
- // CSS uses viewport height for the short-screen rail; this function receives
- // the stage height below navigation. Blend the space reserves before each
- // rail reflow so a one-pixel resize does not suddenly resize every cover.
+ // The timeline floats above the photographs. Reserve only a symmetric edge,
+ // retaining balanced wings and a fixed main-cover axis as the drawer opens.
  const viewportHeight=height+(width<=700?68:78),stageHeight=viewportHeight-78;
- const shortWeight=(1-smooth(480,540,viewportHeight))*smooth(600,800,width);
- const compact=(1-smooth(1100,1300,width))*(1-shortWeight);
- const rail=Math.max(180*shortWeight,clamp(width*.15,186,246)*smooth(900,1200,width)),ratio=style==='arc'?1.72:1.5;
- const usable=width-2*rail,cover=Math.max(110,Math.min(width*(.66-.16*smooth(550,1400,width)),usable*.78,900,
-  Math.max(110,stageHeight-(170+130*compact))*ratio));
+ const rail=clamp(width*.03,14,52),ratio=style==='arc'?1.72:1.5;
+ const usable=width-2*rail,cover=Math.max(110,Math.min(width*(.74-.18*smooth(550,1400,width)),usable*.84,900,
+  Math.max(110,stageHeight-150)*ratio));
  const count=coverCount(width,viewportHeight,total);
- const top=Math.max(18,Math.min(stageHeight*.14,(stageHeight-(110+160*compact)-cover/ratio)*.35));
+ const top=Math.max(18,Math.min(stageHeight*.14,(stageHeight-110-cover/ratio)*.35));
  const spacing=clamp((usable*.48-cover*.5)/Math.max(1,(count-3)/2),20,100);
  const base={cover,count,ratio,top,rail,spacing,usable,origin:50};
  if(style==='depth')base.cover=Math.min(cover*1.05,usable*.85);

@@ -10,7 +10,7 @@ description: 复验 photo-museum 媒体缓存、Gallery/P5展厅、P6策展助�
 少量媒体失败的实测诊断见docs/research/failed-media-compatibility-diagnosis.md：先只读当前media_jobs和entries确认状态，再在独立TemporaryDirectory用现有WebDAV下载器复现metadata/still完整异常；私密消息/路径留data。ValueError/OSError不是根因。JPEG的“bytes not processed”不等于缺失字节数；检查主流EOI并只对临时副本补标记复测，不全局打开容错。HEIF区分容器引用限额、主图NCLX/ICC和HDR，不把辅助信息当主图；原生成功须再生成并重开thumb/display验证。保留正常队列，清理诊断原文件；Mac成功不代表Linux/Docker通过，诊断不自动授权全库重刮。
 
 
-烟色玻璃时间线复验见docs/research/timeline-smoke-glass.md：隔离P5 fixture运行web/tests/timeline-material.mjs与timeline-material-contrast.mjs，检查黑底实测像素、全白/缺失缩略图对比度、月份固定、源图切换和Blob撤销。再用timeline-preview.mjs与coverflow-light.mjs回归。字体/材质截图须等待对应图片解码及自身淡入完成；镜面像素比较串行运行，沿用既有容差，不因并行GPU抖动随意放宽。
+当前抽屉时间线复验见docs/research/timeline-drawer.md及design-system skill：隔离P5 fixture运行timeline-drawer.mjs，再回归timeline-preview.mjs、coverflow-resize.mjs和coverflow-light.mjs。旧烟色玻璃的timeline-material/contrast只对应历史复制缩略图层，不作为现版验收。材质截图需等待图片及开合完成；镜面像素比较串行运行，沿用既有容差。
 
 正式页刷新后先等鉴权和图库初始化完成再判断会话是否失效；当前App初始化期间可能短暂渲染密码表单，不能据此立即要求馆主重新解锁。不要读取密码、cookie或钥匙串来验证会话。
 

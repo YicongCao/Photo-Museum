@@ -16,16 +16,13 @@ test('short and compact viewport rail reflows do not jump the main cover size',(
   }
  }
 });
-test('height reflows stay continuous and horizontal timeline clears the main cover',()=>{
+test('height reflows stay continuous while floating timelines do not reserve a horizontal strip',()=>{
  for(const width of [320,390,700,701,844,1100,1101,1280])for(const style of Object.keys(coverStyles)){
   let before;
   for(let height=390;height<=900;height++){
    const nav=width<=700?68:78,layout=coverLayout(width,height-nav,400,20,style);
    if(before)assert.ok(Math.abs(layout.cover-before.cover)<5,`${style} ${width}×${height}`);
-   if(width>=701&&width<=1100&&height>=541){
-    const mainBottom=nav+layout.top+layout.cover/layout.ratio;
-    assert.ok(mainBottom<=height-246,`${style} ${width}×${height}: cover ${mainBottom}, timeline ${height-246}`);
-   }
+   assert.ok(layout.usable>width*.9,`The stage keeps full width at ${width}×${height}`);
    before=layout;
   }
  }

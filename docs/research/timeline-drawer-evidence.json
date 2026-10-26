@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-26",
+  "unit_layout_and_mosaic_tests": 9,
+  "drawer": {
+    "checks": [
+      "Timeline starts fully offscreen and inert, with a named 44px entry and no decorative photo copy",
+      "Crossing the right 20% threshold reveals the sliding panel without moving or resizing covers",
+      "Full-width Cover Flow overlaps the real blurred backdrop; year, month and activity labels have no background blocks",
+      "Pixel test confirms visible glass responds to photographs behind it, rather than a flat or duplicated texture",
+      "Leaving closes after a brief grace period; photo bubble closes and releases its Blob URLs",
+      "Scrolling inside keeps the drawer open and its position survives hiding",
+      "Keyboard opens the timeline, keeps focused items available and returns focus on Escape",
+      "Night and day text reach 4.5:1 against worst-case composited photo backgrounds",
+      "Desktop, tablet, phone and short landscape all use the same vertical hierarchy inside one screen",
+      "Reduced motion switches directly without slide animation",
+      "Touch-only devices open explicitly and retract after selecting an event",
+      "Spacetime retains its existing timeline and Cover Flow listeners are removed on departure",
+      "No NAS originals, external requests or uncaught browser errors"
+    ],
+    "errors": [],
+    "contrastResults": {
+      "light": [
+        7.445821139831717,
+        4.853884232875157,
+        4.744359232133859,
+        5.243834489080986
+      ],
+      "dark": [
+        6.321954651214505,
+        5.297076298707362,
+        5.267267990584666,
+        5.372569308537288
+      ]
+    },
+    "glassPixelChangedFraction": 0.8932461873638344,
+    "fixture": "84 generated photos; geometry and glass rendering, not private photos or HDR validation"
+  },
+  "preview_regression": {
+    "checks": 15,
+    "errors": []
+  },
+  "resize_regression": {
+    "checks": 6,
+    "errors": []
+  },
+  "light_regression": {
+    "checks": 12,
+    "errors": []
+  },
+  "backend": "Static frontend only; existing API/worker processes retained",
+  "privacy": "Generated public screenshots; real NAS images/screenshots remain ignored under data/",
+  "limits": [
+    "Touch and short screens are Chromium emulations, not physical-device validation",
+    "Text contrast uses surface alpha composited with black/white stress backgrounds; glass pixel comparison uses actual rendered cover colors"
+  ],
+  "formal_browser": {
+    "cover_count": 9,
+    "year_background": "transparent",
+    "page_overflow": false,
+    "drawer_open_and_closed_verified": true,
+    "screenshots": "ignored data/timeline-drawer/formal-open.png and formal-closed.png",
+    "api_pid_unchanged": 4358
+  }
+}
