@@ -63,3 +63,11 @@
  :is(.gallery-shell,.keeper-shell,.settings-shell,.curator-shell) .museum-nav.museum-nav{gap:4px}
 }
 @media(prefers-reduced-motion:reduce){.museum-nav .nav-chevron{transition:none}}
+/* Extra Gallery tools get their own row on phones, rather than squeezing labels. */
+@media(max-width:480px){
+ .gallery-shell .museum-nav:has(.gallery-random){flex-wrap:wrap;row-gap:0}
+ .gallery-shell .museum-nav:has(.gallery-random) .museum-nav-pages{flex-basis:100%;justify-content:flex-end}
+ .gallery-shell .museum-nav:has(.gallery-random) .museum-nav-tools{border-left:0;padding-left:0;gap:2px}
+ .gallery-shell .museum-nav:has(.gallery-random) .museum-nav-tool{width:44px;padding:10px}
+ .gallery-shell:has(.gallery-random){--timeline-top:112px}
+}

@@ -5,6 +5,7 @@ import {RoomMenuIcon} from './room-menu-icon';
 import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
 import "./gallery.css";
 import { useSceneMotion, createActivityWarmup } from "./scene-motion";
+import {prepareCover,coverPreviewSources,randomCoverIndex} from './random-cover';
 import {PhotoLoading} from "./loading-mark";
 import {StatusNotice,StatusPanel,MediaStatus} from "./system-status";
 import {useGalleryHistory} from "./gallery-history";
@@ -73,6 +74,22 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   const shell=useRef(null), warm=useRef(null), openingRef=useRef(false);
   const chromeVisible=useGalleryChrome(shell,{menuOpen:roomMenu});
   const animate=useSceneMotion(shell);
+  const [randomBusy,setRandomBusy]=useState(false),randomJob=useRef(null),randomRelease=useRef(null),catalogue=useRef(activities);
+  catalogue.current=activities;
+  const cancelRandom=()=>{clearTimeout(randomRelease.current);randomJob.current?.dispose();randomJob.current=null;setRandomBusy(false)};
+  useEffect(()=>()=>{clearTimeout(randomRelease.current);randomJob.current?.dispose()},[]);
+  const randomCover=async()=>{
+    cancelRandom();if(activities.length<2||openingRef.current)return;
+    const selected=randomCoverIndex(activities.length,index),id=activities[selected].id;
+    const job=prepareCover(coverPreviewSources(activities,selected,innerWidth,innerHeight,room));
+    randomJob.current=job;setRandomBusy(true);setError('');
+    try{
+      await job.promise;if(randomJob.current!==job)return;
+      const destination=catalogue.current.findIndex(a=>a.id===id);if(destination<0){cancelRandom();return}
+      setRandomBusy(false);tunnel.current?.goTo(destination);
+      randomRelease.current=setTimeout(()=>{if(randomJob.current===job){job.dispose();randomJob.current=null}},2500);
+    }catch(e){if(randomJob.current!==job)return;randomJob.current=null;setRandomBusy(false);if(e.name!=='AbortError')setError(e.message)}
+  };
   const transition=useRef(0),sceneRef=useRef(null),navigationRequest=useRef(null),pendingFocus=useRef(null);
   const current = activities[index];
   const CreativeRoom=creativeRooms[room];
@@ -101,6 +118,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   useEffect(()=>{if(loaded&&!openingRef.current)navigation.sync(capture())},[loaded,room,view,wallId,collection,photo?.id,immersive,current?.id,anchor,opening]);
   useEffect(()=>()=>{transition.current++;navigationRequest.current?.abort();warm.current?.dispose()},[]);
   async function restoreScene(target,{record=true,initial=false,photoRecord=null,selector='.wall-scene .wall-photo img'}={}){
+    cancelRandom();
     const origin=capture(),token=++transition.current;
     animate.cancel();navigationRequest.current?.abort();const request=new AbortController();navigationRequest.current=request;openingRef.current=true;setOpening(true);setError('');
     if(record){navigation.sync(origin);navigation.push(target)}
@@ -170,14 +188,16 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   };
   useEffect(()=>{reload();const timer=setInterval(reload,15000);return()=>{clearInterval(timer);catalogueRequest.current?.abort()}},[]);
   const goTo = (i) => {
+    cancelRandom();
     if (view === "tunnel") tunnel.current?.goTo(i);
     else setIndex(i);
   };
-  const move = (n) => tunnel.current?.move(n);
+  const move = (n) => {cancelRandom();tunnel.current?.move(n)};
   const backGallery=()=>navigation.back(capture({view:'tunnel',photo:null,immersive:false}));
   const openActivity=id=>restoreScene(capture({activityId:id,view:'wall',wallId:id,collection:null,photo:null,immersive:false,wallLeft:wallPositions.current[id] || 0}));
   useEffect(() => {
     const f = (e) => {
+      if(['Escape','ArrowRight','ArrowLeft'].includes(e.key))cancelRandom();
       if (photo || openingRef.current || ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
       if (e.key === "Escape" && view === "wall") {
         backGallery();
@@ -200,16 +220,17 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   const toggleImmersive=()=>immersive?navigation.back(capture({immersive:false})):restoreScene(capture({immersive:true}));
   const displayTheme=room==='cover'&&view==='tunnel'&&!photo?coverTheme:'dark';
   return (
-    <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening} data-theme={displayTheme} data-cover-style={coverStyle} data-chrome-visible={chromeVisible}>
+    <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening} data-theme={displayTheme} data-cover-style={coverStyle} data-chrome-visible={chromeVisible} onWheelCapture={cancelRandom} onPointerDownCapture={e=>{if(!e.target.closest('.gallery-random'))cancelRandom()}}>
       <header className="gallery-nav" inert={!!photo || opening}>
         {view === "wall" && <button className="gallery-back" onClick={rootWall?returnCurator:backGallery} aria-label={rootWall?'返回策展助理':room==='cover'?'返回 Gallery':'返回 '+roomNames[room]}>← {rootWall?'策展助理':room==='cover'?'Gallery':roomNames[room]}</button>}
         {exhibitionId&&view==='tunnel'&&<><button className="gallery-curated-back" onClick={returnCurator}>← 策展助理</button><span className="gallery-curated-context">{scopeMeta?.title}</span></>}
         <MuseumNav current="gallery" onLogout={onLogout}
+          onRandom={view==='tunnel'&&['cover','space'].includes(room)&&!photo?randomCover:undefined} randomBusy={randomBusy} randomDisabled={activities.length<2||opening}
           theme={coverTheme} onTheme={room==='cover'&&view==='tunnel'?toggleCoverTheme:undefined}
           galleryControl={
           <div ref={roomMenuRef} className="gallery-room-switch"><button
             aria-current="page"
-            onClick={()=>setRoomMenu(v=>!v)} onKeyDown={e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();setRoomMenu(true)}}} aria-haspopup="menu" aria-expanded={roomMenu}
+            onClick={()=>{cancelRandom();setRoomMenu(v=>!v)}} onKeyDown={e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();cancelRandom();setRoomMenu(true)}}} aria-haspopup="menu" aria-expanded={roomMenu}
           >
             Gallery <svg className="nav-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg>
           </button>{roomMenu&&<div className="gallery-room-menu" role="menu" aria-label="展厅" onKeyDown={e=>{
@@ -273,6 +294,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
               {view==='wall' && <p className="activity-counts">{counts?.photos ?? displayedActivity.photos ?? 0} 张照片{(counts?.videos ?? displayedActivity.videos)>0 && <span> · {counts?.videos ?? displayedActivity.videos} 个视频</span>}</p>}
             </div>
           </div>}
+          {randomBusy&&<PhotoLoading size="small" symbol="dice" className="gallery-photo-loading random-cover-loading" label="随机选片"/>}
           {opening && (view==='wall'||['cover','space'].includes(room)) && <PhotoLoading size="small" className="gallery-photo-loading" label="加载照片"/>}
           {view === "tunnel" && ['cover','space'].includes(room) && (
             <div className="tunnel-controls">

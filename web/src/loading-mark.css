@@ -19,3 +19,8 @@
 @keyframes museum-ring-breathe{0%,100%{opacity:.62}50%{opacity:.96}}
 @media(max-width:700px),(max-height:540px){.photo-loading:not(.compact):not(.photo-loading-small) .photo-loading-orbit{--loading-diameter:156px}.photo-loading:not(.compact):not(.photo-loading-small) .photo-loading-orbit .museum-mark{width:54px;height:54px}.photo-loading-small .photo-loading-orbit{--loading-diameter:92px}}
 @media(prefers-reduced-motion:reduce){.photo-loading .photo-loading-ring{animation:none;opacity:.85}}
+
+.photo-loading .loading-dice{width:48px;height:48px;color:var(--loading-ink);animation:museum-dice-roll 1.8s cubic-bezier(.45,0,.25,1) infinite;transform-origin:center}
+.photo-loading-small .loading-dice{width:32px;height:32px}
+@keyframes museum-dice-roll{0%,12%{transform:rotate(-12deg) scale(.94)}55%{transform:rotate(168deg) scale(1.06)}88%,100%{transform:rotate(348deg) scale(.94)}}
+@media(prefers-reduced-motion:reduce){.photo-loading .loading-dice{animation:none}}
