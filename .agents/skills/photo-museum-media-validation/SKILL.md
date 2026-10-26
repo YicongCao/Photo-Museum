@@ -62,3 +62,5 @@ Cover Flow日夜模式专项：先隔离构建至data/cover-light-validation/web
 SQLite竞争及进程稳定性复验：运行tests/p1/test_database_contention.py，见docs/research/sqlite-contention-recovery.md。隔离supervisor测试以空库、无模型、动态端口启动，验证worker被杀后HTTP PID不变、持写锁超过10秒后退避且解锁恢复；不得在正式库持锁或强杀worker来做故障注入。判断临时锁用worker_runtime.is_database_busy，不把任意OperationalError都当可重试，也不在connect上下文自动重放含外部操作的事务。目录焦点使用choose_directory，重投影与短CAS写入分开；空闲/版本不变不反复写。真实发布沿用原数据和暂停状态，核对worker进程、API和队列快照，不能把重启成功冒充长期无故障。
 
 面孔姓名复验：见docs/research/people-settings.md。后端tests/p1/test_people_settings.py与test_curation.py验证命名/清空/模型升级人工保护、隐藏/过期范围、头像鉴权/缺缓存零GET。隔离P5 fixture用MUSEUM_VALIDATION_PEOPLE=1，再运行web/tests/people-settings.mjs；脚本会命名/拆组，重新运行须重启临时fixture恢复55组初态。真实库只读汇总与本地缓存禁网模型抽样，不能给真实人物写测试姓名或上传embedding。正式UI从Settings → 面孔与姓名进入。
+
+人物合并专项：见docs/research/people-merge.md，tests/p1/test_people_merge.py覆盖事务回滚、同名不同ID、模型升级、历史自动结果隔离、撤销/后续纠正冲突与零NAS请求。MUSEUM_VALIDATION_PEOPLE=1临时fixture运行web/tests/people-merge.mjs，再运行既有people-settings.mjs；只对合成人物改名/合并，正式页只验证入口。分页后等待people-catalog的aria-busy=false再勾选，避免勾到保留中的上一页。新增DB迁移需兼容既有旧版本重放测试。

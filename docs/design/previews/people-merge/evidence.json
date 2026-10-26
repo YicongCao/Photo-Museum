@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "Typing a matching name finds the existing identity beyond the current page; no implicit rename or merge",
+    "Explicit same-name independent people remain separate IDs",
+    "Choosing an existing identity explicitly merges the group; undo restores it",
+    "Multi-selection persists across pagination and explicitly names the retained identity",
+    "Merge failure retains selection and confirmation; explicit retry succeeds atomically",
+    "Merge history survives reload; undo restores group counts and original names",
+    "320/390px and short landscape keep document fixed and confirmation reachable"
+  ],
+  "errors": [],
+  "originalRequests": 0,
+  "fixture": "Synthetic identity labels and boxes only"
+}
