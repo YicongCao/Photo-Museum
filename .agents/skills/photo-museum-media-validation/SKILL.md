@@ -78,3 +78,5 @@ SQLite竞争及进程稳定性复验：运行tests/p1/test_database_contention.p
 照片流完整布局/滚动专项：见docs/research/wall-scroll-stability.md。先保存静态基线，用同一个独立P5 fixture运行wall-stability.mjs before/after，MUSEUM_WEB_TEST_DIST可覆写静态包；688项合成记录与固定元数据延迟只用于相对比较。分别报告95%稳定性、滚动期间display请求数、挂载格子、rAF及进入耗时，不以请求减少冒充FPS提升。wall-catalogue.test.mjs覆盖范围/稳定清单/取消/升级名额；wall-promotion、status-media、gallery-navigation验证原有降级、取消与返回。首次完整元数据故障现在保留封面，而非展示长度不确定的部分墙；更新故障测试应保留恢复动作断言。真实图片与截图留data，正式仅静态更新不重启worker。
 
 空闲性能复验见 docs/research/idle-efficiency.md：保留旧静态构建，隔离 P5 fixture 运行 idle-efficiency.mjs before/after 串行对照；禁止同时开启 rAF 采样来证明零帧。idle-wake.mjs 验证事件驱动进度、隐藏暂停及恢复后逐根 100%，adaptive-poll.test.mjs 覆盖单飞/退避/取消。真实 CPU 用 tools/measure_idle_cpu.py 在同一页面位置和任务状态测一分钟，统计完成计数是否变化；设备级 GPU 仅作背景，不当单页收益。新系统状态回归用可配置输出目录和 status-system.mjs，支持 since 查询、抽屉时间线、按需导航和无变化退避；不得覆盖历史公开截图。
+
+连续翻页原图取消：见docs/research/original-rapid-navigation.md。运行tests/p1/test_view_original.py与HDR/预览/服务回归；socket级断线验证响应头前取消，独立解码进程组验证终止和临时目录清理。隔离P5 fixture运行web/tests/original-rapid-turn.mjs与viewer-filmstrip.mjs，验证中间项无原图请求、旧请求中止、最终图显示及按需/导航回归；合成网络不证明真实NAS所有阻塞可瞬时取消。

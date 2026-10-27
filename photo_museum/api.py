@@ -6,6 +6,8 @@ from pathlib import Path
 import re
 import time
 import uuid
+import asyncio
+import threading
 import httpx
 import anyio
 from fastapi import FastAPI, HTTPException, Request, Response, Depends
@@ -21,6 +23,28 @@ from .webdav import WebDAV, DAVError, normalize, within, strong
 from tools.inventory import excluded_directory, parse_event
 
 ROOT = Path(__file__).resolve().parents[1]
+
+async def _until_disconnect(request, operation):
+    """Signal a blocking pre-response operation when its HTTP client disappears."""
+    from .download import TransferCancelled
+    cancelled = threading.Event()
+    async def watch():
+        while True:
+            if (await request.receive())['type'] == 'http.disconnect':
+                cancelled.set()
+                return
+    watcher = asyncio.create_task(watch())
+    try:
+        return await asyncio.to_thread(operation, cancelled)
+    except TransferCancelled:
+        return Response(status_code=499)
+    except asyncio.CancelledError:
+        cancelled.set()
+        raise
+    finally:
+        watcher.cancel()
+        try: await watcher
+        except asyncio.CancelledError: pass
 
 class Password(BaseModel):
     password: str = Field(min_length=1, max_length=256)
@@ -295,7 +319,7 @@ def create_app(directory=None, dav_factory=WebDAV):
             raise HTTPException(413,'超大文件仅索引')
 
     @app.get('/api/assets/{aid}/original-compatible', dependencies=[Depends(owner)])
-    def original_compatible(aid: str, revision: str, progress_id: str | None = None):
+    async def original_compatible(aid: str, revision: str, request: Request, progress_id: str | None = None):
         from .view_original import converted_original
         if progress_id is not None and not re.fullmatch(r'[a-f0-9]{32}', progress_id):
             raise HTTPException(422, '进度标识无效')
@@ -304,7 +328,8 @@ def create_app(directory=None, dav_factory=WebDAV):
             raise HTTPException(409, '源版本已变更')
         reject_placeholder(row)
         report = (lambda stage, done=0, total=None: view_progress.report((aid, revision, progress_id), stage, done, total)) if progress_id else None
-        return converted_original(db, row, dav_for(row['source_id']), progress=report)
+        return await _until_disconnect(request, lambda cancelled: converted_original(
+            db, row, dav_for(row['source_id']), progress=report, cancelled=cancelled.is_set))
 
     @app.get('/api/assets/{aid}/original-progress', dependencies=[Depends(owner)])
     def original_progress(aid: str, revision: str, progress_id: str):

@@ -23,7 +23,8 @@ def command(args, timeout=90):
     if args[0]=='ffmpeg':
         full='/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg'
         args=[os.environ.get('MUSEUM_FFMPEG',full if Path(full).is_file() else 'ffmpeg'),*args[1:]]
-    proc=subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True)
+    separate_group = os.environ.get('MUSEUM_VIEW_CONVERSION_CHILD') != '1'
+    proc=subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=separate_group)
     try:
         out,err=proc.communicate(timeout=timeout)
         if proc.returncode:
@@ -31,7 +32,8 @@ def command(args, timeout=90):
         return out
     finally:
         if proc.poll() is None:
-            os.killpg(proc.pid,signal.SIGKILL)
+            if separate_group: os.killpg(proc.pid,signal.SIGKILL)
+            else: proc.kill()
             proc.communicate()
 
 def metadata(path):

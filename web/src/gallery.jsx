@@ -436,6 +436,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
     const m=manifest;if(!m)return()=>c.abort();
     if(m.placeholder){setPhase(m.placeholder==='video'?'此视频超大':'此图片超大');return()=>c.abort()}
     if(photo.kind==='video_candidate'){setPhase('视频封面');return()=>c.abort()}
+    if(changing){setPhase('4K · 等待停留');return()=>c.abort()}
     if(!requested&&(!preferences.ready||preferences.values.original_loading==='on_demand')){
       setPhase(preferences.error?'偏好暂不可用 · 保留 4K':'4K · 原图按需读取');return()=>c.abort();
     }
@@ -462,16 +463,17 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
       decoded.removeAttribute('src');decoded=null;
       report({status:'ready',percent:100});
     };
-    (async()=>{try{
+    const delay=!requested && preferences.values.original_loading==='auto' ? 400 : 0;
+    const start=setTimeout(async()=>{try{
       try{await acquire(nativeChoice?m.original:m.original_compatible||m.original)}catch(e){
         if(!c.signal.aborted&&nativeChoice&&e.decodeFailed&&m.original_compatible){await acquire(m.original_compatible);if(!c.signal.aborted){setNativeFallback(true);setPhase('原生不可用 · SDR 原图')}}else throw e;
       }
       if(c.signal.aborted)return;setOriginal(url);
       if(!nativeChoice)setPhase(m.original_compatible?'原图 · SDR 兼容显示':'原图');
       else setPhase(p=>p==='原生不可用 · SDR 原图'?p:'原图 · 原生色彩');
-    }catch(e){if(!c.signal.aborted){const reason=originalErrorText(e);setPhase('保留 4K · '+reason);setTransfer(p=>p?{...p,status:'failed',error:reason}:p)}}})();
-    return()=>{c.abort();decoded?.removeAttribute('src');if(url)URL.revokeObjectURL(url)};
-  },[photo.id,manifest,nativeChoice,requested,retryOriginal,preferences.ready,preferences.values.original_loading,preferences.ready?'':preferences.error]);
+    }catch(e){if(!c.signal.aborted){const reason=originalErrorText(e);setPhase('保留 4K · '+reason);setTransfer(p=>p?{...p,status:'failed',error:reason}:p)}}},delay);
+    return()=>{clearTimeout(start);c.abort();decoded?.removeAttribute('src');if(url)URL.revokeObjectURL(url)};
+  },[photo.id,manifest,nativeChoice,requested,retryOriginal,changing,preferences.ready,preferences.values.original_loading,preferences.ready?'':preferences.error]);
   const visiblePhase=original?phase:previewFailed?'预览暂不可用':source===photo.thumbnail&&source!==photo.preview&&previewReady?'保留缩略图 · 4K 暂不可用':phase;
   return (
     <div
