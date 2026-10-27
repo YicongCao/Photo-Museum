@@ -13,7 +13,7 @@ import {prepareCover,coverPreviewSources,randomCoverIndex} from './random-cover'
 import {PhotoLoading} from "./loading-mark";
 import {ViewerFilmstrip,ViewerPageButtons} from './viewer-filmstrip';
 import {OriginalProgress} from './original-progress';
-import {receiveOriginal} from './original-transfer.mjs';
+import {receiveOriginal,originalFailure,originalErrorText} from './original-transfer.mjs';
 import {StatusNotice,StatusPanel,MediaStatus} from "./system-status";
 import {useGalleryHistory} from "./gallery-history";
 import { PhotoArchive } from "./photo-archive";
@@ -454,7 +454,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
       const stop=()=>{poll?.abort();clearTimeout(timer)};c.signal.addEventListener('abort',stop,{once:true});
       let response;
       try{response=await fetch(target+(compatible?'&progress_id='+id:''),{signal:c.signal,cache:'no-store'})}finally{stop();c.signal.removeEventListener('abort',stop)}
-      if(!response.ok)throw Error('原图暂不可用');
+      if(!response.ok)throw await originalFailure(response);
       const blob=await receiveOriginal(response,c.signal,(done,total)=>report({status:compatible?'delivery':'download',done,total,percent:total?(compatible?90:0)+Math.min(1,done/total)*(compatible?9:99):compatible?90:0}));if(c.signal.aborted)return;
       report({status:'decode',percent:99});
       url=URL.createObjectURL(blob);decoded=new Image();decoded.src=url;
@@ -469,7 +469,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
       if(c.signal.aborted)return;setOriginal(url);
       if(!nativeChoice)setPhase(m.original_compatible?'原图 · SDR 兼容显示':'原图');
       else setPhase(p=>p==='原生不可用 · SDR 原图'?p:'原图 · 原生色彩');
-    }catch(e){if(!c.signal.aborted){setPhase('保留 4K · 原图暂不可用');setTransfer(p=>p?{...p,status:'failed'}:p)}}})();
+    }catch(e){if(!c.signal.aborted){const reason=originalErrorText(e);setPhase('保留 4K · '+reason);setTransfer(p=>p?{...p,status:'failed',error:reason}:p)}}})();
     return()=>{c.abort();decoded?.removeAttribute('src');if(url)URL.revokeObjectURL(url)};
   },[photo.id,manifest,nativeChoice,requested,retryOriginal,preferences.ready,preferences.values.original_loading,preferences.ready?'':preferences.error]);
   const visiblePhase=original?phase:previewFailed?'预览暂不可用':source===photo.thumbnail&&source!==photo.preview&&previewReady?'保留缩略图 · 4K 暂不可用':phase;
@@ -501,7 +501,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
             {pinned ? "★ 已标记" : "☆ 标记照片"}
           </button>
           {manifest?.original&&photo.kind!=='video_candidate'&&!manifest?.placeholder&&!requested&&(!preferences.ready||preferences.values.original_loading==='on_demand')&&<button onClick={()=>setRequested(true)}>加载原图</button>}
-          {manifest?.original&&phase.includes('原图暂不可用')&&<button onClick={()=>{setRequested(true);setRetryOriginal(n=>n+1)}}>重新读取原图</button>}
+          {manifest?.original&&transfer?.status==='failed'&&<button onClick={()=>{setRequested(true);setRetryOriginal(n=>n+1)}}>重新读取原图</button>}
           <button onClick={() => {setRequested(true);setNative(!nativeChoice)}}>
             {nativeFallback?'SDR 回退':nativeChoice?'原生色彩':'SDR'}
           </button>

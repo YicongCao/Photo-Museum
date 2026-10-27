@@ -1,6 +1,7 @@
 import React,{useEffect,useRef,useState,useId} from 'react';
 import {Icon} from './icons';
 import './original-progress.css';
+import {originalErrorText} from './original-transfer.mjs';
 const BARS=160;
 const bytes=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':Math.round(n/1024)+' KB';
 export function OriginalProgress({state,label='原图就绪'}){
@@ -31,7 +32,7 @@ export function OriginalProgress({state,label='原图就绪'}){
   return()=>{clearTimeout(start);clearTimeout(end)};
  },[state.status,lit]);
  if(hidden)return <span className="original-progress-done" role="status">{label}</span>;
- const labels={waiting:'连接原图',download:'取回原图',convert:'转换中',delivery:'接收原图',decode:'解码中',ready:'原图就绪',failed:'原图暂不可用'};
+ const labels={waiting:'连接原图',download:'取回原图',convert:'转换中',delivery:'接收原图',decode:'解码中',ready:'原图就绪',failed:state.error?originalErrorText(state.error):'原图暂不可用'};
  return <div className={'original-progress '+state.status+(dismiss?' dismiss':'')} data-lit={lit} data-percent={percent}>
   <div className="original-progress-labels"><span className="original-progress-stage" role="status"><Icon name={state.status==='failed'?'connection':state.status==='ready'?'check':'download'}/>{labels[state.status]}</span><span className="original-progress-bytes">{state.done>0?bytes(state.done)+(state.total?' / '+bytes(state.total):''):''}</span><span className="original-progress-percent">{state.total||state.status==='ready'?<>{percent}<small>%</small></>:'—'}</span></div>
   <svg className="original-progress-track" viewBox="0 0 640 12" preserveAspectRatio="none" role="progressbar" aria-label="原图读取进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={state.total||['decode','ready'].includes(state.status)?percent:undefined} aria-valuetext={labels[state.status]}>
