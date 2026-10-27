@@ -5,6 +5,8 @@ description: 复验 photo-museum 媒体缓存、Gallery/P5展厅、P6策展助�
 
 # 正式媒体与馆务复验
 
+用户明确要求脚本/埋点录制演示时，见[脚本化录屏](references/showcase-recording.md)，避免录制中的识图停顿。真实素材和完整操作脚本只留忽略目录，不提交公开截图。
+
 原图暂不可用先按docs/research/original-availability.md比较受控HTTP错误、源目录浏览和新/旧服务进程的同一只读请求；不要清空正常4K或猜测媒体损坏。重启前核对付费策展/有效任务，保留会话和队列，用同一失败文件复测并检查view-work清理；单次重启恢复不证明底层系统原因。
 
 普通搜索、主体匹配模式、可撤销标签纠正及可选代表性封面见[检索与选片复验](references/search-representative.md)。
