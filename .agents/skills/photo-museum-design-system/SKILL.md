@@ -38,3 +38,5 @@ description: 修改 photo-museum 页面视觉或加载、错误、空状态、�
 展厅宫格：先查看docs/design/gallery-menu-grid-concept.html与docs/research/gallery-menu-grid.md。图标由room-menu-icons.mjs统一路径、RoomMenuIcon渲染，保持馆徽64单位/1.35细线；不另加图标库。隔离fixture运行web/tests/room-menu.mjs（十图标、二维键盘、日夜、320/390/矮屏、九展厅切换和策展入口），再回归gallery-chrome.mjs。菜单开时隐藏时间线入口以免遮挡宫格；源码CSS在museum-nav之后引入以覆盖旧列表布局。
 
 圆环加载复验：见docs/research/loading-circle.md，隔离构建后运行web/tests/loading-circle.mjs。覆盖真读取→成功消失、双缓存失败→重试、原图底栏保留4K、Dashboard预览、展厅/Settings、日夜与窄屏/矮屏和减少动态效果；故障注入用新context避免已解码图片绕过网络。PhotoLoading标准/size=small/compact分别用于主区域、浮层、行内；不复制馆徽与动画。正式/brand/loading-preview.html由Vite第二HTML入口直接引用实际组件，持续展示仅为组件预览，不添加业务假等待。
+
+单图照片横条全宽与横移：见docs/research/viewer-filmstrip-wide.md。隔离P5 fixture运行web/tests/viewer-filmstrip-wide.mjs及viewer-filmstrip.mjs；核对1920/1440/390/矮屏填充、首尾与真实集合数量、前后横移方向、快速切换、减少动态效果及无NAS原图预取。公开截图用合成照片，真实截图只放data；正式静态发布保留查看位置及后台服务。

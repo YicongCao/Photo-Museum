@@ -65,7 +65,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   const [room,setRoom]=useState(()=>roomNames[roomHint]?roomHint:roomNames[savedRooms(storageKey).room]?savedRooms(storageKey).room:'cover'),[roomMenu,setRoomMenu]=useState(false),
     [anchor,setAnchor]=useState(()=>savedRooms(storageKey).anchor || null),[roomStates,setRoomStates]=useState(()=>savedRooms(storageKey).states || {}),
     [collection,setCollection]=useState(null);
-  const roomMenuRef=useRef(null),wallPositions=useRef({});
+  const roomMenuRef=useRef(null),wallPositions=useRef({}),filmstripMotion=useRef(null);
   const [wallSequence,setWallSequence]=useState(null),[directSequence,setDirectSequence]=useState([]);
   const sequence=view==='wall'&&wallSequence?.key===(collection?.id||wallId)?wallSequence:{items:directSequence,total:directSequence.length};
   useEffect(()=>{if(photo&&view==='wall'&&sequence.items.length&&!sequence.items.some(p=>p.id===photo.id)&&sequence.items.length<sequence.total&&!sequence.busy&&!sequence.error)sequence.loadMore?.()},[photo?.id,sequence.items,sequence.busy,sequence.total,sequence.error,view]);
@@ -348,6 +348,8 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
         <Viewer
           key={photo.id}
           sequence={sequence}
+          filmstripMotion={filmstripMotion}
+          filmstripScope={collection?.id || wallId || room}
           onSelect={selectPhoto}
           changing={opening}
           photo={photo}
@@ -363,7 +365,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   );
 }
 
-function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChange,returnLabel='返回照片墙',sequence,onSelect,changing }) {
+function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChange,returnLabel='返回照片墙',sequence,onSelect,changing,filmstripMotion,filmstripScope }) {
   const preferences=usePreferences();
   const [requested,setRequested]=useState(false),[retryOriginal,setRetryOriginal]=useState(0),[nativeFallback,setNativeFallback]=useState(false);
   const [transfer,setTransfer]=useState(null);
@@ -556,7 +558,7 @@ function Viewer({ photo, api, onClose, onChanged,immersive:zoom,onImmersiveChang
         )}
         <ViewerPageButtons onTurn={turn} previous={photoIndex>0} next={photoIndex>=0&&photoIndex+1<sequence.items.length} busy={changing}/>
       </div>
-      <ViewerFilmstrip photo={photo} sequence={sequence} onSelect={onSelect} busy={changing}/>
+      <ViewerFilmstrip photo={photo} sequence={sequence} onSelect={onSelect} busy={changing} motion={filmstripMotion} scope={filmstripScope}/>
       <div className="viewer-bottom">
         {transfer?<OriginalProgress key={transfer.id} state={transfer} label={visiblePhase}/>:<span aria-live="polite">{visiblePhase.includes("读取中")?<PhotoLoading compact label={visiblePhase}/>:<MediaStatus failed={/暂不可用|失败|无法/.test(visiblePhase)}>{visiblePhase}</MediaStatus>}</span>}
         <span>
