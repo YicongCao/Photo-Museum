@@ -283,6 +283,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
           {room==='cover'&&<div className={"cover-scene scene-layer " + (view!=="tunnel" || photo ? "scene-inactive" : "")} inert={view!=="tunnel" || !!photo}>
             <Tunnel
               ref={tunnel}
+              active={view==='tunnel'&&!photo}
               style={coverStyle}
               activities={activities}
               index={index}

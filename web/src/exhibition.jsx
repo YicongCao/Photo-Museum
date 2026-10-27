@@ -16,6 +16,7 @@ import { Icon } from "./icons";
 import {coverLayout,coverPose,coverWindow} from "./cover-layout";
 import {planCoverMosaic} from './cover-mosaic';
 import './cover-mosaic.css';
+import {CoverMotion} from './cover-motion';
 export function FullscreenButton({ target, className = "" }) {
   const [active, setActive] = useState(false);
   useEffect(() => {
@@ -57,7 +58,7 @@ export function FullscreenButton({ target, className = "" }) {
 }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const Tunnel = forwardRef(function Tunnel(
-  { activities, index, onIndex, onOpen, style="classic" },
+  { activities, index, onIndex, onOpen, style="classic", active=true },
   ref,
 ) {
   const stage = useRef(null),
@@ -66,25 +67,21 @@ export const Tunnel = forwardRef(function Tunnel(
     stride = useRef(720),
     gesture = useRef(null),
     frame = useRef(0),
-    settleTimer = useRef(null),
+    motion = useRef(null),
+    activityCount = useRef(activities.length),
     measuredWidth = useRef(null),
     resizing = useRef(false);
   const [position, setPosition] = useState(index),
     [viewport, setViewport] = useState({width:1000,height:700});
   const {width,height}=viewport;
-  const goTo = (i) => {
-    clearTimeout(settleTimer.current);
-    scroll.current?.scrollTo({
-      left: clamp(i, 0, activities.length - 1) * stride.current,
-      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "instant"
-        : "smooth",
-    });
-  };
-  const settle = () => {
-    if (!gesture.current && scroll.current)
-      goTo(Math.round(scroll.current.scrollLeft / stride.current));
-  };
+  activityCount.current=activities.length;
+  if(!motion.current)motion.current=new CoverMotion({
+    read:()=>scroll.current?scroll.current.scrollLeft/stride.current:pos.current,
+    write:p=>{if(scroll.current&&!resizing.current)scroll.current.scrollTo({left:p*stride.current,behavior:'instant'})},
+    maximum:()=>Math.max(0,activityCount.current-1),
+    reduced:()=>matchMedia('(prefers-reduced-motion: reduce)').matches,
+  });
+  const goTo = i=>motion.current.goTo(i);
   useImperativeHandle(
     ref,
     () => ({ goTo, move: (n) => goTo(((Math.round(pos.current)+n)%activities.length+activities.length)%activities.length) }),
@@ -119,19 +116,32 @@ export const Tunnel = forwardRef(function Tunnel(
       const delta =
         (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) *
         (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? node.clientWidth : 1);
-      // Each input interrupts settling; wait for the end of trackpad momentum.
-      clearTimeout(settleTimer.current);
-      scroll.current.scrollTo({left:scroll.current.scrollLeft + delta,behavior:"instant"});
-      settleTimer.current=setTimeout(settle,180);
+      motion.current.wheel(delta/stride.current);
     };
     node.addEventListener("wheel", wheel, { passive: false });
     return () => {
       node.removeEventListener("wheel", wheel);
       cancelAnimationFrame(frame.current);
       frame.current=0;
-      clearTimeout(settleTimer.current);
+      motion.current.cancel();
     };
   }, [activities.length]);
+  useEffect(()=>{
+    const stopHidden=()=>{
+      if(!document.hidden)return;
+      motion.current.finish();
+      const g=gesture.current;gesture.current=null;
+      if(g&&stage.current?.hasPointerCapture(g.id))stage.current.releasePointerCapture(g.id);
+    };
+    document.addEventListener('visibilitychange',stopHidden);
+    return()=>document.removeEventListener('visibilitychange',stopHidden);
+  },[]);
+  useEffect(()=>{
+    if(active)return;
+    motion.current.finish();
+    const g=gesture.current;gesture.current=null;
+    if(g&&stage.current?.hasPointerCapture(g.id))stage.current.releasePointerCapture(g.id);
+  },[active]);
   useLayoutEffect(() => {
     scroll.current.scrollTo({left:pos.current * stride.current,behavior:"instant"});
     resizing.current = false;
@@ -144,7 +154,7 @@ export const Tunnel = forwardRef(function Tunnel(
     let wanted=pos.current;
     if(moved&&next===index&&next>=0)wanted=index+(pos.current-oldIndex);
     else if(Math.round(pos.current)!==index)wanted=index;
-    if(Math.abs(wanted-pos.current)>.0001){pos.current=wanted;scroll.current.scrollTo({left:wanted*stride.current,behavior:'instant'});setPosition(wanted)}
+    if(Math.abs(wanted-pos.current)>.0001){motion.current.cancel();pos.current=wanted;scroll.current.scrollTo({left:wanted*stride.current,behavior:'instant'});setPosition(wanted)}
   },[index,activities]);
   const update = () => {
     if (frame.current) return;
@@ -173,9 +183,11 @@ export const Tunnel = forwardRef(function Tunnel(
     gesture.current = null;
     if (stage.current.hasPointerCapture(e.pointerId))
       stage.current.releasePointerCapture(e.pointerId);
-    settle();
-    if (e.type !== "pointercancel" && !g.moved && g.activity != null)
+    if (e.type !== "pointercancel" && !g.moved && g.activity != null){
+      motion.current.goTo(activities.findIndex(a=>a.id===g.activity));
       onOpen(g.activity);
+    }
+    else motion.current.settle(e.type!=='pointercancel'&&performance.now()-g.time<80?g.velocity:0);
   };
   const layout=coverLayout(width,height,activities.length,position,style),
     {count,cover:coverWidth,ratio,top}=layout,
@@ -190,7 +202,7 @@ export const Tunnel = forwardRef(function Tunnel(
       data-position={position.toFixed(3)}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
-        clearTimeout(settleTimer.current);
+        motion.current.cancel();
         scroll.current.scrollTo({
           left: scroll.current.scrollLeft,
           behavior: "instant",
@@ -199,6 +211,8 @@ export const Tunnel = forwardRef(function Tunnel(
           id: e.pointerId,
           x: e.clientX,
           lastX: e.clientX,
+          time: performance.now(),
+          velocity: 0,
           start: scroll.current.scrollLeft,
           moved: false,
           activity: e.target.closest("[data-activity]")?.dataset.activity,
@@ -209,7 +223,12 @@ export const Tunnel = forwardRef(function Tunnel(
         const g = gesture.current;
         if (!g || g.id !== e.pointerId) return;
         const dx = e.clientX - g.x;
-        g.lastX = e.clientX;
+        const now=performance.now(),dt=now-g.time;
+        if(dt>0){
+          const speed=(g.lastX-e.clientX)/stride.current/Math.max(8,dt);
+          g.velocity=dt>80?speed:g.velocity*.3+speed*.7;
+        }
+        g.lastX = e.clientX;g.time=now;
         if (Math.abs(dx) > 6) g.moved = true;
         if (g.moved) scroll.current.scrollLeft = g.start - dx;
       }}
@@ -245,7 +264,7 @@ export const Tunnel = forwardRef(function Tunnel(
               tabIndex={i === index ? 0 : -1}
               aria-label={"展开活动 " + a.event.theme}
               onClick={(e) => {
-                if (e.detail === 0) onOpen(a.id);
+                if (e.detail === 0) {motion.current.goTo(i);onOpen(a.id);}
               }}
               style={{
                 width:coverWidth,height:coverWidth/ratio,top,left:origin+"%",

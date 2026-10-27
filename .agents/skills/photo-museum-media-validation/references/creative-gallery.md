@@ -26,3 +26,6 @@
 头图比例复验：`node --test web/tests/cover-mosaic.test.mjs web/tests/cover-layout.test.mjs`，再以最新构建运行8793及`node web/tests/cover-hero.mjs`。使用真实内在宽高比匹配元数据的合成SVG头图，测量实际DOM槽位比例和裁切保留比例，检查四样式/手机、十图无重叠、倒影同构、原始排名顺序和小集合。截图须等待所有封面/镜面图片complete且naturalWidth>0，不能只等快速SVG头图就保存尚未加载的小照片空框。见docs/research/cover-hero-validation.md。
 
 英文标题复验运行`node web/tests/title-typography.mjs`，再运行现有timeline-preview回归。FontFaceSet须确认本地字体已加载；用浏览器Canvas在相同坐标分别绘制原字体栈及新字体栈，确认中文和数字像素/宽度不变、英文字母确实改变。检查320/390/桌面/矮屏四类标题栏的控件边界与交叠，字体请求失败仍可操作。OFL文件须出现在最终dist/assets/licenses中，字体与许可证SHA256须匹配manifest；不请求线上字体、不为字体核验发送真实LLM请求。见docs/research/title-typography.md。
+
+
+Cover Flow减速停靠复验：先读docs/research/coverflow-deceleration.md，运行cover-motion.test.mjs、cover-layout.test.mjs和random-cover.test.mjs。用隔离fixture以真实UI输入采样`.tunnel-stage[data-position]`，正/反向应单调到整数，中央rotateY(0deg)，反向或增强输入可立即打断；拖动期间不漂移，窄屏同样落位。尾段识别不能重复叠加OS惯性，普通滚轮短兜底、减少动态效果、边界、隐藏/卸载和照片流返回分别验证。旧coverflow-settle断言“正向小滚动最终向后归位”已失效；改过脚本但未运行时不得声称脚本验收通过。
