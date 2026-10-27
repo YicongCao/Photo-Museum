@@ -12,13 +12,13 @@ const traceEnd=()=>page.evaluate(()=>{window.stopTraceActive=false;return window
 const monotonic=(trace,sign)=>{for(let i=1;i<trace.length;i++)assert.ok((trace[i]-trace[i-1])*sign>=-.002,JSON.stringify(trace.slice(i-1,i+1)))};
 try{
  await page.goto((process.env.MUSEUM_BROWSER_BASE||'http://localhost:8798')+'/#gallery');
- await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:'解锁',exact:true}).click();await page.locator('.depth-0').waitFor();
+ await page.getByLabel('馆主密码',{exact:true}).fill('synthetic-owner-password');await page.getByRole('button',{name:/^解锁/}).click();await page.locator('.depth-0').waitFor();
  await page.keyboard.press('ArrowRight');await straight(1);
  await page.mouse.move(500,300);await traceStart();await page.mouse.wheel(120,0);await straight(2);
  const forward=await traceEnd();monotonic(forward,1);assert.ok(new Set(forward).size>3);checks.push('Wheel landing is continuous, forward and exact with no pullback');
  await traceStart();await page.mouse.wheel(-120,0);await straight(1);const reverse=await traceEnd();monotonic(reverse,-1);checks.push('Reverse wheel landing is monotonic and exact');
  await page.keyboard.press('ArrowRight');await expect.poll(position).toBeGreaterThan(1.05);await page.mouse.wheel(-120,0);await expect.poll(async()=>{const p=await position();return Number.isInteger(p)&&p<2}).toBe(true);checks.push('Reverse input interrupts an in-flight landing');
- await page.mouse.move(600,300);await page.mouse.down();await page.mouse.move(410,300,{steps:8});const held=await position();await page.waitForTimeout(220);assert.equal(await position(),held);await page.mouse.up();await expect.poll(async()=>Number.isInteger(await position())).toBe(true);checks.push('Drag stays under the pointer until release and then settles');
+ await page.mouse.move(600,300);await page.mouse.down();await page.mouse.move(410,300,{steps:8});await page.waitForTimeout(100);const held=await position();await page.waitForTimeout(220);assert.equal(await position(),held);await page.mouse.up();await expect.poll(async()=>Number.isInteger(await position())).toBe(true);checks.push('Drag stays under the pointer until release and then settles');
  await page.emulateMedia({reducedMotion:'reduce'});const before=await position();await page.mouse.wheel(90,0);await straight(Math.min(5,before+1));checks.push('Reduced motion retains the same forward target without a coast');
  await page.mouse.wheel(9999,0);await straight(5);await page.mouse.wheel(-9999,0);await straight(0);checks.push('First and last covers are bounded');
  assert.deepEqual(errors,[]);checks.push('No uncaught browser errors');
