@@ -10,17 +10,27 @@ import {curatorTimeline} from './curator-timeline.js';
 export const exhibitionRooms={cover:'Cover Flow',wall:'照片墙',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道',rings:'人生年轮',constellation:'记忆星图',scroll:'记忆长卷',revisit:'故地重游'};
 const statuses={queued:'等待中',running:'策展中',preparing:'准备展厅',completed:'已结束',failed:'失败',cancelled:'已取消',interrupted:'已中断'};
 const terminal=s=>['completed','failed','cancelled','interrupted'].includes(s);
+const routeRun=()=>new URLSearchParams(location.hash.split('?')[1]).get('run') || null;
 
 export function Curator({api,onLogout}){
  const [provider,setProvider]=useState(null),[history,setHistory]=useState([]),
  [run,setRun]=useState(null),[events,setEvents]=useState([]),[prompt,setPrompt]=useState(''),[room,setRoom]=useState('auto'),
  [showRoom,setShowRoom]=useState('wall'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[connection,setConnection]=useState(''),
  [exhibition,setExhibition]=useState(null),[follow,setFollow]=useState(false),[imageStates,setImageStates]=useState({});
- const [runId,setRunId]=useState(()=>new URLSearchParams(location.hash.split('?')[1]).get('run'));
- const currentId=useRef(runId),seen=useRef(new Set()),scroll=useRef(null),stick=useRef(true),processScroll=useRef(null),processStick=useRef(true);currentId.current=runId;
+ const [runId,setRunId]=useState(routeRun);
+ const currentId=useRef(runId),entryEpoch=useRef(0),seen=useRef(new Set()),scroll=useRef(null),stick=useRef(true),processScroll=useRef(null),processStick=useRef(true);currentId.current=runId;
+ function selectConversation(id){
+  id=id || null;entryEpoch.current++;currentId.current=id;setRunId(id);setRun(null);setEvents([]);setExhibition(null);setImageStates({});setPrompt('');setFollow(false);setError('');setConnection('');setBusy(false);
+ }
+ useEffect(()=>{
+  // A bare entry is always a new conversation; explicit run links are history replay.
+  const changed=()=>{const id=routeRun();if(location.hash.split('?')[0]==='#curator'&&id!==currentId.current)selectConversation(id)};
+  window.addEventListener('hashchange',changed);
+  return()=>{entryEpoch.current++;window.removeEventListener('hashchange',changed)};
+ },[]);
  const refreshHistory=()=>api('/curator/runs').then(d=>setHistory(d.items));
  useEffect(()=>{const c=new AbortController();Promise.all([api('/curator/provider','GET',undefined,{signal:c.signal}),api('/curator/runs','GET',undefined,{signal:c.signal})]).then(([p,h])=>{
-  setProvider(p);setHistory(h.items);if(!currentId.current&&h.items.length)setRunId(h.items[0].id)
+  if(!c.signal.aborted){setProvider(p);setHistory(h.items)}
  }).catch(e=>{if(!c.signal.aborted)setError(e.message)});return()=>c.abort()},[]);
  useEffect(()=>{
   if(!runId)return;const c=new AbortController();seen.current=new Set();stick.current=true;processStick.current=true;setEvents([]);setExhibition(null);setImageStates({});setError('');setConnection('连接中');
@@ -28,7 +38,7 @@ export function Curator({api,onLogout}){
   const load=async()=>{const r=await api('/curator/runs/'+runId,'GET',undefined,{signal:c.signal});if(c.signal.aborted||currentId.current!==runId)return;setRun(r);
    if(r.exhibition_id){const d=await api('/curator/exhibitions/'+r.exhibition_id,'GET',undefined,{signal:c.signal});if(!c.signal.aborted&&currentId.current===runId){setExhibition(d);setShowRoom(d.room)}}
   };
-  load().catch(e=>{if(!c.signal.aborted)setError(e.message)});
+  load().catch(e=>{if(!c.signal.aborted&&currentId.current===runId)setError(e.message)});
   const source=new EventSource('/api/curator/runs/'+encodeURIComponent(runId)+'/stream');
   source.onopen=()=>{if(!c.signal.aborted&&currentId.current===runId)setConnection('已连接')};source.onerror=()=>{if(!c.signal.aborted&&currentId.current===runId)setConnection('重连中')};
   source.onmessage=e=>{if(c.signal.aborted||currentId.current!==runId)return;try{const item=JSON.parse(e.data);if(seen.current.has(item.id))return;seen.current.add(item.id);setEvents(p=>[...p,item]);
@@ -53,17 +63,17 @@ export function Curator({api,onLogout}){
  const active=run&&!terminal(run.status),thumbnails=Object.values(imageStates),loaded=thumbnails.filter(v=>v==='loaded').length;
  useEffect(()=>{if(scroll.current&&stick.current)scroll.current.scrollTop=scroll.current.scrollHeight},[answer,exhibition,progress?.checked]);
  useEffect(()=>{if(processScroll.current&&processStick.current)processScroll.current.scrollTop=processScroll.current.scrollHeight},[events]);
- async function submit(e){e.preventDefault();if(!prompt.trim()||active||busy)return;setBusy(true);setError('');try{
-  const r=await api('/curator/runs','POST',{prompt,room,...(follow&&run?.id?{parent_run_id:run.id}:{})});currentId.current=r.id;setEvents([]);setExhibition(null);setImageStates({});setRun(r);setRunId(r.id);setPrompt('');setFollow(false);refreshHistory().catch(e=>setError(e.message))
- }catch(e){setError(e.message)}finally{setBusy(false)}}
- async function cancel(){setError('');try{setRun(await api('/curator/runs/'+runId+'/cancel','POST',{}))}catch(e){setError(e.message)}}
+ async function submit(e){e.preventDefault();if(!prompt.trim()||active||busy)return;const epoch=entryEpoch.current;setBusy(true);setError('');try{
+  const r=await api('/curator/runs','POST',{prompt,room,...(follow&&run?.id?{parent_run_id:run.id}:{})});if(epoch!==entryEpoch.current)return;currentId.current=r.id;setEvents([]);setExhibition(null);setImageStates({});setRun(r);setRunId(r.id);setPrompt('');setFollow(false);refreshHistory().catch(e=>{if(epoch===entryEpoch.current)setError(e.message)})
+ }catch(e){if(epoch===entryEpoch.current)setError(e.message)}finally{if(epoch===entryEpoch.current)setBusy(false)}}
+ async function cancel(){const id=runId;setError('');try{const r=await api('/curator/runs/'+id+'/cancel','POST',{});if(currentId.current===id)setRun(r)}catch(e){if(currentId.current===id)setError(e.message)}}
  function show(){if(!exhibition)return;location.hash='gallery?exhibit='+exhibition.id+'&room='+showRoom}
  return <div className="curator-shell" data-run-id={run?.id}>
   <header className="curator-header"><div><h1>策展助理</h1><button className="curator-provider-button" aria-label={'Provider '+(provider?.model || '')} onClick={()=>{location.hash='settings?tab=llm&from='+encodeURIComponent(location.hash.slice(1))}} disabled={!provider}><Icon name="server"/><span className="curator-provider-model">{provider?.model || 'Provider'}</span><span>{provider?.configured&&provider?.enabled?'已配置':'待配置'}</span></button></div>
    <MuseumNav current="curator" onLogout={onLogout}/>
   </header>
   <div className="curator-layout"><section className="curator-conversation" aria-label="策展对话">
-   <div className="curator-conversation-head"><select aria-label="策展记录" value={runId || ''} onChange={e=>{setRunId(e.target.value);setFollow(false)}}><option value="">策展记录</option>{history.map(r=><option key={r.id} value={r.id}>{new Date(r.created*1000).toLocaleDateString()} · {r.prompt.slice(-40).replaceAll('\n',' ')}</option>)}</select>{run&&<span className={'curator-state '+run.status}><Icon name={active?'pulse':run.status==='completed'?'check':'alert'}/>{statuses[run.status]}</span>}</div>
+   <div className="curator-conversation-head"><select aria-label="策展记录" value={runId || ''} onChange={e=>{const id=e.target.value;selectConversation(id);window.history.replaceState(null,'',id?'#curator?run='+encodeURIComponent(id):'#curator')}}><option value="">新对话</option>{history.map(r=><option key={r.id} value={r.id}>{new Date(r.created*1000).toLocaleDateString()} · {r.prompt.slice(-40).replaceAll('\n',' ')}</option>)}</select>{run&&<span className={'curator-state '+run.status}><Icon name={active?'pulse':run.status==='completed'?'check':'alert'}/>{statuses[run.status]}</span>}</div>
    <div className="curator-messages" ref={scroll} onScroll={e=>{const n=e.currentTarget;stick.current=n.scrollHeight-n.scrollTop-n.clientHeight<60}}>
     {run&&<article className="curator-user"><small>要求</small><p>{run.prompt}</p></article>}
     {(answer||run?.answer)&&<article className="curator-response"><small>{active?'模型输出':'策展结果'}</small><p>{run?.status==='completed'?(run.answer || answer):answer || run?.answer}</p></article>}

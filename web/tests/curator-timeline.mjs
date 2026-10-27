@@ -15,6 +15,18 @@ try{
  const posts=requests.filter(r=>r.method==='POST'&&r.url.endsWith('/curator/runs')).length;
  await page.reload();await page.locator('.curator-result').waitFor();assert.deepEqual(await page.locator('[data-event-id]').evaluateAll(es=>es.map(e=>({id:Number(e.dataset.eventId),kind:e.dataset.kind}))),kinds);assert.equal(requests.filter(r=>r.method==='POST'&&r.url.endsWith('/curator/runs')).length,posts);
  checks.push('Authenticated reload replays the same chronology without starting another model request');
+ await page.goto(base+'/#curator');await page.getByLabel('策展记录',{exact:true}).locator('option').filter({hasText:fresh.prompt.slice(-40)}).waitFor({state:'attached'});
+ assert.equal(await page.locator('.curator-user,.curator-result,[data-event-id]').count(),0);
+ assert.equal(await page.getByLabel('策展记录',{exact:true}).inputValue(),'');
+ assert.equal(await page.getByLabel('策展要求',{exact:true}).inputValue(),'');
+ await page.getByLabel('策展记录',{exact:true}).selectOption(fresh.id);await page.locator('.curator-result').waitFor();
+ await page.getByLabel('策展要求',{exact:true}).fill('尚未提交的合成草稿');
+ await page.getByLabel('策展记录',{exact:true}).selectOption('');
+ assert.equal(await page.locator('.curator-user,.curator-result,[data-event-id]').count(),0);
+ assert.equal(await page.getByLabel('策展要求',{exact:true}).inputValue(),'');
+ assert.equal(new URL(page.url()).hash,'#curator');
+ assert.equal(requests.filter(r=>r.method==='POST'&&r.url.endsWith('/curator/runs')).length,posts);
+ checks.push('Bare entry with history stays blank; history is manually replayable; New conversation clears draft, result and event stream without another model request');
  // Controlled SSE events supplement the real fixture with waiting, reconnect and stop states.
  const controlled=await browser.newContext({storageState:await context.storageState(),viewport:{width:1500,height:940}}),p=await controlled.newPage();p.on('pageerror',e=>errors.push(e.message));
  await p.addInitScript(()=>{
