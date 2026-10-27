@@ -2,7 +2,31 @@
 
 一部可以不断重看的“人生照片集”。以活动主题作为展览，将照片、Live Photo 和视频组织成个人博物馆。服务目标是自托管于 Mac、内网 Linux 或 Docker，从 NAS WebDAV 只读取得成片。
 
-**当前阶段：P2–P5 本机软件链路与 P6 策展助理首版已实现，真实队列持续运行，待用户验收。** [策展助理](http://127.0.0.1:8790/#curator)可用自然语言整理索引、查看模型/工具过程并Show至六种展厅；首次Gallery仍为经典Cover Flow。物理HDR/真实移动设备和全库处理进度见[STATUS](docs/STATUS.md)。
+## 界面预览
+
+以下为 **3360 × 1440（21:9）** 的实际运行截图，使用馆主授权展示的「2022-10-麻涌赛道」样本。Cover Flow 两侧其他活动在截图预览中做了隐私模糊；正式界面没有这层模糊。
+
+**Cover Flow · 以活动为封面**
+
+![Cover Flow，2022-10-麻涌赛道](docs/images/coverflow-21x9.webp)
+
+**照片流 · 按原始比例横向铺开**
+
+![活动照片流，2022-10-麻涌赛道](docs/images/photo-wall-21x9.webp)
+
+**单图查看 · 原图与照片档案**
+
+![单张照片查看与EXIF档案](docs/images/photo-viewer-21x9.webp)
+
+## 当前能力
+
+- 只读 WebDAV、可暂停恢复的增量刮削、本地 SQLite、受预算控制的缩略图与 4K 缓存。
+- Cover Flow、照片流、暗房显影，以及日历、离线地图、器材馆、时空隧道等展厅。
+- 本地人物、主体、摄影主题与神经美学分析；人物命名和人工纠正保留在本地。
+- 普通条件搜索与关键词词库、可撤销标签确认/排除；可选活动代表性精选，并排比较评分 Top10。
+- 可配置 LLM 策展助理，通过本地索引工具筛选、统计并创建展览。
+
+**当前阶段：P2–P6 首版及普通检索、可选代表性精选已实现。** 真实队列与软件验证记录见 [STATUS](docs/STATUS.md)。原生 HDR 的终端覆盖、真实移动设备和主观识别/选片质量仍需单独验收。
 
 最新视觉与交付顺序：[ADR 0005](docs/decisions/0005-p5-exhibition-rooms.md) · [纯黑/黄褐设计语言](docs/design/visual-language.md) · [P5验收与截图](docs/research/p5-exhibition-validation.md)。React/DOM、SVG与CSS透视实现沉浸观展，右侧timeline为年/月/活动三级。
 

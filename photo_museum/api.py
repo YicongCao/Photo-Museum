@@ -385,6 +385,8 @@ def create_app(directory=None, dav_factory=WebDAV):
     register_gallery(app, db, owner)
     from .exhibitions import register as register_exhibitions
     register_exhibitions(app, db, owner)
+    from .search import register as register_search
+    register_search(app, db, owner)
     from .curator import register as register_curator
     register_curator(app, db, security, owner)
     from .settings_api import register as register_settings

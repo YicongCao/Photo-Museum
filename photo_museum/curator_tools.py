@@ -30,6 +30,7 @@ class Filters(Input):
     style:list[str]=Field(default_factory=list,max_length=20)
     topic:list[str]=Field(default_factory=list,max_length=20)
     subject:list[str]=Field(default_factory=list,max_length=20)
+    subject_mode:Literal['primary','all','confirmed']='all'
     keyword_ids:list[str]=Field(default_factory=list,max_length=20,description='lookup_keywords返回的标准ID；同domain多个ID为OR，不同domain为AND，不自动扩展相关概念')
     @field_validator('keyword_ids')
     @classmethod
@@ -176,6 +177,7 @@ def schema():
         'orientation':'landscape/portrait/square，按有效宽高','exposure':'真实ISO、光圈、快门秒数、实际/35mm等效焦距，逐文件事实不能近邻复制',
         'color':'源色域、位深、HDR标记和sRGB假定；浏览预览统一SDR/sRGB'},'rooms':ROOMS,
         'filters_schema':Filters.model_json_schema(),'privacy':'无图片、文件名、NAS路径、精确GPS、人脸特征或人物库姓名；只检索本地现有索引',
+        'subject_matching':'subject_mode=primary仅模型首选及人工确认，all包含其余候选，confirmed仅人工确认主体；人工排除始终不命中。主体明确的请求优先primary，无结果先报告，不偷偷放宽。候选顺位/模型分数不是正确率。',
         'keyword_lookup':'先用lookup_keywords查词，使用返回的id放入filters.keyword_ids；同域OR、跨域AND。来源标签仍是机器候选，相关概念不自动扩展。',
         'logic':'字段间AND，字段内多个值OR；未知不当命中。style/topic/subject是候选不是确定事实。'}
 
@@ -218,7 +220,7 @@ class LocalTools:
                 AND json_extract(a.data_json,'$.input_media_version') IS json_extract(m.data_json,'$.version')
                 AND json_extract(a.data_json,'$.error') IS NULL"""+suffix('a'),params):
                 if r['asset_id'] in photos:
-                    photos[r['asset_id']]['subjects']=[{'id':str(t.get('synset') or (t['class_index'] if t.get('class_index') is not None else t.get('label',''))),'label':t.get('label_zh') or t.get('label',''),'raw_label':t.get('label',''),'taxonomy':t.get('taxonomy')} for t in localize_tags(json.loads(r['tags'] or '[]'))]
+                    photos[r['asset_id']]['subjects']=[{'id':str(t.get('synset') or (t['class_index'] if t.get('class_index') is not None else t.get('label',''))),'label':t.get('label_zh') or t.get('label',''),'raw_label':t.get('label',''),'taxonomy':t.get('taxonomy'),'rank':i+1,'model_score':t.get('confidence')} for i,t in enumerate(localize_tags(json.loads(r['tags'] or '[]')))]
                     photos[r['asset_id']]['lexicon_versions']['visual']=r['version']
             for r in c.execute("""SELECT a.asset_id,a.version,a.data_json FROM analysis a JOIN entries e ON e.id=a.asset_id AND e.revision=a.revision
                 JOIN media_info m ON m.asset_id=e.id AND m.revision=e.revision JOIN media_jobs q ON q.asset_id=e.id AND q.revision=e.revision
@@ -231,11 +233,30 @@ class LocalTools:
                 for source,target in [('style','styles'),('topic','topics')]:
                     photos[r['asset_id']][target]=[{'id':t['id'],'label':t['label'],'similarity':t.get('similarity')} for t in (d.get(source,{}).get('labels',[]) if d.get(source,{}).get('status')!='uncertain' else []) if isinstance(t,dict) and t.get('id') and t.get('label')]
             for r in c.execute("""SELECT f.asset_id,p.label,count(*) count FROM faces f JOIN entries e ON e.id=f.asset_id AND e.revision=f.revision
-                JOIN people p ON p.id=f.person_id WHERE e.missing=0 AND e.scope_excluded=0"""+suffix('f')+""" GROUP BY f.asset_id,p.id""",params):
+                JOIN people p ON p.id=f.person_id WHERE e.missing=0 AND e.scope_excluded=0
+                AND (f.manual=1 OR f.model=coalesce((SELECT value FROM settings WHERE key='analysis_version'),f.model))"""+suffix('f')+""" GROUP BY f.asset_id,p.id""",params):
                 if r['asset_id'] in photos:
                     p=photos[r['asset_id']];p['people_count']+=r['count']
                     if r['label']:p['people_terms'].append(r['label'])
-        for p in photos.values():p['keyword_ids']=list(photo_terms(p))
+            for r in c.execute('SELECT k.* FROM keyword_reviews k JOIN entries e ON e.id=k.asset_id AND e.revision=k.revision WHERE 1=1'+suffix('k'),params):
+                p=photos.get(r['asset_id'])
+                if not p:continue
+                domain=r['keyword_id'].split(':',1)[0];field={'subject':'subjects','topic':'topics','style':'styles'}.get(domain)
+                if not field:continue
+                p[field]=[t for t in p[field] if r['keyword_id'] not in photo_terms({field:[t]})]
+                if r['verdict']==1:p[field].append(json.loads(r['tag_json'])|{'confirmed':True})
+        subject_ids={}
+        for p in photos.values():
+            p['keyword_ids']=list(photo_terms(p))
+            other=[k for k in p['keyword_ids'] if not k.startswith('subject:')]
+            for mode in ('primary','confirmed'):
+                tags=[t for t in p['subjects'] if t.get('confirmed') or mode=='primary' and t.get('rank')==1]
+                ids=[]
+                for t in tags:
+                    key=(t['id'],t['label'],t.get('taxonomy'))
+                    if key not in subject_ids:subject_ids[key]=list(photo_terms({'subjects':[t]}))
+                    ids.extend(subject_ids[key])
+                p[mode+'_keyword_ids']=other+ids
         self.photos=list(photos.values());return self.photos
     def values(self,p,field):
         if field=='year':return [p['period'][:4]] if p['period'] else []
@@ -254,9 +275,13 @@ class LocalTools:
                         values=list(dict.fromkeys([*values,*aliases]))
             return values
         if field in ('style','topic','subject'):
-            return [str(t[k]) for t in p[{'style':'styles','topic':'topics','subject':'subjects'}[field]] for k in ('id','label')]
+            return [str(t[k]) for t in p[{'style':'styles','topic':'topics','subject':'subjects'}[field]] for k in ('id','label','raw_label') if t.get(k)]
         raise ValueError('分类字段无效')
     def matches(self,p,f):
+        if f.subject_mode!='all':
+            p=dict(p,subjects=[t for t in p['subjects'] if t.get('confirmed') or f.subject_mode=='primary' and t.get('rank')==1])
+            p['keyword_ids']=p.get(f.subject_mode+'_keyword_ids')
+            if p['keyword_ids'] is None:p['keyword_ids']=list(photo_terms(p))
         groups=defaultdict(set)
         for identifier in f.keyword_ids:groups[identifier.split(':',1)[0]].add(identifier)
         if any(not ids.intersection(p.get('keyword_ids') or photo_terms(p)) for ids in groups.values()):return False

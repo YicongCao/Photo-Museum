@@ -1,5 +1,5 @@
 import React,{createContext,useCallback,useContext,useEffect,useState} from 'react';
-export const defaults={gps_mode:'offline',gps_use_inferred:true,gps_max_distance_km:100,original_loading:'auto',hdr_display:'sdr',cover_style:'classic',revision:0};
+export const defaults={gps_mode:'offline',gps_use_inferred:true,gps_max_distance_km:100,original_loading:'auto',hdr_display:'sdr',cover_style:'classic',cover_selection:'top10',revision:0};
 const Context=createContext({values:defaults,ready:false,error:'',refresh:()=>{},update:()=>{}});
 export const usePreferences=()=>useContext(Context);
 export function PreferencesProvider({api,children}){

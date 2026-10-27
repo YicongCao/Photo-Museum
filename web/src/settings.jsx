@@ -8,6 +8,7 @@ import {PeopleSettings} from './people-settings';
 import {usePreferences} from './preferences';
 import './settings.css';
 import {MuseumNav} from './museum-nav';
+import {CoverSelectionPreview} from './cover-selection';
 import {coverStyles} from './cover-layout';
 import './cover-settings.css';
 const tabs={sources:['folder','文件源'],llm:['server','LLM Provider'],gps:['pin','GPS 地址'],display:['display','照片显示'],cache:['thumbnail','缓存'],people:['face','面孔与姓名'],lexicon:['topic','关键词词库']};
@@ -47,12 +48,14 @@ function PreferenceForm({kind,api,reload,geography,paused}){
   <p className="settings-note">离线解析，不上传 GPS；地址为最近城市，不制造街道。保存后在本地增量更新已有地址，不读取 NAS。</p>
  </>:<>
   <fieldset className="cover-style-options"><legend>Cover Flow 样式</legend><div role="radiogroup" aria-label="Cover Flow 样式">{Object.entries(coverStyles).map(([id,label])=><label key={id} className={'cover-style-choice '+(form.cover_style===id?'chosen':'')}><input type="radio" name="cover_style" value={id} checked={(form.cover_style || 'classic')===id} onChange={()=>set('cover_style',id)}/><span className={'cover-style-sketch sketch-'+id} aria-hidden="true">{[-2,-1,0,1,2].map(n=><i key={n} style={{'--n':n,'--a':Math.abs(n)}}><b/><em/><em/><em/></i>)}</span><span>{label}</span></label>)}</div></fieldset>
+  <fieldset className="cover-selection-options"><legend>封面选片</legend>{[['top10','美学 Top10','优先单张评分；本活动美学未补齐时整组回退技术分'],['representative','活动代表性精选','保留最高分头图，兼顾拍摄时段、画面差异与主体候选']].map(([id,label,detail])=><label key={id} className="settings-check"><input type="radio" name="cover_selection" checked={(form.cover_selection||'top10')===id} onChange={()=>set('cover_selection',id)}/><span>{label}<small style={{display:'block',marginTop:6,color:'#a9a49c'}}>{detail}</small></span></label>)}</fieldset>
   <label>原图读取<select aria-label="原图读取" value={form.original_loading} onChange={e=>set('original_loading',e.target.value)}><option value="auto">4K 后自动读取原图</option><option value="on_demand">点按后读取原图</option></select></label>
   <label>HDR / 原文件显示<select aria-label="HDR / 原文件显示" value={form.hdr_display} onChange={e=>set('hdr_display',e.target.value)}><option value="sdr">准确 SDR 优先</option><option value="native_if_supported">设备支持时尝试原生 HDR（实验）</option></select></label>
   <p className="settings-note">缩略图与 4K 始终为 sRGB / SDR。原生模式按设备能力尝试，解码失败回退 SDR；不改变缓存、不重刮。</p>
  </>}
  <div className="settings-actions"><button disabled={busy||!preferences.ready}>保存偏好</button>{saved&&<SavedStatus/>}</div>{error&&<StatusNotice error={error} onRetry={async()=>{try{const value=await preferences.refresh();setForm(value);setError('')}catch(e){setError(e.message)}}}/>}
  </form>
+ {kind==='display'&&<CoverSelectionPreview api={api}/>}
  {kind==='gps'&&geography&&<section className="settings-geography"><h3>地址处理</h3><div className="settings-data"><span>{!geography.available?'离线数据或分析进程未就绪':geography.paused?'地址解析已暂停':paused?'随媒体处理暂停':geography.awaiting_worker?'等待进程应用设置':geography.pending?'后台更新中':'当前规则已处理'}</span></div>{geography.pending!=null&&<><progress value={geography.completed} max={geography.total||1}/><p>{geography.completed} / {geography.total} · 待处理 {geography.pending}</p></>}<button disabled={busy||!geography.available||geography.paused} onClick={refresh}>重新解析已有 GPS</button>{queued&&<p role="status">已排队 · 仅本地地址计算</p>}</section>}
  </>
 }

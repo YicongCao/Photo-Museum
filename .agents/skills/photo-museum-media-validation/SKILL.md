@@ -5,6 +5,8 @@ description: 复验 photo-museum 媒体缓存、Gallery/P5展厅、P6策展助�
 
 # 正式媒体与馆务复验
 
+普通搜索、主体匹配模式、可撤销标签纠正及可选代表性封面见[检索与选片复验](references/search-representative.md)。
+
 全局关键词/城市词库、标准ID检索和metadata-only增量进程见[词库复验](references/lexicon.md)。
 
 少量媒体失败的实测诊断见docs/research/failed-media-compatibility-diagnosis.md：先只读当前media_jobs和entries确认状态，再在独立TemporaryDirectory用现有WebDAV下载器复现metadata/still完整异常；私密消息/路径留data。ValueError/OSError不是根因。JPEG的“bytes not processed”不等于缺失字节数；检查主流EOI并只对临时副本补标记复测，不全局打开容错。HEIF区分容器引用限额、主图NCLX/ICC和HDR，不把辅助信息当主图；原生成功须再生成并重开thumb/display验证。保留正常队列，清理诊断原文件；Mac成功不代表Linux/Docker通过，诊断不自动授权全库重刮。

@@ -56,6 +56,7 @@ def photo_terms(p):
             if domain!='subject':words.append((raw.replace('_',' ').replace('-',' '),'photography-taxonomy-id'))
             provider='visual' if domain=='subject' else 'photography'
             source={'provider':provider,'model_version':p.get('lexicon_versions',{}).get(provider),'media_version':p.get('info',{}).get('version')}
+            if tag.get('confirmed'):source={'provider':'manual','model_version':tag.get('confirmed_source_version'),'media_version':None}
             add(identity,domain,label,words,source)
     place=p.get('place')
     if place and place.get('city'):

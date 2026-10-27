@@ -5,7 +5,7 @@ import {PhotoLoading} from './loading-mark';
 import {StatusNotice,StatusPanel} from './system-status';
 import './lexicon-settings.css';
 const domains={subject:['subject','主体'],topic:['topic','摄影主题'],style:['style','摄影风格'],city:['pin','城市']};
-const providers={visual:'主体识别',photography:'摄影分析',places:'地址解析'};
+const providers={manual:'馆主确认（原候选版本）',visual:'主体识别',photography:'摄影分析',places:'地址解析'};
 const aliasSource=value=>value.startsWith('imagenet1k/')?'ImageNet 词表':value.startsWith('geonames/')?'GeoNames 词表':({'observed-label':'原始标签','observed-id':'原始 ID','place-observation':'原始地名','place-display':'中文地名','photography-taxonomy-id':'主题词表 ID'}[value]||value);
 export function LexiconSettings({api}){
  const [domain,setDomain]=useState('subject'),[text,setText]=useState(''),[query,setQuery]=useState(''),[pages,setPages]=useState([null]),[data,setData]=useState(null),[lastStatus,setLastStatus]=useState(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[revision,setRevision]=useState(0),[rebuilding,setRebuilding]=useState(false);

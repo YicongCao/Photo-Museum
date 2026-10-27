@@ -1,5 +1,6 @@
 import React from "react";
 const paths = {
+  search: "M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14M15 15l6 6",
   dice: "M6 3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3ZM8 8h.01M16 8h.01M12 12h.01M8 16h.01M16 16h.01",
   timeline: 'M7 3v18M3 5h.01M3 12h.01M3 19h.01M11 5h10M11 12h7M11 19h10',
   refresh: 'M20 7v5h-5M4 17v-5h5M5.3 7a8 8 0 0 1 13-2L20 8M4 16l1.7 3a8 8 0 0 0 13-2',

@@ -1,6 +1,7 @@
 import {adaptivePoll} from './adaptive-poll.mjs';
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "./icons";
+import {SearchRoom} from './search-room';
 import {MuseumNav} from "./museum-nav";
 import {RoomMenuIcon} from './room-menu-icon';
 import { Tunnel, PhotoWall, FullscreenButton } from "./exhibition";
@@ -38,7 +39,7 @@ import {useGalleryChrome} from './gallery-chrome';
 import './gallery-chrome.css';
 import './viewer-filmstrip.css';
 
-const roomNames={cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道',revisit:'故地重游',scroll:'记忆长卷',rings:'人生年轮',constellation:'记忆星图'};
+const roomNames={search:'检索',cover:'Cover Flow',calendar:'日历',map:'地图',gear:'器材馆',space:'时空隧道',revisit:'故地重游',scroll:'记忆长卷',rings:'人生年轮',constellation:'记忆星图'};
 const creativeRooms={rings:RingsRoom,constellation:ConstellationRoom,scroll:MemoryScrollRoom,revisit:RevisitRoom};
 function savedRooms(key='museum.rooms'){try{return JSON.parse(sessionStorage.getItem(key) || '{}')}catch{return {}}}
 
@@ -69,7 +70,7 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   const sequence=view==='wall'&&wallSequence?.key===(collection?.id||wallId)?wallSequence:{items:directSequence,total:directSequence.length};
   useEffect(()=>{if(photo&&view==='wall'&&sequence.items.length&&!sequence.items.some(p=>p.id===photo.id)&&sequence.items.length<sequence.total&&!sequence.busy&&!sequence.error)sequence.loadMore?.()},[photo?.id,sequence.items,sequence.busy,sequence.total,sequence.error,view]);
   const [roomRevision,setRoomRevision]=useState(0);
-  useEffect(()=>{try{sessionStorage.setItem(storageKey,JSON.stringify({room,anchor,states:roomStates,activityId:activities[index]?.id || savedRooms(storageKey).activityId}))}catch{}},[room,anchor,roomStates,activities[index]?.id]);
+  useEffect(()=>{try{sessionStorage.setItem(storageKey,JSON.stringify({room,anchor,states:{...roomStates,search:roomStates.search?{form:roomStates.search.form,chips:roomStates.search.chips,order:roomStates.search.order}:undefined},activityId:activities[index]?.id || savedRooms(storageKey).activityId}))}catch{}},[room,anchor,roomStates,activities[index]?.id]);
   useEffect(()=>{
     if(!roomMenu)return;
     const focus=requestAnimationFrame(()=>roomMenuRef.current?.querySelector('[aria-checked="true"]')?.focus());
@@ -243,11 +244,11 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
   const toggleImmersive=()=>immersive?navigation.back(capture({immersive:false})):restoreScene(capture({immersive:true}));
   const displayTheme=room==='cover'&&view==='tunnel'&&!photo?coverTheme:'dark';
   return (
-    <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening} data-theme={displayTheme} data-cover-style={coverStyle} data-chrome-visible={chromeVisible} onWheelCapture={cancelRandom} onPointerDownCapture={e=>{if(!e.target.closest('.gallery-random'))cancelRandom()}}>
+    <RoomRefreshContext.Provider value={roomRevision}><div ref={shell} className={"gallery-shell gallery-room-"+room+" gallery-view-" + view + (opening ? " opening-activity" : "")} aria-busy={opening} data-theme={displayTheme} data-cover-style={coverStyle} data-chrome-visible={room==='search'?true:chromeVisible} onWheelCapture={cancelRandom} onPointerDownCapture={e=>{if(!e.target.closest('.gallery-random'))cancelRandom()}}>
       <header className="gallery-nav" inert={!!photo || opening}>
         {view === "wall" && <button className="gallery-back" onClick={rootWall?returnCurator:backGallery} aria-label={rootWall?'返回策展助理':room==='cover'?'返回 Gallery':'返回 '+roomNames[room]}>← {rootWall?'策展助理':room==='cover'?'Gallery':roomNames[room]}</button>}
         {exhibitionId&&view==='tunnel'&&<><button className="gallery-curated-back" onClick={returnCurator}>← 策展助理</button><span className="gallery-curated-context">{scopeMeta?.title}</span></>}
-        <MuseumNav current="gallery" onLogout={onLogout}
+        <MuseumNav current="gallery" onLogout={onLogout} onSearch={!exhibitionId?()=>changeRoom('search'):undefined}
           onRandom={view==='tunnel'&&['cover','space'].includes(room)&&!photo?randomCover:undefined} randomBusy={randomBusy} randomDisabled={activities.length<2||opening}
           theme={coverTheme} onTheme={room==='cover'&&view==='tunnel'?toggleCoverTheme:undefined}
           galleryControl={
@@ -262,12 +263,13 @@ export function Gallery({ api:baseApi, onAdmin,onLogout,exhibitionId=null,roomHi
             const next=e.key==='Home'?0:e.key==='End'?items.length-1:e.key==='ArrowDown'?Math.min(i+3,items.length-1):e.key==='ArrowUp'?Math.max(i-3,0):(i+(e.key==='ArrowRight'?1:-1)+items.length)%items.length;
             items[next]?.focus();
           }}>
-            {Object.entries(roomNames).map(([id,name])=><button className="room-menu-tile" role="menuitemradio" key={id} aria-checked={room===id} onClick={()=>changeRoom(id)}><RoomMenuIcon room={id}/><span>{name}</span></button>)}
+            {Object.entries(roomNames).filter(([id])=>id!=='search').map(([id,name])=><button className="room-menu-tile" role="menuitemradio" key={id} aria-checked={room===id} onClick={()=>changeRoom(id)}><RoomMenuIcon room={id}/><span>{name}</span></button>)}
             <button role="menuitem" className="room-menu-tile curator-menu-entry" onClick={()=>{location.hash='curator'}}><RoomMenuIcon room="curator"/><span>策展助理</span></button>
           </div>}</div>
           }/>
       </header>
       {(error||(loadError&&current))&&<div className="gallery-status-banner"><StatusNotice error={error||loadError} scope={error?'浏览操作':'图库更新'} detail={!error&&current?'保留当前画面':undefined} onRetry={!error?reload:undefined} onDismiss={error?()=>setError(''):undefined}/></div>}
+      {view==='tunnel'&&room==='search'&&!exhibitionId&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><SearchRoom api={api} state={roomStates.search||{}} onState={s=>setRoomStates(p=>({...p,search:s}))} onCollection={openCollection} onPhoto={(p,neighbors)=>open(p,'.search-photo img',neighbors)}/></div>}
       {view==='tunnel'&&room==='calendar'&&<div className="gallery-room-host"><CalendarRoom api={api} anchor={anchor} setAnchor={setAnchor} state={roomStates.calendar || {}} onState={s=>setRoomStates(p=>({...p,calendar:s}))} onCollection={openCollection}/></div>}
       {view==='tunnel'&&room==='map'&&<div className="gallery-room-host"><MapRoom api={api} state={roomStates.map || {}} onState={s=>setRoomStates(p=>({...p,map:s}))} onCollection={openCollection}/></div>}
       {view==='tunnel'&&room==='gear'&&<div className="gallery-room-host" inert={!!photo} style={photo?{visibility:'hidden'}:undefined}><GearRoom api={api} anchor={anchor} state={roomStates.gear || {}} onState={s=>setRoomStates(p=>({...p,gear:s}))} onCollection={openCollection} onPhoto={(p,neighbors)=>open(p,'.room img',neighbors)}/></div>}

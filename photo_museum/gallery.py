@@ -265,7 +265,30 @@ def register(app,database,owner):
                 catalog_snapshot[:] = [version, result]
             return result
 
+    def cover_candidates(all_rows):
+        candidates=[r for r in all_rows if not r['excluded'] and r['kind']=='image_candidate' and not json.loads(r['data_json']).get('placeholder')]
+        pending=sum(r['aesthetic_score'] is None for r in candidates) if aesthetics.enabled() else 0
+        use_neural=aesthetics.enabled() and pending==0
+        for r in candidates:
+            r['score']=r['aesthetic_score'] if use_neural else r['technical_score']
+            r['score_kind']='aesthetic' if use_neural else 'technical'
+            r['representative_time']=capture_value(r)
+            if r['technical_score'] is None:r['signature']=None;r['concept']=None
+        ranked=sorted((r for r in candidates if isinstance(r['score'],(int,float))),key=lambda r:(-r['score'],r['path'],r['id']))
+        return candidates,ranked,pending,use_neural
+
+    @app.get('/api/gallery/{gid}/selection',dependencies=[Depends(owner)])
+    def selection_preview(gid:str):
+        from .representatives import choose
+        candidates,ranked,pending,neural=cover_candidates(rows(gid))
+        selected,summary=choose(ranked)
+        return {'top10':[pack(r) for r in ranked[:10]],'representative':[pack(r) for r in selected],
+                'summary':summary,'score_kind':'aesthetic' if neural else 'technical','aesthetic_pending':pending}
+
     def build_gallery():
+        from .preferences import read_preferences
+        from .representatives import choose
+        with database.connect() as c:selection=read_preferences(c)['cover_selection']
         groups={}
         for r in rows():
             key=group_key(r)
@@ -274,19 +297,14 @@ def register(app,database,owner):
         result=[]
         for g in groups.values():
             all_rows=g.pop('rows')
-            candidates=[r for r in all_rows if not r['excluded'] and r['kind']=='image_candidate' and not json.loads(r['data_json']).get('placeholder')]
-            # One scale per activity while backfill runs; never compare 0-100 with neural estimates.
-            pending=sum(r['aesthetic_score'] is None for r in candidates) if aesthetics.enabled() else 0
-            use_neural=aesthetics.enabled() and pending==0
-            for r in candidates:
-                r['score']=r['aesthetic_score'] if use_neural else r['technical_score']
-                r['score_kind']='aesthetic' if use_neural else 'technical'
-            # Strict score Top10. Pins remain user annotations, never override this ranking.
-            ranked=sorted((r for r in candidates if isinstance(r['score'],(int,float))),key=lambda r:(-r['score'],r['path'],r['id']))
+            candidates,ranked,pending,use_neural=cover_candidates(all_rows)
             selected=ranked[:10]
+            if selection=='representative':
+                selected,diversity=choose(ranked)
+                g['representative']=diversity
             g.update(latest_capture=activity_time(g['event'],[{'data_json':json.dumps({'captured_at':capture_value(r)})} for r in all_rows]),count=len(all_rows),
                      photos=sum(r['kind']=='image_candidate' for r in all_rows),videos=sum(r['kind']=='video_candidate' for r in all_rows),
-                     selection_policy='aesthetic-top10' if use_neural else 'technical-top10-backfill' if aesthetics.enabled() else 'score-top10',aesthetic_pending=pending,unscored=sum(r['score'] is None for r in candidates),selected=[pack(r) for r in selected])
+                     selection_policy=('representative-' if selection=='representative' else '')+('aesthetic-top10' if use_neural else 'technical-top10-backfill' if aesthetics.enabled() else 'score-top10'),aesthetic_pending=pending,unscored=sum(r['score'] is None for r in candidates),selected=[pack(r) for r in selected])
             result.append(g)
         result.sort(key=lambda g:(g['event'].get('year') or 0,g['event'].get('month') or 0,g['latest_capture'],g['event'].get('theme') or '',g['id']),reverse=True)
         return {'activities':result}
