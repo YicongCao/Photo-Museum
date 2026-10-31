@@ -14,6 +14,18 @@ test('approved domain states preserve meaning without relaying arbitrary strings
  assert.equal(failureText('设置已在其他页面更新，请重新读取'),'设置已在其他页面更新，请重新读取');
  assert.equal(failureInfo('暂时无法连接服务').code,'connection');
 });
+test('upstream HTTP failures retain safe codes, guidance and old run compatibility',()=>{
+ const billing=failureInfo('Provider返回HTTP 402');
+ assert.equal(billing.code,'provider_http');assert.equal(billing.httpStatus,402);
+ assert.match(billing.title,/HTTP 402/);assert.match(billing.detail,/开通.*余额.*额度/);
+ for(const status of [400,401,402,403,404,422,429,500,502,503,599]){
+  const info=failureInfo('Provider返回HTTP '+status);assert.equal(info.httpStatus,status);assert.match(info.title,new RegExp('HTTP '+status));
+ }
+ for(const [message,status] of [['API key未通过验证',401],['Provider拒绝请求',403],['Provider配额或速率限制',429]])assert.equal(failureInfo(message).httpStatus,status);
+ assert.equal(failureInfo({status:401,message:'请先登录'}).code,'authentication');
+ assert.equal(failureInfo({code:'provider_http',status:402,message:'sk-private /Users/owner'}).httpStatus,402);
+ for(const raw of ['Provider返回HTTP 402 sk-private','Provider返回HTTP 402\n/private/path','Provider返回HTTP 999','Provider返回HTTP 402 <html>','Provider返回HTTP 402002'])assert.equal(failureText(raw),'操作未完成');
+});
 test('request failure, invalid JSON, timeout, external cancellation and password failure stay distinct',async()=>{
  const original=globalThis.fetch;
  try{

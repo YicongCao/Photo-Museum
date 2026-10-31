@@ -11,6 +11,7 @@ export const failureCopy = {
   validation: ['请检查输入内容', '', 'alert'],
   oversized: ['文件超过处理上限', '保留索引与占位预览', 'file'],
   rate_limit: ['请求过于频繁', '稍后再试', 'clock'],
+  provider_http: ['模型服务拒绝请求', '请检查模型服务配置或账户状态', 'server'],
   unknown: ['操作未完成', '请稍后重试', 'alert'],
 };
 export const domainFailures = {
@@ -51,10 +52,30 @@ const messages = [
   'API key未通过验证','Provider拒绝请求','Provider配额或速率限制','页面暂不可用','预览暂不可用','词库已更新或分页条件已变化，请重新查询','词库查询参数无效','关键词 ID 无效或已过期，请先查询词库',
 ];
 const approved = new Set([...messages,...Object.values(domainFailures),...Object.values(failureCopy).map(value=>value[0])]);
+// Parse only the server's exact status-only receipt, never an upstream response body.
+// Older runs used labels instead of numbers for these three statuses.
+const legacyProviderStatus={'API key未通过验证':401,'Provider拒绝请求':403,'Provider配额或速率限制':429};
+function providerFailure(error,raw){
+  const match=/^Provider返回HTTP ([1-5][0-9]{2})$/.exec(raw);
+  const status=match?Number(match[1]):Object.hasOwn(legacyProviderStatus,raw)?legacyProviderStatus[raw]:
+    error?.code==='provider_http'&&Number.isInteger(error.status)&&error.status>=100&&error.status<=599?error.status:null;
+  if(status===null)return null;
+  const detail=({
+    400:'检查模型名称及该模型支持的请求参数；修改后手动重新提交',
+    401:'检查模型服务的 API key 和服务地址；这不是馆主登录失效',
+    402:'检查该模型是否已开通，以及账户余额、可用额度；修复后手动重新提交',
+    403:'检查模型服务的访问权限及模型开通状态',
+    404:'检查模型名称及模型服务地址',
+    429:'检查模型服务的额度与速率限制；稍后手动重新提交',
+  })[status] || (status>=500?'模型服务暂时异常；稍后手动重新提交':'检查模型服务配置或账户状态；未自动重试');
+  return {code:'provider_http',httpStatus:status,title:`模型服务拒绝请求 · HTTP ${status}`,detail,icon:'server'};
+}
 export function failureInfo(error) {
   if(!error)return null;
   const raw=typeof error==='string'?error:error?.message || '';
   if(error?.name==='AbortError')return null;
+  const provider=providerFailure(error,raw);
+  if(provider)return provider;
   let code=Object.hasOwn(failureCopy,error?.code)?error.code:Object.keys(failureCopy).find(key=>failureCopy[key][0]===raw);
   if(!code){
     if(/Failed to fetch|Load failed|NetworkError|network request failed/i.test(raw))code='connection';

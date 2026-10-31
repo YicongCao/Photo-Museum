@@ -3,6 +3,7 @@ import {MuseumNav} from './museum-nav';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Icon} from './icons';
 import {StatusNotice} from './system-status';
+import {failureInfo} from './status-text';
 import {PhotoLoading} from './loading-mark';
 import './curator.css';
 import {CuratorTimeline,CuratorActivity} from './curator-timeline.jsx';
@@ -68,8 +69,10 @@ export function Curator({api,onLogout}){
  }catch(e){if(epoch===entryEpoch.current)setError(e.message)}finally{if(epoch===entryEpoch.current)setBusy(false)}}
  async function cancel(){const id=runId;setError('');try{const r=await api('/curator/runs/'+id+'/cancel','POST',{});if(currentId.current===id)setRun(r)}catch(e){if(currentId.current===id)setError(e.message)}}
  function show(){if(!exhibition)return;location.hash='gallery?exhibit='+exhibition.id+'&room='+showRoom}
+ function openProviderSettings(){location.hash='settings?tab=llm&from='+encodeURIComponent(location.hash.slice(1))}
+ const runFailure=failureInfo(run?.error);
  return <div className="curator-shell" data-run-id={run?.id}>
-  <header className="curator-header"><div><h1>策展助理</h1><button className="curator-provider-button" aria-label={'Provider '+(provider?.model || '')} onClick={()=>{location.hash='settings?tab=llm&from='+encodeURIComponent(location.hash.slice(1))}} disabled={!provider}><Icon name="server"/><span className="curator-provider-model">{provider?.model || 'Provider'}</span><span>{provider?.configured&&provider?.enabled?'已配置':'待配置'}</span></button></div>
+  <header className="curator-header"><div><h1>策展助理</h1><button className="curator-provider-button" aria-label={'Provider '+(provider?.model || '')} onClick={openProviderSettings} disabled={!provider}><Icon name="server"/><span className="curator-provider-model">{provider?.model || 'Provider'}</span><span>{provider?.configured&&provider?.enabled?'已配置':'待配置'}</span></button></div>
    <MuseumNav current="curator" onLogout={onLogout}/>
   </header>
   <div className="curator-layout"><section className="curator-conversation" aria-label="策展对话">
@@ -81,7 +84,7 @@ export function Curator({api,onLogout}){
     {exhibition&&<section className="curator-result" aria-label="展览草案"><header><h2>{exhibition.title}</h2><span>{exhibition.count} 张照片</span></header><div className="curator-result-images">{exhibition.covers.map(p=><PreviewImage key={p.id} src={p.thumbnail} alt="" decoding="async" onLoad={()=>setImageStates(s=>({...s,[p.id]:'loaded'}))} onError={()=>setImageStates(s=>({...s,[p.id]:'failed'}))}/>)}</div><small>预览 {loaded} / {exhibition.covers.length}{thumbnails.includes('failed')&&' · 部分预览不可用'}</small><div className="curator-show"><select aria-label="展示展厅" value={showRoom} onChange={e=>setShowRoom(e.target.value)}>{Object.entries(exhibitionRooms).map(([id,label])=><option value={id} key={id}>{label}</option>)}</select><button onClick={show} disabled={exhibition.count===0}>Show ↗</button></div></section>}
     {!provider&&!error&&<PhotoLoading compact label="读取策展记录"/>}
     {error&&<StatusNotice error={error} scope="策展记录" onRetry={reloadReadOnly}/>}
-    {run?.error&&<StatusNotice error={run.error} scope="本次策展"/>}
+    {run?.error&&<StatusNotice error={run.error} scope="本次策展" action={runFailure?.code==='provider_http'?<button type="button" onClick={openProviderSettings}><Icon name="server"/><span>模型设置</span></button>:undefined}/>}
     {active&&connection==='重连中'&&<StatusNotice tone="info" title="正在重新连接运行记录" detail="自动恢复事件 · 不重发策展请求"/>}
    </div>
    <form className="curator-composer" onSubmit={submit}><textarea aria-label="策展要求" placeholder="按时间、地点、器材、摄影风格或主题筛选…" value={prompt} maxLength={4000} onChange={e=>setPrompt(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();e.currentTarget.form.requestSubmit()}}}/><div>

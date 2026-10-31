@@ -4,7 +4,7 @@ import {MuseumMark,PhotoLoading} from './loading-mark';
 import {failureInfo} from './status-text';
 
 export const ServiceHealthContext=createContext(null);
-export function StatusNotice({error,title,detail,onRetry,retryLabel='重新读取',onDismiss,scope='',className='',global=false,tone='error'}){
+export function StatusNotice({error,title,detail,onRetry,retryLabel='重新读取',onDismiss,action,scope='',className='',global=false,tone='error'}){
   const health=useContext(ServiceHealthContext),[retrying,setRetrying]=useState(false);
   const info=error?failureInfo(error):null;
   if(error&&!info)return null;
@@ -13,7 +13,7 @@ export function StatusNotice({error,title,detail,onRetry,retryLabel='重新读�
   return <div onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(['Enter',' '].includes(e.key)&&e.target.closest('button'))e.stopPropagation()}} className={'museum-status-notice '+className} data-tone={tone} data-status-code={info?.code} role={tone==='error'?'alert':'status'}>
     <span className="museum-status-symbol"><Icon name={info?.icon || (tone==='success'?'check':'clock')}/></span>
     <div className="museum-status-copy">{scope&&<span className="museum-status-scope">{scope}</span>}<strong>{title || info?.title}</strong>{(detail??info?.detail)&&<small>{detail??info?.detail}</small>}</div>
-    {(onRetry||onDismiss)&&<div className="museum-status-actions">{onRetry&&<button type="button" disabled={retrying} onClick={retry}><Icon name="refresh" className={retrying?'status-is-retrying':''}/><span>{retrying?'读取中':retryLabel}</span></button>}{onDismiss&&<button type="button" onClick={onDismiss} aria-label="关闭提示"><Icon name="close"/></button>}</div>}
+    {(onRetry||onDismiss||action)&&<div className="museum-status-actions">{action}{onRetry&&<button type="button" disabled={retrying} onClick={retry}><Icon name="refresh" className={retrying?'status-is-retrying':''}/><span>{retrying?'读取中':retryLabel}</span></button>}{onDismiss&&<button type="button" onClick={onDismiss} aria-label="关闭提示"><Icon name="close"/></button>}</div>}
   </div>;
 }
 export function StatusPanel({loading=false,label='读取图片',error,onRetry,empty='暂无可展示照片',action,className=''}){
